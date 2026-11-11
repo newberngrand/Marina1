@@ -809,6 +809,9 @@ footer.site-footer {
 .slip-map .pulse.p2 { animation-delay: 0.8s; }
 @keyframes slipPulse {
   0% { transform: scale(0.6); opacity: 1; }
-  100% { transform: scale(2.6); opacity: 0; }
+  100% { transform: scale(4); opacity: 0; }
 }
 .section-subhead { text-align: center; margin: 56px 0 18px; }
+.slip-finder .map-photo { border-radius: 0 0 var(--radius) var(--radius); }
+.slip-map[hidden], .map-photo[hidden], .slip-reset[hidden] { display: none; }
+.slip-map .ring { fill: none; stroke: #ffd400; stroke-width: 5; stroke-dasharray: 10 6; pointer-events: none; }

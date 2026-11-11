@@ -5,6 +5,7 @@
   var input = document.getElementById('slipInput');
   var info = document.getElementById('slipInfo');
   var resetBtn = document.getElementById('slipReset');
+  var photo = document.getElementById('mapPhoto');
   if (!holder || !form) return;
 
   var svg, fullBox, current, anim;
@@ -16,12 +17,11 @@
       svg = holder.querySelector('svg');
       svg.removeAttribute('width');
       svg.removeAttribute('height');
-      fullBox = svg.getAttribute('viewBox').split(/\s+/).map(Number);
       var q = new URLSearchParams(location.search).get('slip');
       if (q) { input.value = q; find(q, false); }
     })
     .catch(function () {
-      holder.innerHTML = '<img src="images/marina-slip-map.jpg" alt="Slip map of New Bern Grand Marina">';
+      svg = null;
     });
 
   function parse(text) {
@@ -44,17 +44,10 @@
     return (parseInt(num, 10) % 2 === 0 ? 'on the west side' : 'on the east side') + ' of ' + dock + ' Dock';
   }
 
-  function zoomTo(box) {
-    if (anim) cancelAnimationFrame(anim);
-    var from = svg.getAttribute('viewBox').split(/\s+/).map(Number);
-    var t0 = performance.now(), dur = 700;
-    function step(now) {
-      var k = Math.min(1, (now - t0) / dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-      var v = from.map(function (f, i) { return f + (box[i] - f) * e; });
-      svg.setAttribute('viewBox', v.join(' '));
-      if (k < 1) anim = requestAnimationFrame(step);
-    }
-    anim = requestAnimationFrame(step);
+  function showDiagram(on) {
+    holder.hidden = !on;
+    photo.hidden = on;
+    resetBtn.hidden = !on;
   }
 
   function clear() {
@@ -75,7 +68,7 @@
       info.innerHTML = p
         ? 'We couldn’t find slip <strong>' + p.num + '</strong> on <strong>' + p.dock + ' Dock</strong>. Please double-check your assignment or call the office at <a href="tel:+12526380318">(252) 638-0318</a>.'
         : 'Enter your dock letter and slip number, for example <strong>B23</strong> or <strong>A0A</strong>.';
-      zoomTo(fullBox);
+      showDiagram(false);
       return;
     }
     current = el;
@@ -87,13 +80,10 @@
     var pin = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     pin.setAttribute('id', 'slipPin');
     pin.innerHTML = '<circle class="pulse" cx="' + cx + '" cy="' + cy + '" r="18"/>' +
-      '<circle class="pulse p2" cx="' + cx + '" cy="' + cy + '" r="18"/>';
+      '<circle class="pulse p2" cx="' + cx + '" cy="' + cy + '" r="18"/>' +
+      '<circle class="ring" cx="' + cx + '" cy="' + cy + '" r="' + (Math.max(b.width, b.height) / 2 + 14) + '"/>';
     svg.appendChild(pin);
-
-    var aspect = fullBox[2] / fullBox[3], w = 620, h = w / aspect;
-    var x = Math.max(fullBox[0], Math.min(cx - w / 2, fullBox[0] + fullBox[2] - w));
-    var y = Math.max(fullBox[1], Math.min(cy - h / 2, fullBox[1] + fullBox[3] - h));
-    zoomTo([x, y, w, h]);
+    showDiagram(true);
 
     var size = el.getAttribute('data-size');
     var sizeTxt = el.getAttribute('data-dock') === 'G' && size === '60' ? "60'+" : size + "'";
@@ -109,7 +99,7 @@
   form.addEventListener('submit', function (e) { e.preventDefault(); find(input.value, true); });
   resetBtn.addEventListener('click', function () {
     clear(); input.value = ''; info.className = 'slip-info'; info.textContent = '';
-    if (svg) zoomTo(fullBox);
+    showDiagram(false);
     var url = new URL(location.href); url.searchParams.delete('slip'); history.replaceState(null, '', url);
   });
 })();
