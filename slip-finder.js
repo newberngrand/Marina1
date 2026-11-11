@@ -226,7 +226,7 @@
   form.addEventListener('submit', function (e) { e.preventDefault(); find(input.value, true); });
   zoomBtn.addEventListener('click', function () { setZoom(!zoomed); });
   resetBtn.addEventListener('click', function () {
-    clear(); input.value = ''; info.className = 'slip-info'; info.textContent = '';
+    clear(); info.className = 'slip-info'; info.textContent = '';
     showDiagram(false);
     var url = new URL(location.href); url.searchParams.delete('slip'); history.replaceState(null, '', url);
   });
