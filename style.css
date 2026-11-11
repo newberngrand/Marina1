@@ -722,3 +722,93 @@ footer.site-footer {
   .brand-text .tag { display: none; }
   .brand img { height: 36px; }
 }
+
+/* Slip finder */
+.slip-finder {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.slip-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  background: var(--navy);
+  color: var(--white);
+  padding: 20px 22px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.slip-form label { font-weight: 700; letter-spacing: 0.5px; }
+.slip-form input {
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 11px 14px;
+  width: 220px;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 2px solid var(--gold);
+  text-transform: uppercase;
+}
+.slip-form .btn { border: 0; cursor: pointer; }
+.slip-form .slip-reset {
+  background: transparent;
+  color: #dce6f0;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+.slip-hint { width: 100%; text-align: center; font-size: 0.85rem; color: #b9c8d8; margin: 0; }
+.slip-info {
+  display: none;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 20px;
+  background: var(--sand);
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  font-size: 1rem;
+}
+.slip-info.found, .slip-info.error { display: flex; }
+.slip-info.error { background: #fdecec; color: #8a1f1f; display: block; }
+.slip-tag {
+  background: var(--gold);
+  color: var(--navy-dark);
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.slip-map {
+  background: #a9d2e6;
+  border-radius: 0 0 var(--radius) var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  line-height: 0;
+}
+.slip-map svg, .slip-map img { width: 100%; height: auto; display: block; }
+.slip-map .slip { transition: opacity 0.4s; }
+.slip-map svg.finding .slip:not(.hit) { opacity: 0.35; }
+.slip-map .slip.hit polygon, .slip-map .slip.hit rect:first-child {
+  fill-opacity: 0.95;
+  stroke: #ffd400;
+  stroke-width: 4;
+  stroke-opacity: 1;
+}
+.slip-map .pulse {
+  fill: none;
+  stroke: #ffd400;
+  stroke-width: 4;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: slipPulse 1.6s ease-out infinite;
+  pointer-events: none;
+}
+.slip-map .pulse.p2 { animation-delay: 0.8s; }
+@keyframes slipPulse {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+.section-subhead { text-align: center; margin: 56px 0 18px; }

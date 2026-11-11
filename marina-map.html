@@ -52,10 +52,25 @@
 
 <section>
   <div class="container">
+    <div class="slip-finder">
+      <form class="slip-form" id="slipForm" autocomplete="off">
+        <label for="slipInput">Find my slip</label>
+        <input id="slipInput" name="slip" type="text" inputmode="text" placeholder="e.g. B23" aria-describedby="slipHint">
+        <button type="submit" class="btn btn-gold">Show on Map</button>
+        <button type="button" class="slip-reset" id="slipReset">Show whole marina</button>
+        <p class="slip-hint" id="slipHint">Enter your dock letter and slip number from your assignment, like <strong>A31</strong>, <strong>G14</strong> or <strong>E0B</strong>.</p>
+      </form>
+      <div class="slip-info" id="slipInfo" aria-live="polite"></div>
+      <div class="slip-map" id="slipMap">
+        <img src="images/marina-slip-map.jpg" alt="Slip map of New Bern Grand Marina showing every dock and slip number, color-coded by slip length">
+      </div>
+    </div>
+    <p class="map-caption">Slip assignments are subject to availability. Contact the marina office for current openings or to confirm your slip location.</p>
+
+    <h2 class="section-subhead">Aerial View</h2>
     <div class="photo-frame" style="max-width:900px;margin:0 auto;">
       <img src="images/marina-map-slips-tags.jpg" alt="Aerial slip map of New Bern Grand Marina on the Trent River showing Docks A through G and Z, with even-numbered slips on the west side of each dock and odd-numbered slips on the east side, Z dock slips 1 and 2, and the Cunningham Bridge (bridge tender on VHF Ch. 13)">
     </div>
-    <p class="map-caption">Slip assignments are subject to availability. Contact the marina office for current openings or to confirm your slip location.</p>
   </div>
 </section>
 
@@ -117,5 +132,6 @@
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="member-login.js"></script>
+<script src="slip-finder.js"></script>
 </body>
 </html>
