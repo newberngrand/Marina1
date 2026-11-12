@@ -59,8 +59,33 @@
         <div class="event-details" id="evDetailsText"></div>
       </div>
     </div>
+
+    <div class="portal-card ballot-card" id="ballotCard" hidden>
+      <h3>Ballot</h3>
+      <p class="vote-state" id="ballotWindow"></p>
+      <div id="ballotBody"></div>
+      <div class="member-login-error" id="ballotError" hidden></div>
+    </div>
+
+    <div class="portal-card" id="resultsCard" hidden>
+      <h3 id="resultsTitle">Results</h3>
+      <div id="resultsBody"></div>
+    </div>
   </div>
 </section>
+
+<div class="member-login-overlay" id="voteConfirm" role="dialog" aria-modal="true" aria-labelledby="voteConfirmTitle">
+  <div class="member-login-modal vote-confirm">
+    <h3 id="voteConfirmTitle">Confirm your vote</h3>
+    <p>You are voting for slip <strong id="vcSlip"></strong>:</p>
+    <p class="vc-choice" id="vcChoice"></p>
+    <div class="vc-warning"><strong>Votes are final.</strong> Once you cast this vote it cannot be changed or taken back.</div>
+    <div class="portal-actions">
+      <button type="button" class="btn btn-outline" id="vcBack">Go Back</button>
+      <button type="button" class="btn btn-gold" id="vcCast">Cast My Vote</button>
+    </div>
+  </div>
+</div>
 
 <footer class="site-footer">
   <div class="container footer-bottom">
@@ -72,36 +97,6 @@
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="member-login.js"></script>
 <script src="member-data.js"></script>
-<script>
-(function () {
-  var D = MemberData;
-  function $(id) { return document.getElementById(id); }
-  var id = new URLSearchParams(location.search).get('id');
-  document.addEventListener('DOMContentLoaded', function () {
-    MemberAuth.getClient().then(function (sb) {
-      return sb.auth.getSession().then(function (r) {
-        if (!r.data.session) { $('evStatus').textContent = 'Please log in to view member events.'; MemberAuth.openLogin('login'); return; }
-        if (!id) { $('evStatus').textContent = 'Event not found.'; return; }
-        return sb.from('events').select('*').eq('id', id).maybeSingle().then(function (res) {
-          var ev = res.data;
-          if (!ev) { $('evStatus').textContent = 'This event is no longer available.'; return; }
-          document.title = ev.title + ' | New Bern Grand Marina';
-          $('evEyebrow').textContent = D.eventTypeLabel(ev.event_type);
-          $('evH1').textContent = ev.title;
-          var facts = '';
-          if (ev.starts_at) facts += '<dt>When</dt><dd>' + D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) + '</dd>';
-          if (ev.location) facts += '<dt>Where</dt><dd>' + D.esc(ev.location) + '</dd>';
-          facts += '<dt>Type</dt><dd>' + D.eventTypeLabel(ev.event_type) + (ev.active ? '' : ' (inactive: only admins can see this)') + '</dd>';
-          $('evFacts').innerHTML = facts;
-          if (ev.summary) { $('evSummaryText').textContent = ev.summary; $('evSummaryText').hidden = false; }
-          $('evDetailsText').innerHTML = ev.details ? D.richText(ev.details) : '';
-          $('evStatus').hidden = true;
-          $('evBody').hidden = false;
-        });
-      });
-    }).catch(function (e) { $('evStatus').textContent = e.message || 'Something went wrong.'; });
-  });
-})();
-</script>
+<script src="event.js"></script>
 </body>
 </html>

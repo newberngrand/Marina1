@@ -58,6 +58,9 @@
     $('evNew').addEventListener('click', function () { openEventForm(null); });
     $('evCancel').addEventListener('click', function () { $('evForm').hidden = true; });
     $('evForm').addEventListener('submit', saveEvent);
+    $('evType').addEventListener('change', updateBallotBox);
+    $('evBallotKind').addEventListener('change', updateBallotBox);
+    setupResults();
     $('evRows').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-act]');
       if (!b) return;
@@ -65,29 +68,52 @@
       if (!ev) return;
       var act = b.getAttribute('data-act');
       if (act === 'edit') openEventForm(ev);
+      if (act === 'results') showResults(ev);
       if (act === 'toggle') sb.from('events').update({ active: !ev.active }).eq('id', ev.id).then(loadEvents);
       if (act === 'delete' && confirm('Delete "' + ev.title + '"? This cannot be undone.\n\nTip: choose Deactivate instead to just hide it from members.')) {
-        sb.from('events').delete().eq('id', ev.id).then(loadEvents);
+        sb.from('events').delete().eq('id', ev.id).then(function (r) {
+          if (r.error) alert(r.error.code === '23503'
+            ? 'This vote already has ballots cast, so it can\'t be deleted (the voting record is kept). Use Deactivate to hide it from members.'
+            : r.error.message);
+          loadEvents();
+        });
       }
     });
     loadEvents();
   }
 
+  var voteCounts = {};
+
   function loadEvents() {
-    return sb.from('events').select('*').order('starts_at', { ascending: false, nullsFirst: true }).then(function (r) {
+    return Promise.all([
+      sb.from('events').select('*').order('starts_at', { ascending: false, nullsFirst: true }),
+      sb.from('votes').select('event_id')
+    ]).then(function (res) {
+      var r = res[0];
+      voteCounts = {};
+      (res[1].data || []).forEach(function (v) { voteCounts[v.event_id] = (voteCounts[v.event_id] || 0) + 1; });
       events = r.data || [];
       if (!events.length) {
         $('evRows').innerHTML = '<tr><td colspan="5">No events yet. Click <strong>+ Add Event</strong> to create one.</td></tr>';
         return;
       }
       $('evRows').innerHTML = events.map(function (ev) {
+        var isVote = ev.event_type === 'vote';
+        var voteInfo = '';
+        if (isVote) {
+          var st = D.voteState(ev);
+          voteInfo = '<div class="vote-state vote-' + st + '">' + D.esc(D.voteWindowText(ev)) + '</div>' +
+            '<div class="note">' + (voteCounts[ev.id] || 0) + ' vote' + ((voteCounts[ev.id] || 0) === 1 ? '' : 's') + ' cast &middot; ' +
+            D.esc(D.ballotChoices(ev).join(' / ')) + '</div>';
+        }
         return '<tr' + (ev.active ? '' : ' class="row-inactive"') + '>' +
           '<td><a href="event.html?id=' + ev.id + '" target="_blank" rel="noopener"><strong>' + D.esc(ev.title) + '</strong></a>' +
             (ev.summary ? '<div class="note">' + D.esc(ev.summary) + '</div>' : '') + '</td>' +
           '<td><span class="badge badge-' + ev.event_type + '">' + D.eventTypeLabel(ev.event_type) + '</span></td>' +
-          '<td>' + (ev.starts_at ? D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) : '<span class="note">No date</span>') + '</td>' +
+          '<td>' + (ev.starts_at ? D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) : (isVote ? '' : '<span class="note">No date</span>')) + voteInfo + '</td>' +
           '<td>' + (ev.active ? 'Active' : '<span class="inactive">Inactive</span>') + '</td>' +
           '<td class="row-actions">' +
+            (isVote ? '<button type="button" class="btn-sm btn-primary-sm" data-act="results" data-id="' + ev.id + '">Results</button>' : '') +
             '<button type="button" class="btn-sm" data-act="edit" data-id="' + ev.id + '">Edit</button>' +
             '<button type="button" class="btn-sm" data-act="toggle" data-id="' + ev.id + '">' + (ev.active ? 'Deactivate' : 'Activate') + '</button>' +
             '<button type="button" class="btn-sm btn-danger" data-act="delete" data-id="' + ev.id + '">Delete</button>' +
@@ -107,6 +133,17 @@
     $('evSummary').value = ev ? ev.summary : '';
     $('evDetails').value = ev ? ev.details : '';
     $('evActive').checked = ev ? ev.active : true;
+    $('evBallotKind').value = ev ? ev.ballot_kind : 'yes_no';
+    $('evResults').value = ev ? ev.results_visibility : 'after_close';
+    $('evOptions').value = ev && ev.ballot_options ? ev.ballot_options.join('\n') : '';
+    $('evVoteOpen').value = ev ? D.toLocalInput(ev.vote_opens_at) : '';
+    $('evVoteClose').value = ev ? D.toLocalInput(ev.vote_closes_at) : '';
+    var locked = !!(ev && voteCounts[ev.id]);
+    $('evBallotLocked').hidden = !locked;
+    $('evBallotKind').disabled = locked;
+    $('evOptions').disabled = locked;
+    $('evType').disabled = locked;
+    updateBallotBox();
     showErr($('evError'), '');
     $('evForm').hidden = false;
     $('evForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -128,12 +165,137 @@
     if (!row.title) return showErr($('evError'), 'Please enter a title.');
     if (row.starts_at && row.ends_at && row.ends_at < row.starts_at) return showErr($('evError'), 'The end time is before the start time.');
     var id = $('evId').value;
+    if (row.event_type === 'vote') {
+      row.results_visibility = $('evResults').value;
+      row.vote_opens_at = D.fromLocalInput($('evVoteOpen').value);
+      row.vote_closes_at = D.fromLocalInput($('evVoteClose').value);
+      if (!row.vote_closes_at) return showErr($('evError'), 'Please set when voting closes.');
+      if (row.vote_opens_at && row.vote_closes_at <= row.vote_opens_at) return showErr($('evError'), 'Voting must close after it opens.');
+      if (!$('evBallotKind').disabled) {
+        row.ballot_kind = $('evBallotKind').value;
+        row.ballot_options = row.ballot_kind === 'choice'
+          ? $('evOptions').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean)
+              .filter(function (s, i, a) { return a.indexOf(s) === i; })
+          : [];
+        if (row.ballot_kind === 'choice' && row.ballot_options.length < 2) return showErr($('evError'), 'Please enter at least two custom choices, one per line.');
+      }
+      if (!id && new Date(row.vote_closes_at) <= new Date() &&
+          !confirm('The closing time is in the past, so this ballot will not accept any votes. Save anyway?')) return;
+    }
+    if ($('evType').disabled) delete row.event_type;
     var q = id ? sb.from('events').update(row).eq('id', id) : sb.from('events').insert(row);
     q.then(function (r) {
       if (r.error) return showErr($('evError'), r.error.message);
       $('evForm').hidden = true;
       loadEvents();
     });
+  }
+
+  function updateBallotBox() {
+    var isVote = $('evType').value === 'vote';
+    $('evBallot').hidden = !isVote;
+    $('evOptionsWrap').hidden = $('evBallotKind').value !== 'choice';
+    $('evVoteClose').required = isVote;
+  }
+
+  /* ---------- Vote results ---------- */
+  var current = null, resultRows = [];
+
+  function setupResults() {
+    $('vrClose').addEventListener('click', function () { $('voteResults').hidden = true; current = null; });
+    $('vrRefresh').addEventListener('click', function () { if (current) showResults(current); });
+    $('vrSearch').addEventListener('input', drawResults);
+    $('vrShow').addEventListener('change', drawResults);
+    $('vrCsv').addEventListener('click', downloadCsv);
+    $('vrPrint').addEventListener('click', printResults);
+  }
+
+  function showResults(ev) {
+    current = ev;
+    $('vrTitle').textContent = 'Results: ' + ev.title;
+    $('vrStatus').textContent = D.voteWindowText(ev) + '.';
+    $('vrRows').innerHTML = '<tr><td colspan="4">Loading&hellip;</td></tr>';
+    $('vrTotals').innerHTML = '';
+    $('voteResults').hidden = false;
+    $('voteResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    Promise.all([
+      sb.from('members').select('slip, owner_name, active, is_admin').eq('is_admin', false),
+      sb.from('votes').select('slip, choice, cast_at').eq('event_id', ev.id)
+    ]).then(function (r) {
+      var votes = {};
+      (r[1].data || []).forEach(function (v) { votes[v.slip] = v; });
+      resultRows = (r[0].data || [])
+        .filter(function (m) { return m.active || votes[m.slip]; })
+        .sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); })
+        .map(function (m) { return { slip: m.slip, owner: m.owner_name, vote: votes[m.slip] || null }; });
+      drawResults();
+    });
+  }
+
+  function drawResults() {
+    if (!current) return;
+    var f = $('vrSearch').value.toLowerCase(), show = $('vrShow').value;
+    var rows = resultRows.filter(function (r) {
+      if (show === 'voted' && !r.vote) return false;
+      if (show === 'not' && r.vote) return false;
+      return !f || (r.slip + ' ' + r.owner).toLowerCase().indexOf(f) !== -1;
+    });
+    $('vrRows').innerHTML = rows.length ? rows.map(function (r) {
+      return '<tr><td><strong>' + D.esc(r.slip) + '</strong></td><td>' + D.esc(r.owner) + '</td>' +
+        '<td>' + (r.vote ? '<span class="vote-choice">' + D.esc(r.vote.choice) + '</span>' : '<span class="note">Not voted</span>') + '</td>' +
+        '<td class="note">' + (r.vote ? D.esc(D.fmtWhen(r.vote.cast_at)) : '') + '</td></tr>';
+    }).join('') : '<tr><td colspan="4" class="note">No slips match.</td></tr>';
+
+    // Running totals (always for all slips, not just the filtered rows)
+    var choices = D.ballotChoices(current);
+    var counts = {}; choices.forEach(function (c) { counts[c] = 0; });
+    var cast = 0;
+    resultRows.forEach(function (r) { if (r.vote) { cast++; counts[r.vote.choice] = (counts[r.vote.choice] || 0) + 1; } });
+    var eligible = resultRows.length;
+    function pct(n, d) { return d ? ' (' + Math.round(n * 1000 / d) / 10 + '%)' : ''; }
+    var maxCount = Math.max.apply(null, choices.map(function (c) { return counts[c]; }));
+    $('vrTotals').innerHTML =
+      '<tr class="vr-total-head"><td colspan="4">Running total</td></tr>' +
+      choices.map(function (c) {
+        var lead = cast && counts[c] === maxCount;
+        return '<tr class="vr-total' + (lead ? ' lead' : '') + '"><td colspan="2"><strong>' + D.esc(c) + '</strong></td>' +
+          '<td colspan="2"><strong>' + counts[c] + '</strong>' + pct(counts[c], cast) + ' of votes cast' +
+          '<div class="vr-bar"><span style="width:' + (cast ? counts[c] * 100 / cast : 0) + '%"></span></div></td></tr>';
+      }).join('') +
+      '<tr class="vr-total"><td colspan="2">Votes cast</td><td colspan="2"><strong>' + cast + '</strong> of ' + eligible + ' slips' + pct(cast, eligible) + '</td></tr>' +
+      '<tr class="vr-total"><td colspan="2">Not yet voted</td><td colspan="2">' + (eligible - cast) + '</td></tr>';
+  }
+
+  function downloadCsv() {
+    if (!current) return;
+    function q(s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; }
+    var lines = [['Slip', 'Owner', 'Vote', 'Cast at (Eastern)'].map(q).join(',')];
+    resultRows.forEach(function (r) {
+      lines.push([r.slip, r.owner, r.vote ? r.vote.choice : 'Not voted', r.vote ? D.fmtWhen(r.vote.cast_at) : ''].map(q).join(','));
+    });
+    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = current.title.replace(/[^\w-]+/g, '_') + '_results.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function printResults() {
+    if (!current) return;
+    var w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + D.esc(current.title) + ' results</title>' +
+      '<style>body{font-family:Arial,sans-serif;margin:24px;color:#111}table{border-collapse:collapse;width:100%;font-size:12px}' +
+      'td,th{border-bottom:1px solid #ccc;padding:4px 6px;text-align:left}tfoot td{font-weight:bold;border-top:2px solid #000}.vr-bar{display:none}</style></head><body>' +
+      '<h2>' + D.esc(current.title) + '</h2><p>' + D.esc(D.voteWindowText(current)) + '. Printed ' + D.esc(D.fmtWhen(new Date().toISOString())) + '.</p>' +
+      '<table><thead><tr><th>Slip</th><th>Owner</th><th>Vote</th><th>Cast</th></tr></thead><tbody>' +
+      resultRows.map(function (r) {
+        return '<tr><td>' + D.esc(r.slip) + '</td><td>' + D.esc(r.owner) + '</td><td>' + (r.vote ? D.esc(r.vote.choice) : '-') + '</td><td>' + (r.vote ? D.esc(D.fmtWhen(r.vote.cast_at)) : '') + '</td></tr>';
+      }).join('') + '</tbody><tfoot>' + $('vrTotals').innerHTML + '</tfoot></table></body></html>');
+    w.document.close();
+    w.focus();
+    w.print();
   }
 
   /* ---------- Documents ---------- */

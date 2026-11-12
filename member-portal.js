@@ -24,7 +24,7 @@
               });
             }
             renderAccount(sb, m);
-            loadEvents(sb);
+            loadEvents(sb, m);
             loadDocs(sb);
           });
       });
@@ -65,39 +65,63 @@
     });
   }
 
-  function eventItem(ev, past) {
+  function voteTag(ev, voted, isAdmin) {
+    if (ev.event_type !== 'vote') return '';
+    var st = D.voteState(ev);
+    var tag = '';
+    if (!isAdmin) {
+      if (voted[ev.id]) tag = '<span class="vote-tag voted">You voted</span>';
+      else if (st === 'open') tag = '<span class="vote-tag open">Vote now</span>';
+    }
+    return '<div class="vote-state vote-' + st + '">' + D.esc(D.voteWindowText(ev)) + tag + '</div>';
+  }
+
+  function eventItem(ev, past, voted, isAdmin) {
     return '<li class="event-item' + (past ? ' past' : '') + '">' +
       '<span class="badge badge-' + ev.event_type + '">' + D.eventTypeLabel(ev.event_type) + '</span>' +
       '<div><a class="event-title" href="event.html?id=' + ev.id + '">' + D.esc(ev.title) + '</a>' +
       (ev.starts_at ? '<div class="event-when">' + D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) + (ev.location ? ' &middot; ' + D.esc(ev.location) : '') + '</div>' : '') +
+      voteTag(ev, voted, isAdmin) +
       (ev.summary ? '<p class="event-summary">' + D.esc(ev.summary) + '</p>' : '') +
       '</div></li>';
   }
 
-  function loadEvents(sb) {
-    sb.from('events').select('id, title, summary, event_type, starts_at, ends_at, location')
-      .eq('active', true).then(function (r) {
+  function loadEvents(sb, m) {
+    Promise.all([
+      sb.from('events').select('id, title, summary, event_type, starts_at, ends_at, location, vote_opens_at, vote_closes_at').eq('active', true),
+      m.is_admin ? Promise.resolve({ data: [] }) : sb.from('votes').select('event_id').eq('slip', m.slip)
+    ]).then(function (res) {
+        var r = res[0];
+        var voted = {};
+        (res[1].data || []).forEach(function (v) { voted[v.event_id] = true; });
+        var isAdmin = m.is_admin;
         var list = r.data || [];
         if (!list.length) {
           $('portalEvents').innerHTML = '<p class="note" style="margin:0">No current events right now. Check back soon.</p>';
           return;
         }
         var now = Date.now();
-        function endOf(ev) { return new Date(ev.ends_at || ev.starts_at).getTime() + (ev.ends_at ? 0 : 6 * 3600 * 1000); }
-        var upcoming = list.filter(function (ev) { return !ev.starts_at || endOf(ev) >= now; })
+        function endOf(ev) {
+          if (ev.event_type === 'vote' && ev.vote_closes_at) return new Date(ev.vote_closes_at).getTime();
+          if (!ev.starts_at) return Infinity;
+          return new Date(ev.ends_at || ev.starts_at).getTime() + (ev.ends_at ? 0 : 6 * 3600 * 1000);
+        }
+        function sortKey(ev) { return ev.starts_at || (ev.event_type === 'vote' ? ev.vote_closes_at : null); }
+        var upcoming = list.filter(function (ev) { return endOf(ev) >= now; })
           .sort(function (a, b) {
-            if (!a.starts_at) return 1;
-            if (!b.starts_at) return -1;
-            return new Date(a.starts_at) - new Date(b.starts_at);
+            var ka = sortKey(a), kb = sortKey(b);
+            if (!ka) return 1;
+            if (!kb) return -1;
+            return new Date(ka) - new Date(kb);
           });
-        var past = list.filter(function (ev) { return ev.starts_at && endOf(ev) < now; })
-          .sort(function (a, b) { return new Date(b.starts_at) - new Date(a.starts_at); });
+        var past = list.filter(function (ev) { return endOf(ev) < now; })
+          .sort(function (a, b) { return new Date(sortKey(b)) - new Date(sortKey(a)); });
         var html = upcoming.length
-          ? '<ul class="event-list">' + upcoming.map(function (e) { return eventItem(e, false); }).join('') + '</ul>'
+          ? '<ul class="event-list">' + upcoming.map(function (e) { return eventItem(e, false, voted, isAdmin); }).join('') + '</ul>'
           : '<p class="note" style="margin:0">No upcoming events.</p>';
         if (past.length) {
           html += '<details class="past-events"><summary>Past events (' + past.length + ')</summary><ul class="event-list">' +
-            past.map(function (e) { return eventItem(e, true); }).join('') + '</ul></details>';
+            past.map(function (e) { return eventItem(e, true, voted, isAdmin); }).join('') + '</ul></details>';
         }
         $('portalEvents').innerHTML = html;
       });

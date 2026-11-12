@@ -101,7 +101,28 @@
     });
   }
 
+  function ballotChoices(ev) {
+    if (ev.ballot_kind === 'yes_no') return ['Yea', 'Nay'];
+    if (ev.ballot_kind === 'yes_no_abstain') return ['Yea', 'Nay', 'Abstain'];
+    return ev.ballot_options || [];
+  }
+  // 'upcoming' | 'open' | 'closed'
+  function voteState(ev) {
+    var now = Date.now();
+    if (ev.vote_opens_at && now < new Date(ev.vote_opens_at).getTime()) return 'upcoming';
+    if (ev.vote_closes_at && now >= new Date(ev.vote_closes_at).getTime()) return 'closed';
+    return 'open';
+  }
+  function voteWindowText(ev) {
+    var st = voteState(ev);
+    var close = ev.vote_closes_at ? fmtDate(ev.vote_closes_at) + ' at ' + fmtTime(ev.vote_closes_at) : '';
+    if (st === 'upcoming') return 'Voting opens ' + fmtDate(ev.vote_opens_at) + ' at ' + fmtTime(ev.vote_opens_at) + ' and closes ' + close;
+    if (st === 'open') return 'Voting is open until ' + close;
+    return 'Voting closed ' + close;
+  }
+
   window.MemberData = {
+    ballotChoices: ballotChoices, voteState: voteState, voteWindowText: voteWindowText,
     EVENT_TYPES: EVENT_TYPES, DOC_CATEGORIES: DOC_CATEGORIES,
     eventTypeLabel: function (id) { return label(EVENT_TYPES, id); },
     categoryLabel: function (id) { return label(DOC_CATEGORIES, id); },
