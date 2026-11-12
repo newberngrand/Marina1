@@ -181,7 +181,74 @@
   // Shared with member-portal.html and reset-password.html.
   window.MemberAuth = { getClient: getClient, openLogin: openModal, slipEmail: slipEmail };
 
+  function slipFromUser(user) {
+    var s = (user.user_metadata && user.user_metadata.slip) || '';
+    if (!s && user.email) {
+      var m = /^slip-([^@]+)@/.exec(user.email);
+      if (m) s = m[1];
+    }
+    return String(s).toUpperCase();
+  }
+
+  function logOut() {
+    getClient().then(function (sb) { return sb.auth.signOut(); })
+      .catch(function () {})
+      .then(function () { window.location.href = 'index.html'; });
+  }
+
+  // "Logged in as slip X" bar plus Log Out, shown on every page while signed in.
+  function showSignedIn(user) {
+    var slip = slipFromUser(user);
+    if (!slip || document.getElementById('memberBar')) return;
+    var bar = document.createElement('div');
+    bar.className = 'member-bar';
+    bar.id = 'memberBar';
+    bar.innerHTML =
+      '<div class="container">' +
+        '<span>Logged in as <strong>Slip ' + slip.replace(/[^A-Z0-9-]/g, '') + '</strong></span>' +
+        '<span class="member-bar-links">' +
+          '<a href="member-portal.html">Member Portal</a>' +
+          '<button type="button" id="memberBarLogout">Log Out</button>' +
+        '</span>' +
+      '</div>';
+    var header = document.querySelector('.site-header');
+    if (header && header.parentNode) header.parentNode.insertBefore(bar, header);
+    else document.body.insertBefore(bar, document.body.firstChild);
+    document.getElementById('memberBarLogout').addEventListener('click', logOut);
+
+    var trigger = document.getElementById('memberLoginTrigger');
+    if (trigger) {
+      var svg = trigger.querySelector('svg');
+      trigger.textContent = ' Member Portal';
+      if (svg) trigger.insertBefore(svg, trigger.firstChild);
+    }
+  }
+
+  function hasStoredSession() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        if (/^sb-.*-auth-token$/.test(localStorage.key(i))) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    // Only load the login service for visitors who have signed in before.
+    if (hasStoredSession()) {
+      getClient().then(function (sb) {
+        sb.auth.onAuthStateChange(function (evt) {
+          if (evt === 'SIGNED_OUT') {
+            var bar = document.getElementById('memberBar');
+            if (bar) bar.remove();
+          }
+        });
+        return sb.auth.getSession();
+      }).then(function (r) {
+        if (r.data.session) showSignedIn(r.data.session.user);
+      }).catch(function () {});
+    }
+
     var trigger = document.getElementById('memberLoginTrigger');
     if (trigger) {
       trigger.addEventListener('click', function (e) {

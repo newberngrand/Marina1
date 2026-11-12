@@ -275,6 +275,35 @@ nav.main-nav a.active {
   align-self: center;
 }
 
+/* Signed-in member bar (all pages) */
+.member-bar {
+  background: var(--gold);
+  color: var(--navy-dark);
+  font-size: 0.88rem;
+}
+.member-bar .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.member-bar-links { display: inline-flex; gap: 16px; align-items: center; }
+.member-bar a { color: var(--navy-dark); font-weight: 600; text-decoration: underline; }
+.member-bar button {
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.member-bar button:hover { background: var(--navy-dark); }
+
 /* Member portal */
 .portal-wrap { max-width: 860px; margin: 0 auto; }
 .portal-card {
