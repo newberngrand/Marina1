@@ -205,7 +205,7 @@
     bar.id = 'memberBar';
     bar.innerHTML =
       '<div class="container">' +
-        '<span>Logged in as <strong>Slip ' + slip.replace(/[^A-Z0-9-]/g, '') + '</strong></span>' +
+        '<span id="memberBarWho">Logged in as <strong>Slip ' + slip.replace(/[^A-Z0-9-]/g, '') + '</strong></span>' +
         '<span class="member-bar-links">' +
           '<a href="member-portal.html">Member Portal</a>' +
           '<button type="button" id="memberBarLogout">Log Out</button>' +
@@ -215,6 +215,16 @@
     if (header && header.parentNode) header.parentNode.insertBefore(bar, header);
     else document.body.insertBefore(bar, document.body.firstChild);
     document.getElementById('memberBarLogout').addEventListener('click', logOut);
+
+    // Owners with several slips (same email on file) see all of them.
+    getClient().then(function (sb) { return sb.rpc('my_slips'); }).then(function (r) {
+      var rows = (r && r.data) || [];
+      if (rows.length < 2) return;
+      var list = rows.map(function (x) { return String(x.slip).replace(/[^A-Z0-9-]/g, ''); });
+      var shown = list.length > 6 ? list.slice(0, 6).join(', ') + ' +' + (list.length - 6) + ' more' : list.join(', ');
+      document.getElementById('memberBarWho').innerHTML = 'Logged in as <strong>Slip ' + list[0] +
+        '</strong> &middot; Your slips: <strong>' + shown + '</strong>';
+    }).catch(function () {});
 
     var trigger = document.getElementById('memberLoginTrigger');
     if (trigger) {

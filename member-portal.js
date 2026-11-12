@@ -38,9 +38,22 @@
     $('portalMember').hidden = false;
     $('portalWelcome').textContent = 'Welcome, ' + (m.owner_name || 'Member');
     $('portalSlipTop').textContent = m.slip;
-    $('portalSlip').textContent = m.slip;
-    $('portalOwner').textContent = m.owner_name || '';
+    $('portalSlip').textContent = 'Slip ' + m.slip;
     $('portalEmail').textContent = m.email || 'None on file';
+    var mine = m.is_admin ? Promise.resolve({ data: [] }) : sb.rpc('my_slips');
+    mine.then(function (r) {
+      var rows = r.data && r.data.length ? r.data : [{ slip: m.slip, owner_name: m.owner_name, is_login: true }];
+      $('portalSlips').innerHTML = rows.map(function (x) {
+        return '<tr><td><strong>' + D.esc(x.slip) + '</strong>' + (x.is_login ? ' <span class="note">(logged in)</span>' : '') +
+          '</td><td>' + D.esc(x.owner_name) + '</td></tr>';
+      }).join('');
+      if (rows.length > 1) {
+        $('portalSlipsHead').textContent = 'Your slips (' + rows.length + ')';
+        $('portalSlipLabel').textContent = 'Slips';
+        $('portalSlipTop').textContent = rows.map(function (x) { return x.slip; }).join(', ');
+        $('portalSlipsNote').hidden = false;
+      }
+    });
     if (m.is_admin) $('portalAdminLink').hidden = false;
 
     $('portalLogout').addEventListener('click', function () {
@@ -70,8 +83,10 @@
     var st = D.voteState(ev);
     var tag = '';
     if (!isAdmin) {
-      if (voted[ev.id]) tag = '<span class="vote-tag voted">You voted</span>';
-      else if (st === 'open') tag = '<span class="vote-tag open">Vote now</span>';
+      var n = voted[ev.id] || 0, total = voted.total;
+      if (n >= total) tag = '<span class="vote-tag voted">' + (total > 1 ? 'All slips voted' : 'You voted') + '</span>';
+      else if (st === 'open') tag = '<span class="vote-tag open">' + (n ? n + ' of ' + total + ' slips voted' : 'Vote now') + '</span>';
+      else if (n) tag = '<span class="vote-tag voted">' + n + ' of ' + total + ' slips voted</span>';
     }
     return '<div class="vote-state vote-' + st + '">' + D.esc(D.voteWindowText(ev)) + tag + '</div>';
   }
@@ -89,11 +104,12 @@
   function loadEvents(sb, m) {
     Promise.all([
       sb.from('events').select('id, title, summary, event_type, starts_at, ends_at, location, vote_opens_at, vote_closes_at').eq('active', true),
-      m.is_admin ? Promise.resolve({ data: [] }) : sb.from('votes').select('event_id').eq('slip', m.slip)
+      m.is_admin ? Promise.resolve({ data: [] }) : sb.from('votes').select('event_id, slip'),
+      m.is_admin ? Promise.resolve({ data: [] }) : sb.rpc('my_slips')
     ]).then(function (res) {
         var r = res[0];
-        var voted = {};
-        (res[1].data || []).forEach(function (v) { voted[v.event_id] = true; });
+        var voted = { total: Math.max(1, (res[2].data || []).length) };
+        (res[1].data || []).forEach(function (v) { voted[v.event_id] = (voted[v.event_id] || 0) + 1; });
         var isAdmin = m.is_admin;
         var list = r.data || [];
         if (!list.length) {

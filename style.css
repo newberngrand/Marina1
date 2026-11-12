@@ -441,6 +441,17 @@ nav.main-nav a.active {
 .ballot-choice input { width: 20px; height: 20px; accent-color: var(--navy); }
 .ballot-choice:has(input:checked) { border-color: var(--navy); background: #f2f6fa; }
 .ballot-form .btn { border: none; cursor: pointer; margin-top: 6px; align-self: flex-start; }
+.ballot-form.multi { max-width: 560px; }
+.ballot-fill { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.9rem; color: var(--muted); }
+.ballot-slip { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; margin: 0; }
+.ballot-slip legend { font-weight: 700; color: var(--navy); padding: 0 6px; }
+.ballot-slip-choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.ballot-slip-choices .ballot-choice { flex: 1 1 120px; padding: 8px 12px; font-size: 1rem; }
+.voted-list div + div { margin-top: 4px; }
+.slips-head { margin: 18px 0 6px; color: var(--navy); font-size: 1rem; }
+.vc-picks { list-style: none; padding: 0; margin: 0 0 14px; max-height: 260px; overflow-y: auto; }
+.vc-picks li { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.vc-picks li strong { font-size: 1.15rem; color: var(--navy); }
 .vote-confirm { max-width: 420px; }
 .vc-choice { font-size: 1.5rem; font-weight: 800; color: var(--navy); margin: 4px 0 14px; }
 .vc-warning { background: #fdf0e6; border-left: 4px solid #c0702a; padding: 10px 12px; border-radius: 6px; font-size: 0.92rem; color: #5c3410; }

@@ -59,7 +59,7 @@
       <div class="portal-card portal-welcome">
         <div>
           <h3 id="portalWelcome">Welcome</h3>
-          <p class="note" style="margin:0">Slip <strong id="portalSlipTop"></strong></p>
+          <p class="note" style="margin:0"><span id="portalSlipLabel">Slip</span> <strong id="portalSlipTop"></strong></p>
         </div>
         <div class="portal-actions" style="margin-top:0">
           <a href="admin.html" class="btn btn-outline" id="portalAdminLink" hidden>Admin</a>
@@ -80,10 +80,17 @@
       <div class="portal-card">
         <h3>My Account</h3>
         <dl class="portal-details">
-          <dt>Slip</dt><dd id="portalSlip"></dd>
-          <dt>Owner of record</dt><dd id="portalOwner"></dd>
+          <dt>Logged in with</dt><dd id="portalSlip"></dd>
           <dt>Email on file</dt><dd id="portalEmail"></dd>
         </dl>
+        <h4 class="slips-head" id="portalSlipsHead">Your slip</h4>
+        <div class="admin-table-wrap">
+          <table class="admin-table slips-table">
+            <thead><tr><th>Slip</th><th>Owner of record</th></tr></thead>
+            <tbody id="portalSlips"></tbody>
+          </table>
+        </div>
+        <p class="note" id="portalSlipsNote" style="margin:8px 0 0" hidden>Slips that share your email address are grouped here, so you can see and vote all of them from one login.</p>
         <p style="color:var(--muted);font-size:0.88rem;margin:16px 0 0;">If any of this is out of date, please contact the marina office at (252) 638-0318.</p>
         <div class="portal-actions">
           <button type="button" class="btn btn-outline" id="portalShowPw">Change Password</button>

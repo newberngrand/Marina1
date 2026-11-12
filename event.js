@@ -1,4 +1,5 @@
-/* Event page: details, and for votes the ballot (with a final confirmation) and results. */
+/* Event page: details, and for votes the ballot (with a final confirmation) and results.
+   Owners with several slips (same email on file) vote each slip from one login. */
 (function () {
   var D = window.MemberData;
   function $(id) { return document.getElementById(id); }
@@ -47,58 +48,108 @@
     $('ballotWindow').className = 'vote-state vote-' + st;
     $('ballotWindow').textContent = D.voteWindowText(ev) + '.';
 
-    var myVote = me && !me.is_admin
-      ? sb.from('votes').select('choice, cast_at').eq('event_id', ev.id).eq('slip', me.slip).maybeSingle()
-      : Promise.resolve({ data: null });
-    myVote.then(function (r) {
-      var v = r.data;
-      if (!me) {
-        $('ballotBody').innerHTML = '<p class="note">Your slip could not be found.</p>';
-      } else if (me.is_admin) {
-        $('ballotBody').innerHTML = '<p class="note">Admin accounts don\'t vote. Members vote by logging in with their own slip. ' +
-          'You can follow the voting on the <a href="admin.html">Admin page</a> (Results button).</p>';
-      } else if (v) {
-        showVoted(v);
-      } else if (st === 'open') {
-        showBallot();
-      } else if (st === 'upcoming') {
-        $('ballotBody').innerHTML = '<p>The ballot will appear here when voting opens.</p>';
-      } else {
-        $('ballotBody').innerHTML = '<p>Voting has closed. No vote was recorded for slip <strong>' + D.esc(me.slip) + '</strong>.</p>';
-      }
+    if (!me) {
+      $('ballotBody').innerHTML = '<p class="note">Your slip could not be found.</p>';
+      return loadResults();
+    }
+    if (me.is_admin) {
+      $('ballotBody').innerHTML = '<p class="note">Admin accounts don\'t vote. Members vote by logging in with their own slip. ' +
+        'You can follow the voting on the <a href="admin.html">Admin page</a> (Results button).</p>';
+      return loadResults();
+    }
+
+    Promise.all([
+      sb.rpc('my_slips'),
+      sb.from('votes').select('slip, choice, cast_at').eq('event_id', ev.id)
+    ]).then(function (res) {
+      var slips = (res[0].data && res[0].data.length) ? res[0].data : [{ slip: me.slip, owner_name: '' }];
+      var votes = {};
+      (res[1].data || []).forEach(function (v) { votes[v.slip] = v; });
+      renderBallot(slips, votes, st);
       loadResults();
     });
   }
 
-  function showVoted(v) {
-    $('ballotBody').innerHTML =
-      '<div class="member-login-note">Slip <strong>' + D.esc(me.slip) + '</strong> voted <strong>' + D.esc(v.choice) + '</strong> on ' +
-      D.esc(D.fmtWhen(v.cast_at)) + '. Thank you for voting.</div>' +
-      '<p class="note" style="margin:10px 0 0">Votes are final and can\'t be changed.</p>';
+  function radios(slip, choices) {
+    return choices.map(function (c) {
+      return '<label class="ballot-choice"><input type="radio" name="choice-' + D.esc(slip) + '" value="' + D.esc(c) + '"> <span>' + D.esc(c) + '</span></label>';
+    }).join('');
   }
 
-  function showBallot() {
-    var choices = D.ballotChoices(ev);
-    $('ballotBody').innerHTML =
-      '<p style="margin-top:0">Voting for slip <strong>' + D.esc(me.slip) + '</strong>. Choose one:</p>' +
-      '<form id="ballotForm" class="ballot-form">' +
-        choices.map(function (c, i) {
-          return '<label class="ballot-choice"><input type="radio" name="choice" value="' + D.esc(c) + '"' + (i === 0 ? ' required' : '') + '> <span>' + D.esc(c) + '</span></label>';
-        }).join('') +
-        '<button type="submit" class="btn btn-gold">Cast Vote</button>' +
-      '</form>';
-    $('ballotForm').addEventListener('submit', function (e) {
+  function renderBallot(slips, votes, st) {
+    var multi = slips.length > 1;
+    var done = slips.filter(function (s) { return votes[s.slip]; });
+    var todo = slips.filter(function (s) { return !votes[s.slip]; });
+    var html = '';
+
+    if (done.length) {
+      html += '<div class="member-login-note voted-list">' + done.map(function (s) {
+        var v = votes[s.slip];
+        return '<div>Slip <strong>' + D.esc(s.slip) + '</strong> voted <strong>' + D.esc(v.choice) + '</strong> on ' + D.esc(D.fmtWhen(v.cast_at)) + '.</div>';
+      }).join('') + '</div>';
+    }
+
+    if (!todo.length) {
+      html += '<p class="note" style="margin:10px 0 0">' + (multi ? 'All of your slips have voted. ' : '') +
+        'Thank you for voting. Votes are final and can\'t be changed.</p>';
+    } else if (st === 'upcoming') {
+      html += '<p>The ballot will appear here when voting opens.</p>';
+    } else if (st === 'closed') {
+      html += '<p>Voting has closed. No vote was recorded for slip' + (todo.length > 1 ? 's ' : ' ') +
+        '<strong>' + todo.map(function (s) { return D.esc(s.slip); }).join(', ') + '</strong>.</p>';
+    } else {
+      var choices = D.ballotChoices(ev);
+      html += '<form id="ballotForm" class="ballot-form' + (todo.length > 1 ? ' multi' : '') + '">';
+      if (todo.length > 1) {
+        html += '<p style="margin:0">You have <strong>' + todo.length + ' slips</strong> still to vote. Each slip gets one vote. ' +
+          'Choose for each slip, or use a button to fill them all in:</p>' +
+          '<div class="ballot-fill">Same for all: ' + choices.map(function (c) {
+            return '<button type="button" class="btn-sm" data-fill="' + D.esc(c) + '">' + D.esc(c) + '</button>';
+          }).join('') + '</div>' +
+          todo.map(function (s) {
+            return '<fieldset class="ballot-slip"><legend>Slip ' + D.esc(s.slip) + '</legend>' +
+              '<div class="ballot-slip-choices">' + radios(s.slip, choices) + '</div></fieldset>';
+          }).join('') +
+          '<p class="note" style="margin:0">You can vote some slips now and the rest later, until voting closes.</p>';
+      } else {
+        html += '<p style="margin:0">Voting for slip <strong>' + D.esc(todo[0].slip) + '</strong>. Choose one:</p>' + radios(todo[0].slip, choices);
+      }
+      html += '<button type="submit" class="btn btn-gold">' + (todo.length > 1 ? 'Cast Votes' : 'Cast Vote') + '</button></form>';
+    }
+    $('ballotBody').innerHTML = html;
+
+    var form = $('ballotForm');
+    if (!form) return;
+    form.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-fill]');
+      if (!b) return;
+      var val = b.getAttribute('data-fill');
+      form.querySelectorAll('input[type="radio"]').forEach(function (r) { if (r.value === val) r.checked = true; });
+    });
+    form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var picked = $('ballotForm').querySelector('input[name="choice"]:checked');
-      if (!picked) return;
-      openConfirm(picked.value);
+      var picks = todo.map(function (s) {
+        var r = form.querySelector('input[name="choice-' + CSS.escape(s.slip) + '"]:checked');
+        return r ? { slip: s.slip, choice: r.value } : null;
+      }).filter(Boolean);
+      if (!picks.length) {
+        $('ballotError').textContent = todo.length > 1 ? 'Please choose a vote for at least one slip.' : 'Please choose one of the choices.';
+        $('ballotError').hidden = false;
+        return;
+      }
+      $('ballotError').hidden = true;
+      openConfirm(picks, todo.length - picks.length);
     });
   }
 
-  function openConfirm(choice) {
-    $('vcSlip').textContent = me.slip;
-    $('vcChoice').textContent = choice;
-    $('ballotError').hidden = true;
+  function openConfirm(picks, skipped) {
+    $('vcList').innerHTML =
+      '<p>You are casting ' + (picks.length > 1 ? picks.length + ' votes' : 'this vote') + ':</p>' +
+      '<ul class="vc-picks">' + picks.map(function (p) {
+        return '<li><span>Slip ' + D.esc(p.slip) + '</span><strong>' + D.esc(p.choice) + '</strong></li>';
+      }).join('') + '</ul>' +
+      (skipped ? '<p class="note">' + skipped + ' slip' + (skipped > 1 ? 's are' : ' is') + ' left blank and can vote later.</p>' : '');
+    $('vcCast').textContent = picks.length > 1 ? 'Cast My Votes' : 'Cast My Vote';
     var dlg = $('voteConfirm');
     dlg.classList.add('open');
     $('vcBack').focus();
@@ -112,18 +163,21 @@
     function cast() {
       $('vcCast').disabled = true;
       $('vcCast').textContent = 'Casting…';
-      sb.rpc('cast_vote', { p_event_id: ev.id, p_choice: choice }).then(function (r) {
+      var errors = [];
+      picks.reduce(function (chain, p) {
+        return chain.then(function () {
+          return sb.rpc('cast_vote', { p_event_id: ev.id, p_choice: p.choice, p_slip: p.slip }).then(function (r) {
+            if (r.error) errors.push(r.error.message);
+          });
+        });
+      }, Promise.resolve()).then(function () {
         $('vcCast').disabled = false;
-        $('vcCast').textContent = 'Cast My Vote';
         close();
-        if (r.error) {
-          $('ballotError').textContent = r.error.message;
+        if (errors.length) {
+          $('ballotError').textContent = errors.join(' ');
           $('ballotError').hidden = false;
-          // Refresh in case the vote was already recorded or voting just closed.
-          return loadBallot();
         }
-        showVoted(r.data);
-        loadResults();
+        loadBallot();
       });
     }
     $('vcBack').addEventListener('click', close);
