@@ -128,6 +128,9 @@ nav.main-nav a.active {
   border-bottom-color: var(--gold);
 }
 
+/* Anything marked hidden stays hidden, whatever its other styles say. */
+[hidden] { display: none !important; }
+
 .btn {
   display: inline-block;
   padding: 12px 22px;
