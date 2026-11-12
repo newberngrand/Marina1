@@ -317,7 +317,7 @@ nav.main-nav a.active {
   padding: 28px;
   margin-bottom: 24px;
 }
-.portal-card h3 { color: var(--navy); margin: 0 0 14px; }
+.portal-card h3 { color: var(--navy); margin: 0 0 14px; font-size: 1.4rem; }
 .portal-details { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; }
 .portal-details dt { color: var(--muted); font-size: 0.9rem; }
 .portal-details dd { margin: 0; color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
