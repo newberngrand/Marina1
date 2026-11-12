@@ -52,10 +52,54 @@
 </div>
 
 <section>
-  <div class="container section-head">
-    <div class="eyebrow">Coming Soon</div>
-    <h2>We're building the member portal</h2>
-    <p>Thanks for logging in. Member features &mdash; account details, billing, and slip management &mdash; will live here soon. Check back shortly.</p>
+  <div class="container portal-wrap" id="portalApp">
+    <p id="portalLoading">Loading your account&hellip;</p>
+
+    <div id="portalMember" hidden>
+      <div class="portal-card">
+        <h3 id="portalWelcome">Welcome</h3>
+        <dl class="portal-details">
+          <dt>Slip</dt><dd id="portalSlip"></dd>
+          <dt>Owner of record</dt><dd id="portalOwner"></dd>
+          <dt>Email on file</dt><dd id="portalEmail"></dd>
+        </dl>
+        <p style="color:var(--muted);font-size:0.88rem;margin:16px 0 0;">If any of this is out of date, please contact the marina office at (252) 638-0318.</p>
+        <div class="portal-actions">
+          <button type="button" class="btn btn-outline" id="portalShowPw">Change Password</button>
+          <button type="button" class="btn btn-gold" id="portalLogout">Log Out</button>
+        </div>
+      </div>
+
+      <div class="portal-card" id="portalPwCard" hidden>
+        <h3>Change Password</h3>
+        <form class="member-form" id="portalPwForm">
+          <label for="portalPw1">New password (at least 8 characters)</label>
+          <input type="password" id="portalPw1" autocomplete="new-password" minlength="8" required>
+          <label for="portalPw2">Confirm new password</label>
+          <input type="password" id="portalPw2" autocomplete="new-password" minlength="8" required>
+          <div class="member-login-error" id="portalPwError" hidden></div>
+          <div class="member-login-note" id="portalPwDone" hidden>Your password has been changed.</div>
+          <button type="submit" class="btn btn-gold">Save New Password</button>
+        </form>
+      </div>
+
+      <div class="portal-card">
+        <h3>More coming soon</h3>
+        <p style="margin:0;color:var(--muted);">Billing, slip management and other member features will live here soon.</p>
+      </div>
+
+      <div class="portal-card" id="portalAdmin" hidden>
+        <h3>Admin: Members</h3>
+        <p style="margin:0 0 14px;color:var(--muted);font-size:0.9rem;" id="adminCount"></p>
+        <input type="search" class="admin-search" id="adminSearch" placeholder="Search slip, name or email">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Slip</th><th>Owner</th><th>Email</th><th>Status</th></tr></thead>
+            <tbody id="adminRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -109,5 +153,6 @@
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="member-login.js"></script>
+<script src="member-portal.js"></script>
 </body>
 </html>

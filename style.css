@@ -224,31 +224,90 @@ nav.main-nav a.active {
   cursor: pointer;
 }
 .member-login-close:hover { color: var(--navy); }
-#memberLoginForm {
+.member-form {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
-#memberLoginPassword {
+.member-form input {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   font-size: 0.95rem;
+  font-family: inherit;
 }
-#memberLoginPassword:focus {
+.member-form input:focus {
   outline: none;
   border-color: var(--gold);
+}
+.member-form label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: -8px;
 }
 .member-login-error {
   color: #b3392f;
   font-size: 0.86rem;
   margin: -4px 0 0;
 }
-#memberLoginForm button.btn {
+.member-login-note {
+  color: #1f6b3a;
+  background: #eaf6ee;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+}
+.member-form button.btn {
   width: 100%;
   border: none;
   cursor: pointer;
+}
+.member-login-textlink {
+  background: none;
+  border: none;
+  color: var(--teal);
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  align-self: center;
+}
+
+/* Member portal */
+.portal-wrap { max-width: 860px; margin: 0 auto; }
+.portal-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px;
+  margin-bottom: 24px;
+}
+.portal-card h3 { color: var(--navy); margin: 0 0 14px; }
+.portal-details { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; }
+.portal-details dt { color: var(--muted); font-size: 0.9rem; }
+.portal-details dd { margin: 0; color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.portal-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+.portal-actions .btn { border: none; cursor: pointer; }
+.btn-outline {
+  background: transparent;
+  color: var(--navy);
+  border: 1px solid var(--navy) !important;
+}
+.portal-card .member-form { max-width: 360px; }
+.admin-search { width: 100%; max-width: 320px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.95rem; margin-bottom: 14px; }
+.admin-table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.admin-table th, .admin-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.admin-table th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.admin-table td.inactive { color: #b3392f; font-weight: 600; }
+.admin-table .note { color: var(--muted); font-size: 0.82rem; }
+@media (max-width: 560px) {
+  .portal-card { padding: 20px 16px; }
+  .portal-details { grid-template-columns: 1fr; gap: 2px; }
+  .portal-details dd { margin-bottom: 8px; }
 }
 
 /* Hero */
