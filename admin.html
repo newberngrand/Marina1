@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin | New Bern Grand Marina</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-member-portal>
+
+<div class="topbar">
+  <div class="container">
+    <div>134 Craven St, New Bern, NC 28560 &nbsp;<span class="sep">|</span>&nbsp; Open Daily 8:30 AM &ndash; 5:00 PM</div>
+    <div><a href="tel:+12526380318">(252) 638-0318</a> <span class="sep">|</span> <a href="mailto:newberngrand@f3marina.com">newberngrand@f3marina.com</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a href="index.html" class="brand">
+      <img src="images/logo.png" alt="New Bern Grand Marina logo">
+      <span class="brand-text">
+        <span class="name">New Bern Grand Marina</span>
+        <span class="tag">Downtown New Bern, NC</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.main-nav').classList.toggle('open')">&#9776;</button>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="rates.html">Rates &amp; Amenities</a>
+      <a href="marina-map.html">Marina Map</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="contact.html">Contact</a>
+      <a href="member-portal.html" id="memberLoginTrigger" class="member-login-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Member Portal
+      </a>
+    </nav>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="container">
+    <div class="eyebrow">Board Administration</div>
+    <h1>Admin</h1>
+    <p><a href="member-portal.html" style="color:inherit;">&larr; Back to the Member Portal</a></p>
+  </div>
+</div>
+
+<section>
+  <div class="container admin-wrap">
+    <p id="adminLoading">Loading&hellip;</p>
+
+    <div id="adminApp" hidden>
+      <div class="admin-tabs" role="tablist">
+        <button type="button" class="admin-tab active" data-tab="events" role="tab">Current Events</button>
+        <button type="button" class="admin-tab" data-tab="docs" role="tab">Documents</button>
+        <button type="button" class="admin-tab" data-tab="members" role="tab">Members</button>
+      </div>
+
+      <!-- EVENTS -->
+      <div class="admin-panel" data-panel="events">
+        <div class="admin-panel-head">
+          <h2>Current Events</h2>
+          <button type="button" class="btn btn-gold" id="evNew">+ Add Event</button>
+        </div>
+
+        <form class="portal-card admin-form" id="evForm" hidden>
+          <h3 id="evFormTitle">Add Event</h3>
+          <input type="hidden" id="evId">
+          <div class="admin-grid">
+            <label class="full">Title (this becomes the link members click)
+              <input type="text" id="evTitle" maxlength="150" required placeholder="Annual Member Meeting">
+            </label>
+            <label>Type
+              <select id="evType"></select>
+            </label>
+            <label>Location
+              <input type="text" id="evLocation" maxlength="150" placeholder="Marina clubhouse">
+            </label>
+            <label>Starts
+              <input type="datetime-local" id="evStart">
+            </label>
+            <label>Ends
+              <input type="datetime-local" id="evEnd">
+            </label>
+            <label class="full">Short description (shown in the list)
+              <textarea id="evSummary" rows="2" maxlength="400" placeholder="One or two sentences."></textarea>
+            </label>
+            <label class="full">Full details (shown on the event page; web links become clickable)
+              <textarea id="evDetails" rows="8" placeholder="Agenda, what to bring, how to attend, etc."></textarea>
+            </label>
+            <label class="check full"><input type="checkbox" id="evActive" checked> Active (visible to members)</label>
+          </div>
+          <div class="member-login-error" id="evError" hidden></div>
+          <div class="portal-actions">
+            <button type="submit" class="btn btn-gold">Save Event</button>
+            <button type="button" class="btn btn-outline" id="evCancel">Cancel</button>
+          </div>
+        </form>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Title</th><th>Type</th><th>When</th><th>Status</th><th></th></tr></thead>
+            <tbody id="evRows"><tr><td colspan="5">Loading&hellip;</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DOCUMENTS -->
+      <div class="admin-panel" data-panel="docs" hidden>
+        <div class="admin-panel-head">
+          <h2>Marina Documents</h2>
+          <button type="button" class="btn btn-gold" id="docNew">+ Upload Document</button>
+        </div>
+
+        <form class="portal-card admin-form" id="docForm" hidden>
+          <h3 id="docFormTitle">Upload Document</h3>
+          <input type="hidden" id="docId">
+          <div class="admin-grid">
+            <label>Section
+              <select id="docCategory"></select>
+            </label>
+            <label><span id="docDateLabel">Date</span>
+              <input type="date" id="docDate">
+            </label>
+            <label class="full">Title
+              <input type="text" id="docTitle" maxlength="150" required placeholder="e.g. Board Meeting Minutes">
+            </label>
+            <label class="full">Description (optional)
+              <textarea id="docDesc" rows="2" maxlength="400"></textarea>
+            </label>
+            <label class="full" id="docFileWrap">File (PDF, Word, Excel, PowerPoint or image; up to 25 MB)
+              <input type="file" id="docFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp">
+            </label>
+            <label class="check full"><input type="checkbox" id="docActive" checked> Visible to members</label>
+          </div>
+          <div class="member-login-error" id="docError" hidden></div>
+          <div class="portal-actions">
+            <button type="submit" class="btn btn-gold" id="docSave">Upload</button>
+            <button type="button" class="btn btn-outline" id="docCancel">Cancel</button>
+          </div>
+        </form>
+
+        <div id="docList">Loading&hellip;</div>
+      </div>
+
+      <!-- MEMBERS -->
+      <div class="admin-panel" data-panel="members" hidden>
+        <div class="admin-panel-head"><h2>Members</h2></div>
+        <p style="margin:0 0 14px;color:var(--muted);font-size:0.9rem;" id="memCount"></p>
+        <input type="search" class="admin-search" id="memSearch" placeholder="Search slip, name, email or note">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Slip</th><th>Owner</th><th>Email</th><th>Status</th></tr></thead>
+            <tbody id="memRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container footer-bottom">
+    <div>&copy; <span id="year"></span> New Bern Grand Marina. All rights reserved.</div>
+    <div>Board administration</div>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="member-login.js"></script>
+<script src="member-data.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

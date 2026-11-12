@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Member Event | New Bern Grand Marina</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-member-portal>
+
+<div class="topbar">
+  <div class="container">
+    <div>134 Craven St, New Bern, NC 28560 &nbsp;<span class="sep">|</span>&nbsp; Open Daily 8:30 AM &ndash; 5:00 PM</div>
+    <div><a href="tel:+12526380318">(252) 638-0318</a> <span class="sep">|</span> <a href="mailto:newberngrand@f3marina.com">newberngrand@f3marina.com</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a href="index.html" class="brand">
+      <img src="images/logo.png" alt="New Bern Grand Marina logo">
+      <span class="brand-text">
+        <span class="name">New Bern Grand Marina</span>
+        <span class="tag">Downtown New Bern, NC</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.main-nav').classList.toggle('open')">&#9776;</button>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="rates.html">Rates &amp; Amenities</a>
+      <a href="marina-map.html">Marina Map</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="contact.html">Contact</a>
+      <a href="member-portal.html" id="memberLoginTrigger" class="member-login-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Member Portal
+      </a>
+    </nav>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="container">
+    <div class="eyebrow" id="evEyebrow">Member Event</div>
+    <h1 id="evH1">Event</h1>
+    <p><a href="member-portal.html" style="color:inherit;">&larr; Back to the Member Portal</a></p>
+  </div>
+</div>
+
+<section>
+  <div class="container portal-wrap">
+    <div class="portal-card">
+      <p id="evStatus">Loading&hellip;</p>
+      <div id="evBody" hidden>
+        <dl class="portal-details" id="evFacts"></dl>
+        <p class="event-lead" id="evSummaryText" hidden></p>
+        <div class="event-details" id="evDetailsText"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container footer-bottom">
+    <div>&copy; <span id="year"></span> New Bern Grand Marina. All rights reserved.</div>
+    <div><a href="tel:+12526380318" style="color:inherit;">(252) 638-0318</a></div>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="member-login.js"></script>
+<script src="member-data.js"></script>
+<script>
+(function () {
+  var D = MemberData;
+  function $(id) { return document.getElementById(id); }
+  var id = new URLSearchParams(location.search).get('id');
+  document.addEventListener('DOMContentLoaded', function () {
+    MemberAuth.getClient().then(function (sb) {
+      return sb.auth.getSession().then(function (r) {
+        if (!r.data.session) { $('evStatus').textContent = 'Please log in to view member events.'; MemberAuth.openLogin('login'); return; }
+        if (!id) { $('evStatus').textContent = 'Event not found.'; return; }
+        return sb.from('events').select('*').eq('id', id).maybeSingle().then(function (res) {
+          var ev = res.data;
+          if (!ev) { $('evStatus').textContent = 'This event is no longer available.'; return; }
+          document.title = ev.title + ' | New Bern Grand Marina';
+          $('evEyebrow').textContent = D.eventTypeLabel(ev.event_type);
+          $('evH1').textContent = ev.title;
+          var facts = '';
+          if (ev.starts_at) facts += '<dt>When</dt><dd>' + D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) + '</dd>';
+          if (ev.location) facts += '<dt>Where</dt><dd>' + D.esc(ev.location) + '</dd>';
+          facts += '<dt>Type</dt><dd>' + D.eventTypeLabel(ev.event_type) + (ev.active ? '' : ' (inactive: only admins can see this)') + '</dd>';
+          $('evFacts').innerHTML = facts;
+          if (ev.summary) { $('evSummaryText').textContent = ev.summary; $('evSummaryText').hidden = false; }
+          $('evDetailsText').innerHTML = ev.details ? D.richText(ev.details) : '';
+          $('evStatus').hidden = true;
+          $('evBody').hidden = false;
+        });
+      });
+    }).catch(function (e) { $('evStatus').textContent = e.message || 'Something went wrong.'; });
+  });
+})();
+</script>
+</body>
+</html>

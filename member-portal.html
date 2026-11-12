@@ -56,8 +56,29 @@
     <p id="portalLoading">Loading your account&hellip;</p>
 
     <div id="portalMember" hidden>
+      <div class="portal-card portal-welcome">
+        <div>
+          <h3 id="portalWelcome">Welcome</h3>
+          <p class="note" style="margin:0">Slip <strong id="portalSlipTop"></strong></p>
+        </div>
+        <div class="portal-actions" style="margin-top:0">
+          <a href="admin.html" class="btn btn-outline" id="portalAdminLink" hidden>Admin</a>
+          <button type="button" class="btn btn-gold" id="portalLogout">Log Out</button>
+        </div>
+      </div>
+
       <div class="portal-card">
-        <h3 id="portalWelcome">Welcome</h3>
+        <h3>Current Events</h3>
+        <div id="portalEvents"><p class="note">Loading&hellip;</p></div>
+      </div>
+
+      <div class="portal-card">
+        <h3>Marina Documents</h3>
+        <div id="portalDocs"><p class="note">Loading&hellip;</p></div>
+      </div>
+
+      <div class="portal-card">
+        <h3>My Account</h3>
         <dl class="portal-details">
           <dt>Slip</dt><dd id="portalSlip"></dd>
           <dt>Owner of record</dt><dd id="portalOwner"></dd>
@@ -66,13 +87,8 @@
         <p style="color:var(--muted);font-size:0.88rem;margin:16px 0 0;">If any of this is out of date, please contact the marina office at (252) 638-0318.</p>
         <div class="portal-actions">
           <button type="button" class="btn btn-outline" id="portalShowPw">Change Password</button>
-          <button type="button" class="btn btn-gold" id="portalLogout">Log Out</button>
         </div>
-      </div>
-
-      <div class="portal-card" id="portalPwCard" hidden>
-        <h3>Change Password</h3>
-        <form class="member-form" id="portalPwForm">
+        <form class="member-form" id="portalPwForm" hidden style="margin-top:18px">
           <label for="portalPw1">New password (at least 8 characters)</label>
           <input type="password" id="portalPw1" autocomplete="new-password" minlength="8" required>
           <label for="portalPw2">Confirm new password</label>
@@ -81,23 +97,6 @@
           <div class="member-login-note" id="portalPwDone" hidden>Your password has been changed.</div>
           <button type="submit" class="btn btn-gold">Save New Password</button>
         </form>
-      </div>
-
-      <div class="portal-card">
-        <h3>More coming soon</h3>
-        <p style="margin:0;color:var(--muted);">Billing, slip management and other member features will live here soon.</p>
-      </div>
-
-      <div class="portal-card" id="portalAdmin" hidden>
-        <h3>Admin: Members</h3>
-        <p style="margin:0 0 14px;color:var(--muted);font-size:0.9rem;" id="adminCount"></p>
-        <input type="search" class="admin-search" id="adminSearch" placeholder="Search slip, name or email">
-        <div class="admin-table-wrap">
-          <table class="admin-table">
-            <thead><tr><th>Slip</th><th>Owner</th><th>Email</th><th>Status</th></tr></thead>
-            <tbody id="adminRows"></tbody>
-          </table>
-        </div>
       </div>
     </div>
   </div>
@@ -153,6 +152,7 @@
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="member-login.js"></script>
+<script src="member-data.js"></script>
 <script src="member-portal.js"></script>
 </body>
 </html>
