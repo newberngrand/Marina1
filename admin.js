@@ -461,30 +461,172 @@
   }
 
   /* ---------- Members ---------- */
+  var memRows = [], memNotes = {}, memEditing = null, memWired = false;
+
   function loadMembers() {
-    Promise.all([
-      sb.from('members').select('slip, owner_name, email, active, is_admin, can_vote'),
+    if (!memWired) { wireMembers(); memWired = true; }
+    return Promise.all([
+      sb.from('members').select('slip, owner_name, email, active, is_admin, can_vote, user_id'),
       sb.from('member_notes').select('slip, note')
     ]).then(function (r) {
       if (r[0].error) return;
-      var notes = {};
-      (r[1].data || []).forEach(function (n) { notes[n.slip] = n.note; });
-      var rows = r[0].data.sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); });
-      $('memCount').textContent = rows.length + ' slips on file. To change an owner, email or password, ask your web helper for now; editing here is coming.';
-      function draw(f) {
-        f = (f || '').toLowerCase();
-        $('memRows').innerHTML = rows.filter(function (m) {
-          return !f || (m.slip + ' ' + m.owner_name + ' ' + (m.email || '') + ' ' + (notes[m.slip] || '')).toLowerCase().indexOf(f) !== -1;
-        }).map(function (m) {
-          return '<tr><td><strong>' + D.esc(m.slip) + '</strong></td><td>' + D.esc(m.owner_name) +
-            (notes[m.slip] ? '<div class="note">' + D.esc(notes[m.slip]) + '</div>' : '') +
-            '</td><td>' + (m.email ? D.esc(m.email) : '<em>none</em>') + '</td>' +
-            '<td>' + (m.is_admin ? 'Admin' : (m.active ? 'Active' : '<span class="inactive">Inactive</span>')) +
-            (!m.is_admin && !m.can_vote ? '<div class="note">Non-voting</div>' : '') + '</td></tr>';
-        }).join('');
+      memNotes = {};
+      (r[1].data || []).forEach(function (n) { memNotes[n.slip] = n.note; });
+      memRows = r[0].data.sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); });
+      var voting = memRows.filter(function (m) { return m.active && m.can_vote && !m.is_admin; }).length;
+      var noEmail = memRows.filter(function (m) { return !m.is_admin && !m.email; }).length;
+      $('memCount').textContent = (memRows.length - 1) + ' slips on file · ' + voting + ' voting · ' + noEmail + ' with no email. Click Edit to change an owner, email, note, status or password.';
+      drawMembers();
+    });
+  }
+
+  function drawMembers() {
+    var f = $('memSearch').value.toLowerCase(), show = $('memShow').value;
+    $('memRows').innerHTML = memRows.filter(function (m) {
+      if (show === 'noemail' && (m.email || m.is_admin)) return false;
+      if (show === 'nonvoting' && (m.can_vote || m.is_admin)) return false;
+      if (show === 'inactive' && m.active) return false;
+      return !f || (m.slip + ' ' + m.owner_name + ' ' + (m.email || '') + ' ' + (memNotes[m.slip] || '')).toLowerCase().indexOf(f) !== -1;
+    }).map(function (m) {
+      return '<tr' + (m.active ? '' : ' class="row-inactive"') + '><td><strong>' + D.esc(m.slip) + '</strong></td><td>' + D.esc(m.owner_name) +
+        (memNotes[m.slip] ? '<div class="note">' + D.esc(memNotes[m.slip]) + '</div>' : '') +
+        '</td><td>' + (m.email ? D.esc(m.email) : '<em>none</em>') + '</td>' +
+        '<td>' + (m.is_admin ? 'Admin' : (m.active ? 'Active' : '<span class="inactive">Inactive</span>')) +
+        (!m.is_admin && !m.can_vote ? '<div class="note">Non-voting</div>' : '') + '</td>' +
+        '<td class="row-actions"><button type="button" class="btn-sm" data-slip="' + D.esc(m.slip) + '">Edit</button></td></tr>';
+    }).join('') || '<tr><td colspan="5" class="note">No slips match.</td></tr>';
+  }
+
+  function callAdmin(payload) {
+    return sb.functions.invoke('admin-members', { body: payload }).then(function (r) {
+      if (r.error) {
+        // Pull the server's message out of the error response when there is one.
+        var ctx = r.error.context;
+        if (ctx && typeof ctx.json === 'function') {
+          return ctx.json().then(function (b) { throw new Error(b.error || r.error.message); }, function () { throw new Error(r.error.message); });
+        }
+        throw new Error(r.error.message);
       }
-      draw('');
-      $('memSearch').addEventListener('input', function (e) { draw(e.target.value); });
+      if (r.data && r.data.error) throw new Error(r.data.error);
+      return r.data;
+    });
+  }
+
+  function suggestPassword() {
+    var words = ['Harbor', 'Anchor', 'Tide', 'Cove', 'Marina', 'Neuse', 'Trent', 'Keel', 'Mast', 'Pier', 'Sail', 'Dock', 'Buoy', 'Helm'];
+    var a = new Uint32Array(3); crypto.getRandomValues(a);
+    return words[a[0] % words.length] + '-' + words[a[1] % words.length] + '-' + (1000 + a[2] % 9000);
+  }
+
+  function openMemberForm(m) {
+    memEditing = m;
+    var isNew = !m;
+    $('memFormTitle').textContent = isNew ? 'Add a Slip' : 'Edit Slip ' + m.slip;
+    $('memSoldTip').hidden = isNew || m.is_admin;
+    $('memSlip').value = isNew ? '' : m.slip;
+    $('memSlip').readOnly = !isNew;
+    $('memOwner').value = isNew ? '' : m.owner_name;
+    $('memEmail').value = isNew ? '' : (m.email || '');
+    $('memNote').value = isNew ? '' : (memNotes[m.slip] || '');
+    $('memActive').checked = isNew ? true : m.active;
+    $('memCanVote').checked = isNew ? true : m.can_vote;
+    $('memActive').disabled = !isNew && m.is_admin;
+    $('memCanVote').disabled = !isNew && m.is_admin;
+    $('memPw').value = '';
+    $('memPwLegend').textContent = isNew ? 'Starting password (required)' : 'Set a new password';
+    $('memPwSet').hidden = isNew;
+    $('memPwHelp').textContent = isNew
+      ? 'Give this password to the owner privately. They can change it after logging in.'
+      : 'Sets the password right away. Give it to the owner privately; they can change it after logging in.';
+    $('memSave').textContent = isNew ? 'Add Slip' : 'Save Changes';
+    ['memError', 'memDone', 'memPwDone'].forEach(function (id) { $(id).hidden = true; });
+    $('memForm').hidden = false;
+    $('memForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    (isNew ? $('memSlip') : $('memOwner')).focus();
+  }
+
+  function wireMembers() {
+    $('memNew').addEventListener('click', function () { openMemberForm(null); });
+    $('memCancel').addEventListener('click', function () { $('memForm').hidden = true; memEditing = null; });
+    $('memSearch').addEventListener('input', drawMembers);
+    $('memShow').addEventListener('change', drawMembers);
+    $('memRows').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-slip]');
+      if (!b) return;
+      var m = memRows.find(function (x) { return x.slip === b.getAttribute('data-slip'); });
+      if (m) openMemberForm(m);
+    });
+    $('memPwGen').addEventListener('click', function () { $('memPw').value = suggestPassword(); });
+
+    $('memPwSet').addEventListener('click', function () {
+      if (!memEditing) return;
+      var pw = $('memPw').value.trim();
+      $('memError').hidden = true; $('memPwDone').hidden = true;
+      if (pw.length < 8) return showErr($('memError'), 'The new password needs at least 8 characters.');
+      if (!confirm('Set a new password for slip ' + memEditing.slip + '? The old password will stop working.')) return;
+      var btn = $('memPwSet'); btn.disabled = true;
+      callAdmin({ action: 'set_password', slip: memEditing.slip, password: pw }).then(function (res) {
+        $('memPwDone').textContent = res.message + ' New password: ' + pw;
+        $('memPwDone').hidden = false;
+        $('memPw').value = '';
+      }).catch(function (ex) { showErr($('memError'), ex.message); })
+        .then(function () { btn.disabled = false; });
+    });
+
+    $('memForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var err = $('memError'), done = $('memDone');
+      err.hidden = true; done.hidden = true;
+      var owner = $('memOwner').value.trim();
+      var email = $('memEmail').value.trim();
+      var note = $('memNote').value.trim();
+      if (!owner) return showErr(err, 'Please enter the owner of record.');
+      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showErr(err, 'That email address doesn\'t look right.');
+      var btn = $('memSave'); btn.disabled = true;
+
+      var work;
+      if (!memEditing) {
+        var slip = $('memSlip').value.trim().toUpperCase().replace(/\s+/g, '');
+        var pw = $('memPw').value.trim();
+        if (!/^[A-Z0-9-]{1,20}$/.test(slip)) { btn.disabled = false; return showErr(err, 'Please enter a valid slip (letters, numbers and dashes).'); }
+        if (pw.length < 8) { btn.disabled = false; return showErr(err, 'Please set a starting password of at least 8 characters.'); }
+        work = callAdmin({ action: 'create_slip', slip: slip, owner_name: owner, email: email, password: pw, can_vote: $('memCanVote').checked })
+          .then(function () {
+            return Promise.all([
+              note ? sb.from('member_notes').upsert({ slip: slip, note: note }) : null,
+              $('memActive').checked ? null : sb.from('members').update({ active: false }).eq('slip', slip)
+            ]);
+          })
+          .then(function () { return 'Slip ' + slip + ' added. Starting password: ' + pw; });
+      } else {
+        var m = memEditing;
+        var row = { owner_name: owner, email: email || null };
+        if (!m.is_admin) { row.active = $('memActive').checked; row.can_vote = $('memCanVote').checked; }
+        work = sb.from('members').update(row).eq('slip', m.slip).then(function (r) {
+          if (r.error) throw new Error(r.error.message);
+          var hadNote = !!memNotes[m.slip];
+          if (note) return sb.from('member_notes').upsert({ slip: m.slip, note: note });
+          if (hadNote) return sb.from('member_notes').delete().eq('slip', m.slip);
+        }).then(function (r) {
+          if (r && r.error) throw new Error(r.error.message);
+          return 'Saved changes to slip ' + m.slip + '.';
+        });
+      }
+
+      work.then(function (msg) {
+        done.textContent = msg;
+        done.hidden = false;
+        return loadMembers().then(function () {
+          if (!memEditing) {
+            var slipNow = $('memSlip').value.trim().toUpperCase();
+            var created = memRows.find(function (x) { return x.slip === slipNow; });
+            if (created) { memEditing = created; $('memSlip').readOnly = true; $('memFormTitle').textContent = 'Edit Slip ' + created.slip; $('memSave').textContent = 'Save Changes'; $('memPwSet').hidden = false; $('memPwLegend').textContent = 'Set a new password'; $('memPw').value = ''; }
+          } else {
+            memEditing = memRows.find(function (x) { return x.slip === memEditing.slip; }) || memEditing;
+          }
+        });
+      }).catch(function (ex) { showErr(err, ex.message); })
+        .then(function () { btn.disabled = false; });
     });
   }
 })();

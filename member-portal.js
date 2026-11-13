@@ -187,9 +187,11 @@
           } else {
             inner = '<ul class="doc-list">' + list.map(docLink).join('') + '</ul>';
           }
-          return '<div class="doc-section"><h4>' + c.label + '</h4>' + inner + '</div>';
+          return '<div class="doc-section doc-' + c.id + '">' +
+            '<div class="doc-head"><h4>' + c.label + '</h4><span class="doc-count">' + list.length + '</span></div>' +
+            '<div class="doc-body">' + inner + '</div></div>';
         }).join('');
-        $('portalDocs').innerHTML = html;
+        $('portalDocs').innerHTML = '<div class="doc-grid">' + html + '</div>';
         $('portalDocs').addEventListener('click', function (e) {
           var b = e.target.closest('.doc-link');
           if (b) D.openDocument(sb, b.getAttribute('data-path'), b.getAttribute('data-name'));

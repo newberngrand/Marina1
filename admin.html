@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=20261112f">
+<link rel="stylesheet" href="style.css?v=20261112g">
 </head>
 <body data-member-portal>
 
@@ -208,12 +208,69 @@
 
       <!-- MEMBERS -->
       <div class="admin-panel" data-panel="members" hidden>
-        <div class="admin-panel-head"><h2>Members</h2></div>
+        <div class="admin-panel-head">
+          <h2>Members</h2>
+          <button type="button" class="btn btn-gold" id="memNew">+ Add Slip</button>
+        </div>
         <p style="margin:0 0 14px;color:var(--muted);font-size:0.9rem;" id="memCount"></p>
-        <input type="search" class="admin-search" id="memSearch" placeholder="Search slip, name, email or note">
+
+        <form class="portal-card admin-form" id="memForm" hidden>
+          <h3 id="memFormTitle">Edit Slip</h3>
+          <p class="note" id="memSoldTip" style="margin:-6px 0 14px">
+            <strong>Slip sold?</strong> Replace the owner's name and email with the new owner's, then set a new password below and give it to the new owner.
+          </p>
+          <div class="admin-grid">
+            <label>Slip
+              <input type="text" id="memSlip" maxlength="20" autocapitalize="characters" spellcheck="false" required>
+            </label>
+            <label>Owner of record
+              <input type="text" id="memOwner" maxlength="200" required>
+            </label>
+            <label class="full">Email (used for password resets and to group an owner's slips)
+              <input type="text" id="memEmail" maxlength="254" inputmode="email" autocomplete="off">
+            </label>
+            <label class="full">Admin note (only admins see this)
+              <textarea id="memNote" rows="2" maxlength="500"></textarea>
+            </label>
+            <label class="check"><input type="checkbox" id="memActive"> Active (can log in)</label>
+            <label class="check"><input type="checkbox" id="memCanVote"> Can vote</label>
+          </div>
+          <fieldset class="full ballot-box" style="margin-top:16px">
+            <legend id="memPwLegend">Set a new password</legend>
+            <div class="admin-grid">
+              <label>New password (at least 8 characters)
+                <input type="text" id="memPw" autocomplete="off" spellcheck="false">
+              </label>
+              <label style="justify-content:flex-end">
+                <span class="portal-actions" style="margin:0">
+                  <button type="button" class="btn-sm" id="memPwGen">Suggest one</button>
+                  <button type="button" class="btn-sm btn-primary-sm" id="memPwSet">Set Password</button>
+                </span>
+              </label>
+            </div>
+            <p class="note" id="memPwHelp" style="margin:8px 0 0">Give the new password to the owner privately. They can change it after logging in.</p>
+            <div class="member-login-note" id="memPwDone" hidden></div>
+          </fieldset>
+          <div class="member-login-error" id="memError" hidden></div>
+          <div class="member-login-note" id="memDone" hidden></div>
+          <div class="portal-actions">
+            <button type="submit" class="btn btn-gold" id="memSave">Save Changes</button>
+            <button type="button" class="btn btn-outline" id="memCancel">Close</button>
+          </div>
+        </form>
+
+        <div class="vr-filter">
+          <input type="search" class="admin-search" id="memSearch" placeholder="Search slip, name, email or note">
+          <select id="memShow" class="admin-search" style="max-width:220px">
+            <option value="all">All slips</option>
+            <option value="noemail">No email on file</option>
+            <option value="nonvoting">Non-voting</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
         <div class="admin-table-wrap">
           <table class="admin-table">
-            <thead><tr><th>Slip</th><th>Owner</th><th>Email</th><th>Status</th></tr></thead>
+            <thead><tr><th>Slip</th><th>Owner</th><th>Email</th><th>Status</th><th></th></tr></thead>
             <tbody id="memRows"></tbody>
           </table>
         </div>
@@ -230,8 +287,8 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=20261112f"></script>
-<script src="member-data.js?v=20261112f"></script>
-<script src="admin.js?v=20261112f"></script>
+<script src="member-login.js?v=20261112g"></script>
+<script src="member-data.js?v=20261112g"></script>
+<script src="admin.js?v=20261112g"></script>
 </body>
 </html>

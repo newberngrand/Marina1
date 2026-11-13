@@ -374,10 +374,44 @@ nav.main-nav a.active {
 .event-details { line-height: 1.65; margin-top: 12px; overflow-wrap: anywhere; }
 
 /* Member document list */
-.doc-section + .doc-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
-.doc-section h4 { margin: 0 0 8px; color: var(--navy); font-size: 1rem; }
+.doc-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.doc-section {
+  --doc-accent: var(--navy);
+  --doc-tint: #eef3f8;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--doc-accent);
+  border-radius: var(--radius);
+  background: var(--white);
+  overflow: hidden;
+}
+.doc-section.doc-minutes { grid-column: 1 / -1; }
+.doc-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  background: var(--doc-tint);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.doc-head h4 { margin: 0; color: var(--doc-accent); font-size: 1.05rem; letter-spacing: 0.01em; }
+.doc-count {
+  min-width: 26px; text-align: center; font-size: 0.78rem; font-weight: 700;
+  background: var(--doc-accent); color: #fff; border-radius: 999px; padding: 2px 8px;
+}
+.doc-body { padding: 10px 16px 14px; }
+.doc-bylaws     { --doc-accent: #0b2540; --doc-tint: #e9eff6; }
+.doc-rules      { --doc-accent: #1c5d6e; --doc-tint: #e6f1f3; }
+.doc-minutes    { --doc-accent: #7a5a1f; --doc-tint: #f8f1e3; }
+.doc-financials { --doc-accent: #1f6b3a; --doc-tint: #e8f4ec; }
+.doc-permits    { --doc-accent: #5b3f8c; --doc-tint: #efeaf7; }
+.doc-insurance  { --doc-accent: #9a3b2c; --doc-tint: #f9ebe8; }
+.doc-forms      { --doc-accent: #3c4954; --doc-tint: #eef0f2; }
+.doc-other      { --doc-accent: #5c6b7a; --doc-tint: #f2f4f6; }
+.doc-minutes .doc-year { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; margin: 8px 0; }
+.doc-minutes .doc-year[open] { padding-bottom: 10px; }
+.doc-minutes .doc-year summary { font-size: 1rem; color: var(--doc-accent); }
+.doc-minutes .month-head { color: var(--doc-accent); border-bottom: 1px dashed var(--line); padding-bottom: 3px; }
 .doc-list { list-style: none; margin: 0; padding: 0; }
-.doc-list li { padding: 6px 0; }
+.doc-list li { padding: 8px 0; border-bottom: 1px solid #f0f2f4; }
+.doc-list li:last-child { border-bottom: none; }
 .doc-link {
   background: none; border: none; padding: 0; cursor: pointer;
   color: var(--teal); font: inherit; font-weight: 600; text-align: left; text-decoration: underline;
