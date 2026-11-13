@@ -219,7 +219,7 @@
       $('resultsBody').innerHTML = rows.map(function (x) {
         var n = Number(x.votes), p = pc(n, eligible);
         return '<div class="result-row"><div class="result-label"><strong>' + D.esc(x.choice) + '</strong>' +
-          '<span>' + n + ' (' + p + '% of all slips' + (cast ? ', ' + pc(n, cast) + '% of votes cast' : '') + ')</span></div>' +
+          '<span>' + n + ' of ' + eligible + ' slips (' + p + '%)</span></div>' +
           '<div class="vr-bar"><span style="width:' + p + '%"></span></div></div>';
       }).join('') +
       '<p class="note" style="margin:12px 0 0">' + cast + ' of ' + eligible + ' voting slips have voted (' + pc(cast, eligible) + '% turnout).</p>';
