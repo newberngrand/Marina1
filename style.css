@@ -432,6 +432,9 @@ nav.main-nav a.active {
 .vote-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .vote-tag.open { background: #1f6b3a; color: #fff; }
 .vote-tag.voted { background: #e6f3ee; color: #1f6b3a; }
+a.vote-tag, a.badge { text-decoration: none; cursor: pointer; }
+a.vote-tag:hover, a.badge:hover { filter: brightness(0.92); text-decoration: none; }
+a.vote-tag.open { padding: 3px 10px; }
 .ballot-form { display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
 .ballot-choice {
   display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line);
@@ -464,6 +467,8 @@ nav.main-nav a.active {
 .vr-table tfoot td { background: #f7f8fa; }
 .vr-total-head td { font-weight: 700; color: var(--navy); border-top: 2px solid var(--navy); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em; }
 .vr-total.lead td { background: #fff6e3; }
+.vr-total-head td:not(:first-child) { text-transform: none; letter-spacing: 0; font-size: 0.78rem; color: var(--muted); }
+.vr-turnout { margin: 0 0 14px; padding: 10px 14px; background: #f2f6fa; border-radius: 8px; color: var(--navy); font-size: 1rem; }
 .vote-choice { font-weight: 700; color: var(--navy); }
 .btn-primary-sm { background: var(--navy); color: #fff; border-color: var(--navy); }
 .btn-primary-sm:hover { background: var(--navy-dark); }

@@ -252,18 +252,21 @@
     var cast = 0;
     resultRows.forEach(function (r) { if (r.vote) { cast++; counts[r.vote.choice] = (counts[r.vote.choice] || 0) + 1; } });
     var eligible = resultRows.length;
-    function pct(n, d) { return d ? ' (' + Math.round(n * 1000 / d) / 10 + '%)' : ''; }
+    function pct(n, d) { return d ? (Math.round(n * 1000 / d) / 10) + '%' : '–'; }
     var maxCount = Math.max.apply(null, choices.map(function (c) { return counts[c]; }));
+    $('vrTurnout').innerHTML = '<strong>' + cast + '</strong> of <strong>' + eligible + '</strong> voting slips have voted &middot; <strong>' +
+      pct(cast, eligible) + '</strong> turnout';
     $('vrTotals').innerHTML =
-      '<tr class="vr-total-head"><td colspan="4">Running total</td></tr>' +
+      '<tr class="vr-total-head"><td>Running total</td><td>Votes</td><td>% of votes cast</td><td>% of all ' + eligible + ' voting slips</td></tr>' +
       choices.map(function (c) {
         var lead = cast && counts[c] === maxCount;
-        return '<tr class="vr-total' + (lead ? ' lead' : '') + '"><td colspan="2"><strong>' + D.esc(c) + '</strong></td>' +
-          '<td colspan="2"><strong>' + counts[c] + '</strong>' + pct(counts[c], cast) + ' of votes cast' +
-          '<div class="vr-bar"><span style="width:' + (cast ? counts[c] * 100 / cast : 0) + '%"></span></div></td></tr>';
+        return '<tr class="vr-total' + (lead ? ' lead' : '') + '"><td><strong>' + D.esc(c) + '</strong></td>' +
+          '<td><strong>' + counts[c] + '</strong></td>' +
+          '<td>' + pct(counts[c], cast) + '<div class="vr-bar"><span style="width:' + (cast ? counts[c] * 100 / cast : 0) + '%"></span></div></td>' +
+          '<td>' + pct(counts[c], eligible) + '</td></tr>';
       }).join('') +
-      '<tr class="vr-total"><td colspan="2">Votes cast</td><td colspan="2"><strong>' + cast + '</strong> of ' + eligible + ' slips' + pct(cast, eligible) + '</td></tr>' +
-      '<tr class="vr-total"><td colspan="2">Not yet voted</td><td colspan="2">' + (eligible - cast) + '</td></tr>';
+      '<tr class="vr-total"><td>Voted</td><td><strong>' + cast + '</strong></td><td></td><td><strong>' + pct(cast, eligible) + '</strong> voted</td></tr>' +
+      '<tr class="vr-total"><td>Not yet voted</td><td>' + (eligible - cast) + '</td><td></td><td>' + pct(eligible - cast, eligible) + '</td></tr>';
   }
 
   function downloadCsv() {

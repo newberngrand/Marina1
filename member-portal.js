@@ -83,18 +83,19 @@
     if (ev.event_type !== 'vote') return '';
     var st = D.voteState(ev);
     var tag = '';
+    var href = 'event.html?id=' + ev.id + '#ballot';
     if (!isAdmin && voted.total > 0) {
       var n = voted[ev.id] || 0, total = voted.total;
-      if (n >= total) tag = '<span class="vote-tag voted">' + (total > 1 ? 'All slips voted' : 'You voted') + '</span>';
-      else if (st === 'open') tag = '<span class="vote-tag open">' + (n ? n + ' of ' + total + ' slips voted' : 'Vote now') + '</span>';
-      else if (n) tag = '<span class="vote-tag voted">' + n + ' of ' + total + ' slips voted</span>';
+      if (n >= total) tag = '<a class="vote-tag voted" href="' + href + '">' + (total > 1 ? 'All slips voted' : 'You voted') + '</a>';
+      else if (st === 'open') tag = '<a class="vote-tag open" href="' + href + '">' + (n ? n + ' of ' + total + ' slips voted &rsaquo;' : 'Vote now &rsaquo;') + '</a>';
+      else if (n) tag = '<a class="vote-tag voted" href="' + href + '">' + n + ' of ' + total + ' slips voted</a>';
     }
     return '<div class="vote-state vote-' + st + '">' + D.esc(D.voteWindowText(ev)) + tag + '</div>';
   }
 
   function eventItem(ev, past, voted, isAdmin) {
     return '<li class="event-item' + (past ? ' past' : '') + '">' +
-      '<span class="badge badge-' + ev.event_type + '">' + D.eventTypeLabel(ev.event_type) + '</span>' +
+      '<a class="badge badge-' + ev.event_type + '" href="event.html?id=' + ev.id + (ev.event_type === 'vote' ? '#ballot' : '') + '">' + D.eventTypeLabel(ev.event_type) + '</a>' +
       '<div><a class="event-title" href="event.html?id=' + ev.id + '">' + D.esc(ev.title) + '</a>' +
       (ev.starts_at ? '<div class="event-when">' + D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) + (ev.location ? ' &middot; ' + D.esc(ev.location) : '') + '</div>' : '') +
       voteTag(ev, voted, isAdmin) +

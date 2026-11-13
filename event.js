@@ -78,6 +78,10 @@
         }
       }
       loadResults();
+      if (location.hash === '#ballot') {
+        $('ballotCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', location.pathname + location.search);
+      }
     });
   }
 
@@ -216,7 +220,8 @@
         return '<div class="result-row"><div class="result-label"><strong>' + D.esc(x.choice) + '</strong><span>' + n + ' (' + p + '%)</span></div>' +
           '<div class="vr-bar"><span style="width:' + p + '%"></span></div></div>';
       }).join('') +
-      '<p class="note" style="margin:12px 0 0">' + cast + ' of ' + eligible + ' slips have voted.</p>';
+      '<p class="note" style="margin:12px 0 0">Percentages are of votes cast. ' + cast + ' of ' + eligible + ' voting slips have voted (' +
+        (eligible ? Math.round(cast * 1000 / eligible) / 10 : 0) + '% turnout).</p>';
     });
   }
 })();
