@@ -215,13 +215,14 @@
       var closed = D.voteState(ev) === 'closed';
       $('resultsCard').hidden = false;
       $('resultsTitle').textContent = closed ? 'Final Results' : 'Running Totals';
+      function pc(n, d) { return d ? Math.round(n * 1000 / d) / 10 : 0; }
       $('resultsBody').innerHTML = rows.map(function (x) {
-        var n = Number(x.votes), p = cast ? Math.round(n * 1000 / cast) / 10 : 0;
-        return '<div class="result-row"><div class="result-label"><strong>' + D.esc(x.choice) + '</strong><span>' + n + ' (' + p + '%)</span></div>' +
+        var n = Number(x.votes), p = pc(n, eligible);
+        return '<div class="result-row"><div class="result-label"><strong>' + D.esc(x.choice) + '</strong>' +
+          '<span>' + n + ' (' + p + '% of all slips' + (cast ? ', ' + pc(n, cast) + '% of votes cast' : '') + ')</span></div>' +
           '<div class="vr-bar"><span style="width:' + p + '%"></span></div></div>';
       }).join('') +
-      '<p class="note" style="margin:12px 0 0">Percentages are of votes cast. ' + cast + ' of ' + eligible + ' voting slips have voted (' +
-        (eligible ? Math.round(cast * 1000 / eligible) / 10 : 0) + '% turnout).</p>';
+      '<p class="note" style="margin:12px 0 0">' + cast + ' of ' + eligible + ' voting slips have voted (' + pc(cast, eligible) + '% turnout).</p>';
     });
   }
 })();

@@ -257,16 +257,16 @@
     $('vrTurnout').innerHTML = '<strong>' + cast + '</strong> of <strong>' + eligible + '</strong> voting slips have voted &middot; <strong>' +
       pct(cast, eligible) + '</strong> turnout';
     $('vrTotals').innerHTML =
-      '<tr class="vr-total-head"><td>Running total</td><td>Votes</td><td>% of votes cast</td><td>% of all ' + eligible + ' voting slips</td></tr>' +
+      '<tr class="vr-total-head"><td>Running total</td><td>Votes</td><td>% of all ' + eligible + ' voting slips</td><td>% of votes cast</td></tr>' +
       choices.map(function (c) {
         var lead = cast && counts[c] === maxCount;
         return '<tr class="vr-total' + (lead ? ' lead' : '') + '"><td><strong>' + D.esc(c) + '</strong></td>' +
           '<td><strong>' + counts[c] + '</strong></td>' +
-          '<td>' + pct(counts[c], cast) + '<div class="vr-bar"><span style="width:' + (cast ? counts[c] * 100 / cast : 0) + '%"></span></div></td>' +
-          '<td>' + pct(counts[c], eligible) + '</td></tr>';
+          '<td><strong>' + pct(counts[c], eligible) + '</strong><div class="vr-bar"><span style="width:' + (eligible ? counts[c] * 100 / eligible : 0) + '%"></span></div></td>' +
+          '<td class="note">' + pct(counts[c], cast) + '</td></tr>';
       }).join('') +
-      '<tr class="vr-total"><td>Voted</td><td><strong>' + cast + '</strong></td><td></td><td><strong>' + pct(cast, eligible) + '</strong> voted</td></tr>' +
-      '<tr class="vr-total"><td>Not yet voted</td><td>' + (eligible - cast) + '</td><td></td><td>' + pct(eligible - cast, eligible) + '</td></tr>';
+      '<tr class="vr-total"><td>Voted</td><td><strong>' + cast + '</strong></td><td><strong>' + pct(cast, eligible) + '</strong> voted</td><td></td></tr>' +
+      '<tr class="vr-total"><td>Not yet voted</td><td>' + (eligible - cast) + '</td><td>' + pct(eligible - cast, eligible) + '</td><td></td></tr>';
   }
 
   function downloadCsv() {
