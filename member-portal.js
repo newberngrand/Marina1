@@ -45,6 +45,7 @@
       var rows = r.data && r.data.length ? r.data : [{ slip: m.slip, owner_name: m.owner_name, is_login: true }];
       $('portalSlips').innerHTML = rows.map(function (x) {
         return '<tr><td><strong>' + D.esc(x.slip) + '</strong>' + (x.is_login ? ' <span class="note">(logged in)</span>' : '') +
+          (x.can_vote === false ? ' <span class="note">(non-voting)</span>' : '') +
           '</td><td>' + D.esc(x.owner_name) + '</td></tr>';
       }).join('');
       if (rows.length > 1) {
@@ -82,7 +83,7 @@
     if (ev.event_type !== 'vote') return '';
     var st = D.voteState(ev);
     var tag = '';
-    if (!isAdmin) {
+    if (!isAdmin && voted.total > 0) {
       var n = voted[ev.id] || 0, total = voted.total;
       if (n >= total) tag = '<span class="vote-tag voted">' + (total > 1 ? 'All slips voted' : 'You voted') + '</span>';
       else if (st === 'open') tag = '<span class="vote-tag open">' + (n ? n + ' of ' + total + ' slips voted' : 'Vote now') + '</span>';
@@ -108,7 +109,8 @@
       m.is_admin ? Promise.resolve({ data: [] }) : sb.rpc('my_slips')
     ]).then(function (res) {
         var r = res[0];
-        var voted = { total: Math.max(1, (res[2].data || []).length) };
+        var mySlips = res[2].data || [];
+        var voted = { total: mySlips.length ? mySlips.filter(function (s) { return s.can_vote; }).length : 1 };
         (res[1].data || []).forEach(function (v) { voted[v.event_id] = (voted[v.event_id] || 0) + 1; });
         var isAdmin = m.is_admin;
         var list = r.data || [];

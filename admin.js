@@ -219,13 +219,13 @@
     $('voteResults').hidden = false;
     $('voteResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
     Promise.all([
-      sb.from('members').select('slip, owner_name, active, is_admin').eq('is_admin', false),
+      sb.from('members').select('slip, owner_name, active, is_admin, can_vote').eq('is_admin', false),
       sb.from('votes').select('slip, choice, cast_at').eq('event_id', ev.id)
     ]).then(function (r) {
       var votes = {};
       (r[1].data || []).forEach(function (v) { votes[v.slip] = v; });
       resultRows = (r[0].data || [])
-        .filter(function (m) { return m.active || votes[m.slip]; })
+        .filter(function (m) { return (m.active && m.can_vote) || votes[m.slip]; })
         .sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); })
         .map(function (m) { return { slip: m.slip, owner: m.owner_name, vote: votes[m.slip] || null }; });
       drawResults();
@@ -458,7 +458,7 @@
   /* ---------- Members ---------- */
   function loadMembers() {
     Promise.all([
-      sb.from('members').select('slip, owner_name, email, active, is_admin'),
+      sb.from('members').select('slip, owner_name, email, active, is_admin, can_vote'),
       sb.from('member_notes').select('slip, note')
     ]).then(function (r) {
       if (r[0].error) return;
@@ -474,7 +474,8 @@
           return '<tr><td><strong>' + D.esc(m.slip) + '</strong></td><td>' + D.esc(m.owner_name) +
             (notes[m.slip] ? '<div class="note">' + D.esc(notes[m.slip]) + '</div>' : '') +
             '</td><td>' + (m.email ? D.esc(m.email) : '<em>none</em>') + '</td>' +
-            '<td>' + (m.is_admin ? 'Admin' : (m.active ? 'Active' : '<span class="inactive">Inactive</span>')) + '</td></tr>';
+            '<td>' + (m.is_admin ? 'Admin' : (m.active ? 'Active' : '<span class="inactive">Inactive</span>')) +
+            (!m.is_admin && !m.can_vote ? '<div class="note">Non-voting</div>' : '') + '</td></tr>';
         }).join('');
       }
       draw('');

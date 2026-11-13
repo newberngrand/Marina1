@@ -62,10 +62,21 @@
       sb.rpc('my_slips'),
       sb.from('votes').select('slip, choice, cast_at').eq('event_id', ev.id)
     ]).then(function (res) {
-      var slips = (res[0].data && res[0].data.length) ? res[0].data : [{ slip: me.slip, owner_name: '' }];
+      var all = (res[0].data && res[0].data.length) ? res[0].data : [{ slip: me.slip, owner_name: '', can_vote: true }];
+      var slips = all.filter(function (s) { return s.can_vote !== false; });
+      var nonVoting = all.filter(function (s) { return s.can_vote === false; });
       var votes = {};
       (res[1].data || []).forEach(function (v) { votes[v.slip] = v; });
-      renderBallot(slips, votes, st);
+      if (!slips.length) {
+        $('ballotBody').innerHTML = '<p class="note">' + (nonVoting.length > 1 ? 'Your slips are non-voting slips' : 'Slip ' + D.esc(nonVoting[0].slip) + ' is a non-voting slip') +
+          ', so there is no ballot to cast.</p>';
+      } else {
+        renderBallot(slips, votes, st);
+        if (nonVoting.length) {
+          $('ballotBody').insertAdjacentHTML('beforeend', '<p class="note" style="margin:10px 0 0">Non-voting slip' + (nonVoting.length > 1 ? 's' : '') + ': ' +
+            nonVoting.map(function (s) { return D.esc(s.slip); }).join(', ') + '.</p>');
+        }
+      }
       loadResults();
     });
   }
