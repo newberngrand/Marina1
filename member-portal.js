@@ -19,7 +19,7 @@
           .then(function (res) {
             var m = res.data;
             if (!m || !m.active) {
-              return sb.auth.signOut().then(function () {
+              return MemberAuth.signOut().then(function () {
                 $('portalLoading').textContent = 'This slip\'s member access is not active. Please contact the marina office.';
               });
             }
@@ -58,7 +58,7 @@
     if (m.is_admin) $('portalAdminLink').hidden = false;
 
     $('portalLogout').addEventListener('click', function () {
-      sb.auth.signOut().then(function () { window.location.href = 'index.html'; });
+      MemberAuth.logOut();
     });
     $('portalShowPw').addEventListener('click', function () {
       $('portalPwForm').hidden = !$('portalPwForm').hidden;

@@ -20,13 +20,44 @@
     return String(v || '').trim().toUpperCase().replace(/\s+/g, '');
   }
 
+  // Remove this browser's saved login, whatever state it is in.
+  function clearLocalSession() {
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k && /^sb-.*-auth-token/.test(k)) localStorage.removeItem(k);
+      }
+    } catch (e) {}
+  }
+
+  // Sign out on this device only (other devices stay signed in). The saved
+  // login is always cleared, even if the server no longer knows the session.
+  function signOutHere(sb) {
+    return Promise.resolve()
+      .then(function () { return sb.auth.signOut({ scope: 'local' }); })
+      .catch(function () {})
+      .then(clearLocalSession);
+  }
+
   function getClient() {
     if (clientPromise) return clientPromise;
     clientPromise = new Promise(function (resolve, reject) {
       function make() {
-        resolve(window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
           auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
-        }));
+        });
+        if (!hasStoredSession()) return resolve(sb);
+        // A saved login can go stale (expired, or ended on the server, e.g. a
+        // log out elsewhere or a password change). Check it with the server
+        // and drop it if it's no longer valid, so the site doesn't look
+        // logged in when it isn't.
+        sb.auth.getUser().then(function (r) {
+          var err = r.error;
+          if (err && (err.status === 400 || err.status === 401 || err.status === 403 || err.status === 404 ||
+                      /session|refresh token|jwt/i.test(err.message || ''))) {
+            return signOutHere(sb);
+          }
+        }).catch(function () {}).then(function () { resolve(sb); });
       }
       if (window.supabase && window.supabase.createClient) return make();
       var s = document.createElement('script');
@@ -121,7 +152,7 @@
           if (res.error) throw new Error('Incorrect slip or password. Please try again.');
           return sb.from('members').select('slip, active').eq('slip', slip).maybeSingle().then(function (m) {
             if (!m.data || !m.data.active) {
-              return sb.auth.signOut().then(function () {
+              return signOutHere(sb).then(function () {
                 throw new Error('This slip\'s member access is not active. Please contact the marina office.');
               });
             }
@@ -179,7 +210,11 @@
   }
 
   // Shared with member-portal.html and reset-password.html.
-  window.MemberAuth = { getClient: getClient, openLogin: openModal, slipEmail: slipEmail };
+  window.MemberAuth = {
+    getClient: getClient, openLogin: openModal, slipEmail: slipEmail,
+    signOut: function () { return getClient().then(signOutHere, function () { clearLocalSession(); }); },
+    logOut: logOut
+  };
 
   function slipFromUser(user) {
     var s = (user.user_metadata && user.user_metadata.slip) || '';
@@ -191,9 +226,11 @@
   }
 
   function logOut() {
-    getClient().then(function (sb) { return sb.auth.signOut(); })
-      .catch(function () {})
-      .then(function () { window.location.href = 'index.html'; });
+    var btn = document.getElementById('memberBarLogout');
+    if (btn) { btn.disabled = true; btn.textContent = 'Logging out…'; }
+    getClient().then(signOutHere, function () { clearLocalSession(); })
+      .catch(function () { clearLocalSession(); })
+      .then(function () { window.location.replace('index.html'); });
   }
 
   // "Logged in as slip X" bar plus Log Out, shown on every page while signed in.
