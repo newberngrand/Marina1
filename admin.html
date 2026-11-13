@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=20261112g">
+<link rel="stylesheet" href="style.css?v=20261112h">
 </head>
 <body data-member-portal>
 
@@ -143,17 +143,33 @@
           </div>
           <p class="note" id="vrStatus" style="margin:0 0 6px"></p>
           <p class="vr-turnout" id="vrTurnout"></p>
+          <details class="vr-exclude">
+            <summary>Make slips ineligible for this vote (e.g. in arrears)</summary>
+            <form id="vrExForm" class="vr-exclude-form">
+              <label>Slips (separate with commas or spaces)
+                <input type="text" id="vrExSlips" placeholder="A12, B7, C30" autocapitalize="characters" spellcheck="false">
+              </label>
+              <label>Reason
+                <input type="text" id="vrExReason" value="In arrears" maxlength="100">
+              </label>
+              <button type="submit" class="btn-sm btn-primary-sm">Mark Ineligible</button>
+            </form>
+            <p class="note" style="margin:6px 0 0">Applies to this vote only. Slips that have already voted can't be made ineligible. You can also use the buttons in the list below, and Restore a slip at any time while voting is open.</p>
+            <div class="member-login-error" id="vrExError" hidden></div>
+            <div class="member-login-note" id="vrExDone" hidden></div>
+          </details>
           <div class="vr-filter">
             <input type="search" class="admin-search" id="vrSearch" placeholder="Search slip or owner">
             <select id="vrShow" class="admin-search" style="max-width:200px">
               <option value="all">All slips</option>
               <option value="voted">Voted</option>
               <option value="not">Not voted</option>
+              <option value="excluded">Ineligible</option>
             </select>
           </div>
           <div class="admin-table-wrap">
             <table class="admin-table vr-table">
-              <thead><tr><th>Slip</th><th>Owner</th><th>Vote</th><th>Cast</th></tr></thead>
+              <thead><tr><th>Slip</th><th>Owner</th><th>Vote</th><th>Cast</th><th></th></tr></thead>
               <tbody id="vrRows"></tbody>
               <tfoot id="vrTotals"></tfoot>
             </table>
@@ -287,8 +303,8 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=20261112g"></script>
-<script src="member-data.js?v=20261112g"></script>
-<script src="admin.js?v=20261112g"></script>
+<script src="member-login.js?v=20261112h"></script>
+<script src="member-data.js?v=20261112h"></script>
+<script src="admin.js?v=20261112h"></script>
 </body>
 </html>

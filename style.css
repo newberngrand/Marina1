@@ -466,6 +466,7 @@ nav.main-nav a.active {
 .vote-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .vote-tag.open { background: #1f6b3a; color: #fff; }
 .vote-tag.voted { background: #e6f3ee; color: #1f6b3a; }
+.vote-tag.ineligible { background: #fbe9e7; color: #9a3b2c; }
 a.vote-tag, a.badge { text-decoration: none; cursor: pointer; }
 a.vote-tag:hover, a.badge:hover { filter: brightness(0.92); text-decoration: none; }
 a.vote-tag.open { padding: 3px 10px; }
@@ -498,6 +499,13 @@ a.vote-tag.open { padding: 3px 10px; }
 .vr-bar { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; margin-top: 4px; max-width: 360px; }
 .vr-bar span { display: block; height: 100%; background: var(--gold); }
 .vr-filter { display: flex; gap: 10px; flex-wrap: wrap; }
+.vr-exclude { border: 1px solid #f1d3cd; background: #fdf6f4; border-radius: 8px; padding: 8px 14px; margin: 0 0 14px; }
+.vr-exclude summary { cursor: pointer; font-weight: 600; color: #9a3b2c; }
+.vr-exclude-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 10px; }
+.vr-exclude-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: 600; color: var(--navy); flex: 1 1 200px; }
+.vr-exclude-form input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-weight: 400; }
+.vr-exclude-form .btn-sm { padding: 8px 14px; }
+.ineligible-list { background: #fdf0ee; border-left: 4px solid #b3392f; padding: 10px 12px; border-radius: 6px; color: #6b231a; font-size: 0.92rem; margin-top: 10px; }
 .vr-table tfoot td { background: #f7f8fa; }
 .vr-total-head td { font-weight: 700; color: var(--navy); border-top: 2px solid var(--navy); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em; }
 .vr-total.lead td { background: #fff6e3; }

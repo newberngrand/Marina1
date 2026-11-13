@@ -60,18 +60,28 @@
 
     Promise.all([
       sb.rpc('my_slips'),
-      sb.from('votes').select('slip, choice, cast_at').eq('event_id', ev.id)
+      sb.from('votes').select('slip, choice, cast_at').eq('event_id', ev.id),
+      sb.from('vote_exclusions').select('slip, reason').eq('event_id', ev.id)
     ]).then(function (res) {
+      var excl = {};
+      (res[2].data || []).forEach(function (x) { excl[x.slip] = x.reason; });
       var all = (res[0].data && res[0].data.length) ? res[0].data : [{ slip: me.slip, owner_name: '', can_vote: true }];
-      var slips = all.filter(function (s) { return s.can_vote !== false; });
+      var ineligible = all.filter(function (s) { return s.can_vote !== false && excl[s.slip]; });
+      var slips = all.filter(function (s) { return s.can_vote !== false && !excl[s.slip]; });
       var nonVoting = all.filter(function (s) { return s.can_vote === false; });
       var votes = {};
       (res[1].data || []).forEach(function (v) { votes[v.slip] = v; });
-      if (!slips.length) {
+      var exclNote = ineligible.length ? '<div class="ineligible-list">' + ineligible.map(function (s) {
+        return 'Slip <strong>' + D.esc(s.slip) + '</strong> is not eligible to vote on this ballot (' + D.esc(excl[s.slip]) + ').';
+      }).join('<br>') + ' Please contact the marina office with any questions.</div>' : '';
+      if (!slips.length && ineligible.length) {
+        $('ballotBody').innerHTML = exclNote;
+      } else if (!slips.length) {
         $('ballotBody').innerHTML = '<p class="note">' + (nonVoting.length > 1 ? 'Your slips are non-voting slips' : 'Slip ' + D.esc(nonVoting[0].slip) + ' is a non-voting slip') +
           ', so there is no ballot to cast.</p>';
       } else {
         renderBallot(slips, votes, st);
+        if (exclNote) $('ballotBody').insertAdjacentHTML('beforeend', exclNote);
         if (nonVoting.length) {
           $('ballotBody').insertAdjacentHTML('beforeend', '<p class="note" style="margin:10px 0 0">Non-voting slip' + (nonVoting.length > 1 ? 's' : '') + ': ' +
             nonVoting.map(function (s) { return D.esc(s.slip); }).join(', ') + '.</p>');

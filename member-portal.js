@@ -84,8 +84,11 @@
     var st = D.voteState(ev);
     var tag = '';
     var href = 'event.html?id=' + ev.id + '#ballot';
-    if (!isAdmin && voted.total > 0) {
-      var n = voted[ev.id] || 0, total = voted.total;
+    var total = voted.total - (voted.excluded[ev.id] || 0);
+    if (!isAdmin && voted.total > 0 && total <= 0) {
+      tag = '<a class="vote-tag ineligible" href="' + href + '">Not eligible</a>';
+    } else if (!isAdmin && voted.total > 0) {
+      var n = voted[ev.id] || 0;
       if (n >= total) tag = '<a class="vote-tag voted" href="' + href + '">' + (total > 1 ? 'All slips voted' : 'You voted') + '</a>';
       else if (st === 'open') tag = '<a class="vote-tag open" href="' + href + '">' + (n ? n + ' of ' + total + ' slips voted &rsaquo;' : 'Vote now &rsaquo;') + '</a>';
       else if (n) tag = '<a class="vote-tag voted" href="' + href + '">' + n + ' of ' + total + ' slips voted</a>';
@@ -107,11 +110,13 @@
     Promise.all([
       sb.from('events').select('id, title, summary, event_type, starts_at, ends_at, location, vote_opens_at, vote_closes_at').eq('active', true),
       m.is_admin ? Promise.resolve({ data: [] }) : sb.from('votes').select('event_id, slip'),
-      m.is_admin ? Promise.resolve({ data: [] }) : sb.rpc('my_slips')
+      m.is_admin ? Promise.resolve({ data: [] }) : sb.rpc('my_slips'),
+      m.is_admin ? Promise.resolve({ data: [] }) : sb.from('vote_exclusions').select('event_id, slip')
     ]).then(function (res) {
         var r = res[0];
         var mySlips = res[2].data || [];
-        var voted = { total: mySlips.length ? mySlips.filter(function (s) { return s.can_vote; }).length : 1 };
+        var voted = { total: mySlips.length ? mySlips.filter(function (s) { return s.can_vote; }).length : 1, excluded: {} };
+        (res[3].data || []).forEach(function (x) { voted.excluded[x.event_id] = (voted.excluded[x.event_id] || 0) + 1; });
         (res[1].data || []).forEach(function (v) { voted[v.event_id] = (voted[v.event_id] || 0) + 1; });
         var isAdmin = m.is_admin;
         var list = r.data || [];

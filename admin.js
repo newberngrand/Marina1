@@ -208,67 +208,135 @@
     $('vrShow').addEventListener('change', drawResults);
     $('vrCsv').addEventListener('click', downloadCsv);
     $('vrPrint').addEventListener('click', printResults);
+    $('vrExForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var slips = $('vrExSlips').value.toUpperCase().split(/[\s,;]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+      slips = slips.filter(function (s, i) { return slips.indexOf(s) === i; });
+      if (!slips.length) return showErr($('vrExError'), 'Please type at least one slip.');
+      excludeSlips(slips, $('vrExReason').value.trim() || 'In arrears');
+    });
+    $('vrRows').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-ex]');
+      if (!b || !current) return;
+      var slip = b.getAttribute('data-slip');
+      if (b.getAttribute('data-ex') === 'add') {
+        var reason = prompt('Make slip ' + slip + ' ineligible for "' + current.title + '".\n\nReason:', 'In arrears');
+        if (reason === null) return;
+        excludeSlips([slip], reason.trim() || 'In arrears');
+      } else {
+        if (!confirm('Restore slip ' + slip + ' so it can vote on "' + current.title + '"?')) return;
+        sb.from('vote_exclusions').delete().eq('event_id', current.id).eq('slip', slip).then(function (r) {
+          if (r.error) return showErr($('vrExError'), r.error.message);
+          showResults(current);
+        });
+      }
+    });
+  }
+
+  function excludeSlips(slips, reason) {
+    $('vrExError').hidden = true; $('vrExDone').hidden = true;
+    var known = {}, problems = [];
+    resultRows.forEach(function (r) { known[r.slip] = r; });
+    var ok = slips.filter(function (s) {
+      if (!known[s]) { problems.push(s + ' (not a voting slip)'); return false; }
+      if (known[s].vote) { problems.push(s + ' (already voted)'); return false; }
+      return true;
+    });
+    if (!ok.length) return showErr($('vrExError'), 'Nothing marked: ' + problems.join(', ') + '.');
+    sb.from('vote_exclusions').upsert(ok.map(function (s) { return { event_id: current.id, slip: s, reason: reason }; }))
+      .then(function (r) {
+        if (r.error) return showErr($('vrExError'), r.error.message);
+        $('vrExDone').textContent = 'Marked ineligible (' + reason + '): ' + ok.join(', ') + '.' +
+          (problems.length ? ' Skipped: ' + problems.join(', ') + '.' : '');
+        $('vrExDone').hidden = false;
+        $('vrExSlips').value = '';
+        showResults(current);
+      });
   }
 
   function showResults(ev) {
+    var same = current && current.id === ev.id;
     current = ev;
     $('vrTitle').textContent = 'Results: ' + ev.title;
     $('vrStatus').textContent = D.voteWindowText(ev) + '.';
-    $('vrRows').innerHTML = '<tr><td colspan="4">Loading&hellip;</td></tr>';
-    $('vrTotals').innerHTML = '';
+    if (!same) {
+      $('vrRows').innerHTML = '<tr><td colspan="5">Loading&hellip;</td></tr>';
+      $('vrTotals').innerHTML = '';
+      $('vrExError').hidden = true; $('vrExDone').hidden = true;
+    }
     $('voteResults').hidden = false;
-    $('voteResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!same) $('voteResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
     Promise.all([
       sb.from('members').select('slip, owner_name, active, is_admin, can_vote').eq('is_admin', false),
-      sb.from('votes').select('slip, choice, cast_at').eq('event_id', ev.id)
+      sb.from('votes').select('slip, choice, cast_at').eq('event_id', ev.id),
+      sb.from('vote_exclusions').select('slip, reason').eq('event_id', ev.id)
     ]).then(function (r) {
-      var votes = {};
+      var votes = {}, excl = {};
       (r[1].data || []).forEach(function (v) { votes[v.slip] = v; });
+      (r[2].data || []).forEach(function (x) { excl[x.slip] = x.reason; });
       resultRows = (r[0].data || [])
         .filter(function (m) { return (m.active && m.can_vote) || votes[m.slip]; })
         .sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); })
-        .map(function (m) { return { slip: m.slip, owner: m.owner_name, vote: votes[m.slip] || null }; });
+        .map(function (m) { return { slip: m.slip, owner: m.owner_name, vote: votes[m.slip] || null, excluded: excl[m.slip] || null }; });
       drawResults();
     });
   }
 
   function drawResults() {
     if (!current) return;
+    var open = D.voteState(current) !== 'closed';
     var f = $('vrSearch').value.toLowerCase(), show = $('vrShow').value;
     var rows = resultRows.filter(function (r) {
       if (show === 'voted' && !r.vote) return false;
-      if (show === 'not' && r.vote) return false;
+      if (show === 'not' && (r.vote || r.excluded)) return false;
+      if (show === 'excluded' && !r.excluded) return false;
       return !f || (r.slip + ' ' + r.owner).toLowerCase().indexOf(f) !== -1;
     });
     $('vrRows').innerHTML = rows.length ? rows.map(function (r) {
-      return '<tr><td><strong>' + D.esc(r.slip) + '</strong></td><td>' + D.esc(r.owner) + '</td>' +
-        '<td>' + (r.vote ? '<span class="vote-choice">' + D.esc(r.vote.choice) + '</span>' : '<span class="note">Not voted</span>') + '</td>' +
-        '<td class="note">' + (r.vote ? D.esc(D.fmtWhen(r.vote.cast_at)) : '') + '</td></tr>';
-    }).join('') : '<tr><td colspan="4" class="note">No slips match.</td></tr>';
+      var status = r.vote ? '<span class="vote-choice">' + D.esc(r.vote.choice) + '</span>'
+        : r.excluded ? '<span class="inactive">Ineligible</span> <span class="note">' + D.esc(r.excluded) + '</span>'
+        : '<span class="note">Not voted</span>';
+      var action = r.vote ? ''
+        : r.excluded ? '<button type="button" class="btn-sm" data-ex="remove" data-slip="' + D.esc(r.slip) + '">Restore</button>'
+        : (open ? '<button type="button" class="btn-sm btn-danger" data-ex="add" data-slip="' + D.esc(r.slip) + '">Ineligible</button>' : '');
+      return '<tr' + (r.excluded ? ' class="row-inactive"' : '') + '><td><strong>' + D.esc(r.slip) + '</strong></td><td>' + D.esc(r.owner) + '</td>' +
+        '<td>' + status + '</td>' +
+        '<td class="note">' + (r.vote ? D.esc(D.fmtWhen(r.vote.cast_at)) : '') + '</td>' +
+        '<td class="row-actions">' + action + '</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="note">No slips match.</td></tr>';
 
-    // Running totals (always for all slips, not just the filtered rows)
+    // Running totals (all slips, not just the filtered rows). Ineligible slips don't count.
     var choices = D.ballotChoices(current);
     var counts = {}; choices.forEach(function (c) { counts[c] = 0; });
-    var cast = 0;
-    resultRows.forEach(function (r) { if (r.vote) { cast++; counts[r.vote.choice] = (counts[r.vote.choice] || 0) + 1; } });
-    var eligible = resultRows.length;
+    var cast = 0, excluded = 0;
+    resultRows.forEach(function (r) {
+      if (r.excluded) { excluded++; return; }
+      if (r.vote) { cast++; counts[r.vote.choice] = (counts[r.vote.choice] || 0) + 1; }
+    });
+    var eligible = resultRows.length - excluded;
     function pct(n, d) { return d ? (Math.round(n * 1000 / d) / 10) + '%' : '–'; }
     var maxCount = Math.max.apply(null, choices.map(function (c) { return counts[c]; }));
-    $('vrTurnout').innerHTML = '<strong>' + cast + '</strong> of <strong>' + eligible + '</strong> voting slips have voted &middot; <strong>' +
-      pct(cast, eligible) + '</strong> turnout<br>' +
+    $('vrTurnout').innerHTML = '<strong>' + cast + '</strong> of <strong>' + eligible + '</strong> eligible slips have voted &middot; <strong>' +
+      pct(cast, eligible) + '</strong> turnout' +
+      (excluded ? ' &middot; <span class="inactive">' + excluded + ' ineligible</span>' : '') + '<br>' +
       choices.map(function (c) {
         return D.esc(c) + ': <strong>' + counts[c] + '</strong> (' + pct(counts[c], eligible) + ')';
       }).join(' &middot; ');
     $('vrTotals').innerHTML =
-      '<tr class="vr-total-head"><td>Running total</td><td>Votes</td><td colspan="2">% of all ' + eligible + ' voting slips</td></tr>' +
+      '<tr class="vr-total-head"><td>Running total</td><td>Votes</td><td colspan="3">% of all ' + eligible + ' eligible slips</td></tr>' +
       choices.map(function (c) {
         var lead = cast && counts[c] === maxCount;
         return '<tr class="vr-total' + (lead ? ' lead' : '') + '"><td><strong>' + D.esc(c) + '</strong></td>' +
           '<td><strong>' + counts[c] + '</strong></td>' +
-          '<td colspan="2"><strong>' + pct(counts[c], eligible) + '</strong><div class="vr-bar"><span style="width:' + (eligible ? counts[c] * 100 / eligible : 0) + '%"></span></div></td></tr>';
+          '<td colspan="3"><strong>' + pct(counts[c], eligible) + '</strong><div class="vr-bar"><span style="width:' + (eligible ? counts[c] * 100 / eligible : 0) + '%"></span></div></td></tr>';
       }).join('') +
-      '<tr class="vr-total"><td>Voted</td><td><strong>' + cast + '</strong></td><td colspan="2"><strong>' + pct(cast, eligible) + '</strong></td></tr>' +
-      '<tr class="vr-total"><td>Not yet voted</td><td>' + (eligible - cast) + '</td><td colspan="2">' + pct(eligible - cast, eligible) + '</td></tr>';
+      '<tr class="vr-total"><td>Voted</td><td><strong>' + cast + '</strong></td><td colspan="3"><strong>' + pct(cast, eligible) + '</strong></td></tr>' +
+      '<tr class="vr-total"><td>Not yet voted</td><td>' + (eligible - cast) + '</td><td colspan="3">' + pct(eligible - cast, eligible) + '</td></tr>' +
+      (excluded ? '<tr class="vr-total"><td>Ineligible (not counted)</td><td>' + excluded + '</td><td colspan="3"></td></tr>' : '');
+  }
+
+  function rowStatus(r) {
+    return r.vote ? r.vote.choice : r.excluded ? 'Ineligible: ' + r.excluded : 'Not voted';
   }
 
   function downloadCsv() {
@@ -276,7 +344,7 @@
     function q(s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; }
     var lines = [['Slip', 'Owner', 'Vote', 'Cast at (Eastern)'].map(q).join(',')];
     resultRows.forEach(function (r) {
-      lines.push([r.slip, r.owner, r.vote ? r.vote.choice : 'Not voted', r.vote ? D.fmtWhen(r.vote.cast_at) : ''].map(q).join(','));
+      lines.push([r.slip, r.owner, rowStatus(r), r.vote ? D.fmtWhen(r.vote.cast_at) : ''].map(q).join(','));
     });
     var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
@@ -294,9 +362,9 @@
       '<style>body{font-family:Arial,sans-serif;margin:24px;color:#111}table{border-collapse:collapse;width:100%;font-size:12px}' +
       'td,th{border-bottom:1px solid #ccc;padding:4px 6px;text-align:left}tfoot td{font-weight:bold;border-top:2px solid #000}.vr-bar{display:none}</style></head><body>' +
       '<h2>' + D.esc(current.title) + '</h2><p>' + D.esc(D.voteWindowText(current)) + '. Printed ' + D.esc(D.fmtWhen(new Date().toISOString())) + '.</p>' +
-      '<table><thead><tr><th>Slip</th><th>Owner</th><th>Vote</th><th>Cast</th></tr></thead><tbody>' +
+      '<table><thead><tr><th>Slip</th><th>Owner</th><th>Vote</th><th>Cast</th><th></th></tr></thead><tbody>' +
       resultRows.map(function (r) {
-        return '<tr><td>' + D.esc(r.slip) + '</td><td>' + D.esc(r.owner) + '</td><td>' + (r.vote ? D.esc(r.vote.choice) : '-') + '</td><td>' + (r.vote ? D.esc(D.fmtWhen(r.vote.cast_at)) : '') + '</td></tr>';
+        return '<tr><td>' + D.esc(r.slip) + '</td><td>' + D.esc(r.owner) + '</td><td>' + D.esc(rowStatus(r)) + '</td><td>' + (r.vote ? D.esc(D.fmtWhen(r.vote.cast_at)) : '') + '</td><td></td></tr>';
       }).join('') + '</tbody><tfoot>' + $('vrTotals').innerHTML + '</tfoot></table></body></html>');
     w.document.close();
     w.focus();
@@ -475,7 +543,7 @@
       memRows = r[0].data.sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); });
       var voting = memRows.filter(function (m) { return m.active && m.can_vote && !m.is_admin; }).length;
       var noEmail = memRows.filter(function (m) { return !m.is_admin && !m.email; }).length;
-      $('memCount').textContent = (memRows.length - 1) + ' slips on file · ' + voting + ' voting · ' + noEmail + ' with no email. Click Edit to change an owner, email, note, status or password.';
+      $('memCount').textContent = memRows.filter(function (m) { return !m.is_admin; }).length + ' slips on file · ' + voting + ' voting · ' + noEmail + ' with no email. Click Edit to change an owner, email, note, status or password.';
       drawMembers();
     });
   }
