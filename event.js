@@ -226,7 +226,7 @@
       : 'Sign-up closed' + (ev.signup_closes_at ? ' ' + D.fmtWhen(ev.signup_closes_at) : '') + '.';
     $('signupError').hidden = true;
 
-    var mine = me && !me.is_admin
+    var mine = me
       ? Promise.all([
           sb.from('event_signups').select('*').eq('event_id', ev.id).eq('slip', me.slip).maybeSingle(),
           sb.from('members').select('owner_name, email').eq('slip', me.slip).maybeSingle()
@@ -235,10 +235,12 @@
     mine.then(function (res) {
       var entry = res[0].data, profile = res[1].data || {};
       if (!me) $('signupBody').innerHTML = '<p class="note">Your slip could not be found.</p>';
-      else if (me.is_admin) $('signupBody').innerHTML = '<p class="note">Admin accounts don\'t sign up. The full list with email and phone numbers is on the <a href="admin.html">Admin page</a> (Sign-ups button).</p>';
       else if (entry) showMyEntry(entry, open);
       else if (open) showSignupForm(null, profile);
       else $('signupBody').innerHTML = '<p>Sign-up has closed. Slip <strong>' + D.esc(me.slip) + '</strong> did not sign up.</p>';
+      if (me && me.is_admin) {
+        $('signupBody').insertAdjacentHTML('beforeend', '<p class="note" style="margin:10px 0 0">Admin: the full list with email and phone numbers is on the <a href="admin.html">Admin page</a> (Sign-ups button).</p>');
+      }
       loadSignupList();
       if (location.hash === '#signup') {
         $('signupCard').scrollIntoView({ behavior: 'smooth', block: 'start' });

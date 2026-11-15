@@ -99,7 +99,7 @@
   }
 
   function signupTag(ev, voted, isAdmin) {
-    if (!ev.signup_enabled || isAdmin) return '';
+    if (!ev.signup_enabled) return '';
     var href = 'event.html?id=' + ev.id + '#signup';
     var open = !ev.signup_closes_at || new Date(ev.signup_closes_at) > new Date();
     if (voted.signedUp && voted.signedUp[ev.id]) return '<div class="vote-state"><a class="vote-tag signup" href="' + href + '">You\'re signed up &#10003;</a></div>';
@@ -125,7 +125,7 @@
       m.is_admin ? Promise.resolve({ data: [] }) : sb.from('votes').select('event_id, slip'),
       m.is_admin ? Promise.resolve({ data: [] }) : sb.rpc('my_slips'),
       m.is_admin ? Promise.resolve({ data: [] }) : sb.from('vote_exclusions').select('event_id, slip'),
-      m.is_admin ? Promise.resolve({ data: [] }) : sb.from('event_signups').select('event_id')
+      sb.from('event_signups').select('event_id').eq('slip', m.slip)
     ]).then(function (res) {
         var r = res[0];
         var mySlips = res[2].data || [];
