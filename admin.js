@@ -30,6 +30,7 @@
         setupDocs();
         loadMembers();
         setupLog();
+        setupGallery();
       });
     }).catch(function (e) {
       $('adminLoading').textContent = e.message || 'Something went wrong.';
@@ -530,6 +531,143 @@
     });
   }
 
+  /* ---------- Gallery photos ---------- */
+  var galPhotos = [], galWired = false;
+
+  function setupGallery() {
+    if (galWired) return;
+    galWired = true;
+    $('galForm').addEventListener('submit', uploadPhotos);
+    $('galList').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-gal]');
+      if (!b) return;
+      var p = galPhotos.find(function (x) { return x.id === b.getAttribute('data-id'); });
+      if (!p) return;
+      var act = b.getAttribute('data-gal');
+      if (act === 'up' || act === 'down') movePhoto(p, act === 'up' ? -1 : 1);
+      if (act === 'toggle') sb.from('gallery_photos').update({ active: !p.active }).eq('id', p.id).then(loadGallery);
+      if (act === 'save') {
+        var text = document.querySelector('textarea[data-cap="' + p.id + '"]').value.trim();
+        sb.from('gallery_photos').update({ caption: text }).eq('id', p.id).then(function (r) {
+          if (r.error) return alert(r.error.message);
+          b.textContent = 'Saved ✓';
+          setTimeout(function () { b.textContent = 'Save description'; }, 1500);
+          p.caption = text;
+        });
+      }
+      if (act === 'delete' && confirm('Delete this photo from the gallery? This cannot be undone.\n\nTip: choose Hide instead to just take it off the Gallery page.')) {
+        var gone = p.storage_path ? sb.storage.from('gallery').remove([p.storage_path]) : Promise.resolve();
+        gone.then(function () { return sb.from('gallery_photos').delete().eq('id', p.id); }).then(loadGallery);
+      }
+    });
+    loadGallery();
+  }
+
+  function loadGallery() {
+    return sb.from('gallery_photos').select('*').order('sort_order').order('created_at').then(function (r) {
+      galPhotos = r.data || [];
+      var shown = galPhotos.filter(function (p) { return p.active; }).length;
+      $('galCount').textContent = galPhotos.length + ' photos · ' + shown + ' showing on the Gallery page';
+      $('galList').innerHTML = galPhotos.length ? galPhotos.map(function (p, i) {
+        return '<div class="gal-card' + (p.active ? '' : ' hidden-photo') + '">' +
+          '<div class="gal-thumb"><img src="' + D.esc(p.src) + '" alt="" loading="lazy">' +
+            '<span class="gal-pos">' + (i + 1) + '</span>' + (p.active ? '' : '<span class="gal-flag">Hidden</span>') + '</div>' +
+          '<textarea rows="3" maxlength="300" data-cap="' + p.id + '">' + D.esc(p.caption) + '</textarea>' +
+          '<div class="gal-actions">' +
+            '<button type="button" class="btn-sm" data-gal="up" data-id="' + p.id + '"' + (i === 0 ? ' disabled' : '') + ' title="Move earlier">&#8593;</button>' +
+            '<button type="button" class="btn-sm" data-gal="down" data-id="' + p.id + '"' + (i === galPhotos.length - 1 ? ' disabled' : '') + ' title="Move later">&#8595;</button>' +
+            '<button type="button" class="btn-sm btn-primary-sm" data-gal="save" data-id="' + p.id + '">Save description</button>' +
+            '<button type="button" class="btn-sm" data-gal="toggle" data-id="' + p.id + '">' + (p.active ? 'Hide' : 'Show') + '</button>' +
+            '<button type="button" class="btn-sm btn-danger" data-gal="delete" data-id="' + p.id + '">Delete</button>' +
+          '</div></div>';
+      }).join('') : '<p class="note">No photos yet.</p>';
+    });
+  }
+
+  function movePhoto(p, dir) {
+    var i = galPhotos.indexOf(p), j = i + dir;
+    if (j < 0 || j >= galPhotos.length) return;
+    var order = galPhotos.slice();
+    order.splice(j, 0, order.splice(i, 1)[0]);
+    var updates = [];
+    order.forEach(function (x, k) {
+      var want = (k + 1) * 10;
+      if (x.sort_order !== want) updates.push(sb.from('gallery_photos').update({ sort_order: want }).eq('id', x.id));
+    });
+    Promise.all(updates).then(loadGallery);
+  }
+
+  // Shrink big photos (longest side 2400px) before upload so the gallery loads fast.
+  function shrink(file) {
+    return new Promise(function (resolve) {
+      if (file.type === 'image/gif') return resolve({ blob: file, type: file.type, ext: 'gif' });
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var max = 2400, w = img.naturalWidth, h = img.naturalHeight;
+        var scale = Math.min(1, max / Math.max(w, h));
+        if (scale === 1 && file.size < 1.5 * 1024 * 1024) {
+          URL.revokeObjectURL(url);
+          return resolve({ blob: file, type: file.type, ext: (file.name.split('.').pop() || 'jpg').toLowerCase(), w: w, h: h });
+        }
+        var c = document.createElement('canvas');
+        c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        var type = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        c.toBlob(function (b) { resolve({ blob: b || file, type: type, ext: type === 'image/png' ? 'png' : 'jpg', w: c.width, h: c.height }); }, type, 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve({ blob: file, type: file.type, ext: 'jpg' }); };
+      img.src = url;
+    });
+  }
+
+  function uploadPhotos(e) {
+    e.preventDefault();
+    var files = Array.prototype.slice.call($('galFiles').files);
+    var err = $('galError'), done = $('galDone');
+    err.hidden = true; done.hidden = true;
+    if (!files.length) return showErr(err, 'Please choose at least one photo.');
+    var bad = files.filter(function (f) { return !/^image\/(jpeg|png|webp|gif)$/.test(f.type); });
+    if (bad.length) return showErr(err, 'These aren\'t JPG, PNG, WebP or GIF photos: ' + bad.map(function (f) { return f.name; }).join(', '));
+    var btn = $('galUpload'); btn.disabled = true;
+    var caption = $('galCaption').value.trim();
+    var nextOrder = galPhotos.reduce(function (m, p) { return Math.max(m, p.sort_order); }, 0);
+    var cfg = MemberAuth.config, added = 0, failed = [];
+
+    files.reduce(function (chain, f, k) {
+      return chain.then(function () {
+        btn.textContent = 'Uploading ' + (k + 1) + ' of ' + files.length + '…';
+        return shrink(f).then(function (s) {
+          var base = f.name.replace(/\.[^.]+$/, '');
+          var path = new Date().getFullYear() + '/' + Date.now() + '-' + base.normalize('NFKD').replace(/[^\w-]+/g, '-').slice(0, 60) + '.' + s.ext;
+          return sb.storage.from('gallery').upload(path, s.blob, { contentType: s.type, upsert: false }).then(function (up) {
+            if (up.error) throw new Error(up.error.message);
+            nextOrder += 10;
+            return sb.from('gallery_photos').insert({
+              src: cfg.url + '/storage/v1/object/public/gallery/' + path,
+              storage_path: path,
+              caption: caption && files.length === 1 ? caption : (caption ? caption + ' (' + (k + 1) + ')' : base.replace(/[_-]+/g, ' ')),
+              sort_order: nextOrder, width: s.w || null, height: s.h || null, size_bytes: s.blob.size
+            }).then(function (ins) {
+              if (ins.error) { sb.storage.from('gallery').remove([path]); throw new Error(ins.error.message); }
+              added++;
+            });
+          });
+        }).catch(function (ex) { failed.push(f.name + ' (' + ex.message + ')'); });
+      });
+    }, Promise.resolve()).then(function () {
+      btn.disabled = false; btn.textContent = 'Upload';
+      if (added) {
+        done.textContent = added + ' photo' + (added > 1 ? 's' : '') + ' added to the end of the gallery.';
+        done.hidden = false;
+        $('galForm').reset();
+      }
+      if (failed.length) showErr(err, 'Not uploaded: ' + failed.join('; '));
+      loadGallery();
+    });
+  }
+
   /* ---------- Activity log ---------- */
   var LOG_ACTIONS = [
     ['Member activity', [
@@ -543,7 +681,8 @@
       ['event_created', 'Event created'], ['event_updated', 'Event updated'], ['event_deleted', 'Event deleted'],
       ['document_uploaded', 'Document uploaded'], ['document_updated', 'Document updated'], ['document_deleted', 'Document deleted'],
       ['member_added', 'Slip added'], ['member_updated', 'Slip updated'], ['member_note_changed', 'Admin note changed'],
-      ['password_set', 'Password set by admin'], ['ineligible_marked', 'Marked ineligible'], ['ineligible_removed', 'Eligibility restored']
+      ['password_set', 'Password set by admin'], ['ineligible_marked', 'Marked ineligible'], ['ineligible_removed', 'Eligibility restored'],
+      ['photo_added', 'Gallery photo added'], ['photo_updated', 'Gallery photo updated'], ['photo_deleted', 'Gallery photo deleted']
     ]],
     ['Public website', [
       ['page_view', 'Page view'], ['slip_search', 'Slip finder search'], ['reserve_click', 'Reserve button click']

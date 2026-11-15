@@ -272,7 +272,8 @@
     getClient: getClient, openLogin: openModal, slipEmail: slipEmail,
     signOut: function () { return getClient().then(signOutHere, function () { clearLocalSession(); }); },
     logOut: logOut,
-    track: track
+    track: track,
+    config: { url: SUPABASE_URL, key: SUPABASE_KEY }
   };
 
   function slipFromUser(user) {

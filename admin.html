@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=20261115c">
+<link rel="stylesheet" href="style.css?v=20261115d">
 </head>
 <body data-member-portal>
 
@@ -57,6 +57,7 @@
       <div class="admin-tabs" role="tablist">
         <button type="button" class="admin-tab active" data-tab="events" role="tab">Current Events</button>
         <button type="button" class="admin-tab" data-tab="docs" role="tab">Documents</button>
+        <button type="button" class="admin-tab" data-tab="gallery" role="tab">Gallery</button>
         <button type="button" class="admin-tab" data-tab="members" role="tab">Members</button>
         <button type="button" class="admin-tab" data-tab="log" role="tab">Activity Log</button>
       </div>
@@ -223,6 +224,35 @@
         <div id="docList">Loading&hellip;</div>
       </div>
 
+      <!-- GALLERY -->
+      <div class="admin-panel" data-panel="gallery" hidden>
+        <div class="admin-panel-head">
+          <h2>Gallery Photos</h2>
+          <a href="gallery.html" target="_blank" rel="noopener" class="btn-sm">View the Gallery page &#8599;</a>
+        </div>
+
+        <form class="portal-card admin-form" id="galForm">
+          <h3>Add photos</h3>
+          <div class="admin-grid">
+            <label class="full">Photos (JPG, PNG, WebP or GIF; you can pick several at once)
+              <input type="file" id="galFiles" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
+            </label>
+            <label class="full">Description (shown under the photo when viewed full size; leave blank to use the file name, and edit it below any time)
+              <input type="text" id="galCaption" maxlength="300" placeholder="e.g. Sunrise over C Dock">
+            </label>
+          </div>
+          <p class="note" style="margin:8px 0 0">Large photos are resized automatically so the page stays quick. New photos go at the end; use the arrows below to reorder.</p>
+          <div class="member-login-error" id="galError" hidden></div>
+          <div class="member-login-note" id="galDone" hidden></div>
+          <div class="portal-actions">
+            <button type="submit" class="btn btn-gold" id="galUpload">Upload</button>
+          </div>
+        </form>
+
+        <p class="note" id="galCount"></p>
+        <div class="gal-admin-grid" id="galList">Loading&hellip;</div>
+      </div>
+
       <!-- ACTIVITY LOG -->
       <div class="admin-panel" data-panel="log" hidden>
         <div class="admin-panel-head">
@@ -357,8 +387,8 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=20261115c"></script>
-<script src="member-data.js?v=20261115c"></script>
-<script src="admin.js?v=20261115c"></script>
+<script src="member-login.js?v=20261115d"></script>
+<script src="member-data.js?v=20261115d"></script>
+<script src="admin.js?v=20261115d"></script>
 </body>
 </html>

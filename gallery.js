@@ -1,9 +1,17 @@
-/* Gallery viewer: click/tap a photo to see it full size.
-   Arrows or swipe to move between photos; Esc, the X, or a click outside closes it. */
+/* Gallery: photos come from the database (managed on the Admin page), with
+   the photos written into the page as a fallback. Click/tap a photo to see it
+   full size; arrows or swipe move between photos; Esc, X or outside click closes. */
 (function () {
-  var imgs = Array.prototype.slice.call(document.querySelectorAll('.gallery-grid img'));
-  if (!imgs.length) return;
+  var grid = document.querySelector('.gallery-grid');
+  if (!grid) return;
 
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  /* ---------- Viewer ---------- */
   var box = document.createElement('div');
   box.className = 'lightbox';
   box.setAttribute('role', 'dialog');
@@ -22,7 +30,19 @@
   var count = box.querySelector('.lb-count');
   var index = 0, lastFocus = null;
 
+  function photos() { return Array.prototype.slice.call(grid.querySelectorAll('img')); }
+
+  function prepare() {
+    photos().forEach(function (img) {
+      img.tabIndex = 0;
+      img.setAttribute('role', 'button');
+      img.setAttribute('aria-label', 'View full size: ' + img.alt);
+    });
+  }
+
   function show(i) {
+    var imgs = photos();
+    if (!imgs.length) return;
     index = (i + imgs.length) % imgs.length;
     var src = imgs[index];
     big.src = src.currentSrc || src.src;
@@ -43,16 +63,14 @@
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
-  imgs.forEach(function (img, i) {
-    img.tabIndex = 0;
-    img.setAttribute('role', 'button');
-    img.setAttribute('aria-label', 'View full size: ' + img.alt);
-    img.addEventListener('click', function () { open(i); });
-    img.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(i); }
-    });
+  grid.addEventListener('click', function (e) {
+    var img = e.target.closest('img');
+    if (img) open(photos().indexOf(img));
   });
-
+  grid.addEventListener('keydown', function (e) {
+    var img = e.target.closest('img');
+    if (img && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(photos().indexOf(img)); }
+  });
   box.querySelector('.lb-close').addEventListener('click', close);
   box.querySelector('.lb-prev').addEventListener('click', function () { show(index - 1); });
   box.querySelector('.lb-next').addEventListener('click', function () { show(index + 1); });
@@ -65,8 +83,6 @@
     else if (e.key === 'ArrowLeft') show(index - 1);
     else if (e.key === 'ArrowRight') show(index + 1);
   });
-
-  // Swipe left/right on phones.
   var startX = null, startY = null;
   box.addEventListener('touchstart', function (e) {
     if (e.touches.length === 1) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }
@@ -77,4 +93,21 @@
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) show(index + (dx < 0 ? 1 : -1));
     startX = startY = null;
   });
+
+  prepare();
+
+  /* ---------- Load the current photo list ---------- */
+  var cfg = window.MemberAuth && MemberAuth.config;
+  if (!cfg) return;
+  fetch(cfg.url + '/rest/v1/gallery_photos?select=src,caption&active=eq.true&order=sort_order.asc,created_at.asc', {
+    headers: { apikey: cfg.key }
+  }).then(function (r) { return r.ok ? r.json() : null; }).then(function (rows) {
+    if (!rows || !rows.length) return;
+    grid.innerHTML = rows.map(function (p) {
+      return '<figure class="photo-frame"><img src="' + esc(p.src) + '" alt="' + esc(p.caption) + '" loading="lazy"></figure>';
+    }).join('');
+    var line = document.querySelector('.gallery-caption');
+    if (line) line.hidden = true;
+    prepare();
+  }).catch(function () {});
 })();
