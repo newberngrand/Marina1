@@ -613,6 +613,9 @@ a.vote-tag.open { padding: 3px 10px; }
 .vr-bar { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; margin-top: 4px; max-width: 360px; }
 .vr-bar span { display: block; height: 100%; background: var(--gold); }
 .vr-filter { display: flex; gap: 10px; flex-wrap: wrap; }
+.attach-upload { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; padding: 8px 14px; font-weight: 600; }
+.attach-box .reason-select { flex: 1 1 260px; }
+.at-title { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--navy); }
 .excl-box { margin-top: 16px; padding-top: 14px; border-top: 1px dashed #e3c98f; }
 .excl-box h4 { margin: 0 0 4px; color: var(--navy); font-size: 0.98rem; }
 .excl-add { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }

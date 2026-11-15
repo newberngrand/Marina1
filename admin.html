@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611151135">
+<link rel="stylesheet" href="style.css?v=202611151147">
 </head>
 <body data-member-portal>
 
@@ -153,6 +153,18 @@
             <label class="full">Full details (shown on the event page; web links become clickable)
               <textarea id="evDetails" rows="8" placeholder="Agenda, what to bring, how to attend, etc."></textarea>
             </label>
+            <fieldset class="full ballot-box attach-box" id="evAttach">
+              <legend>Documents for review</legend>
+              <p class="note" style="margin:0 0 8px">Members can open these from the event page (e.g. the budget for a vote, or the notice itself). Upload files, or attach something already in Marina Documents.</p>
+              <div class="excl-add">
+                <label class="btn-sm attach-upload">&#128206; Upload files
+                  <input type="file" id="atFiles" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp" hidden>
+                </label>
+                <select id="atLibrary" class="reason-select" aria-label="Attach from Marina Documents"></select>
+              </div>
+              <div class="member-login-error" id="atError" hidden></div>
+              <div class="admin-table-wrap"><table class="admin-table excl-table"><tbody id="atRows"></tbody></table></div>
+            </fieldset>
             <label class="check full"><input type="checkbox" id="evActive" checked> Active (visible to members)</label>
           </div>
           <div class="member-login-error" id="evError" hidden></div>
@@ -465,9 +477,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611151135"></script>
-<script src="member-data.js?v=202611151135"></script>
-<script src="video-utils.js?v=202611151135"></script>
-<script src="admin.js?v=202611151135"></script>
+<script src="member-login.js?v=202611151147"></script>
+<script src="member-data.js?v=202611151147"></script>
+<script src="video-utils.js?v=202611151147"></script>
+<script src="admin.js?v=202611151147"></script>
 </body>
 </html>

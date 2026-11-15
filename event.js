@@ -22,6 +22,7 @@
         if (!ev) { $('evStatus').textContent = 'This event is no longer available.'; return; }
         renderEvent();
         MemberAuth.track('view_event', { type: 'event', id: ev.id, label: ev.title, details: { type: ev.event_type } });
+        loadAttachments();
         if (ev.event_type === 'vote') loadBallot();
         if (ev.signup_enabled) loadSignup();
       });
@@ -210,6 +211,25 @@
     $('vcBack').addEventListener('click', close);
     $('vcCast').addEventListener('click', cast);
     document.addEventListener('keydown', onKey);
+  }
+
+  /* ---------- Documents for review ---------- */
+  function loadAttachments() {
+    sb.from('event_attachments').select('id, title, file_name, storage_path, size_bytes').eq('event_id', ev.id).order('sort_order').then(function (r) {
+      var list = r.data || [];
+      if (!list.length) return;
+      $('attachCard').hidden = false;
+      $('attachList').innerHTML = list.map(function (a, i) {
+        return '<li><button type="button" class="doc-link" data-i="' + i + '">' + D.esc(a.title) + '</button>' +
+          ' <span class="note">&middot; ' + D.esc((a.file_name.split('.').pop() || '').toUpperCase()) + (a.size_bytes ? ', ' + D.fileSize(a.size_bytes) : '') + '</span></li>';
+      }).join('');
+      $('attachList').addEventListener('click', function (e) {
+        var b = e.target.closest('.doc-link');
+        if (!b) return;
+        var a = list[+b.getAttribute('data-i')];
+        D.openDocument(sb, a.storage_path, a.file_name, { id: a.id, title: a.title + ' (' + ev.title + ')' });
+      });
+    });
   }
 
   /* ---------- Sign-up sheet ---------- */

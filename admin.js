@@ -67,6 +67,7 @@
     $('evSignupOn').addEventListener('change', updateBallotBox);
     setupResults();
     setupExclusions();
+    setupAttachments();
     setupSignups();
     $('evRows').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-act]');
@@ -79,7 +80,16 @@
       if (act === 'signups') showSignups(ev);
       if (act === 'toggle') sb.from('events').update({ active: !ev.active }).eq('id', ev.id).then(loadEvents);
       if (act === 'delete' && confirm('Delete "' + ev.title + '"? This cannot be undone.\n\nTip: choose Deactivate instead to just hide it from members.')) {
-        sb.from('events').delete().eq('id', ev.id).then(function (r) {
+        // Files uploaded just for this event go with it (linked library documents stay).
+        sb.from('event_attachments').select('storage_path, document_id').eq('event_id', ev.id).then(function (a) {
+          return sb.from('events').delete().eq('id', ev.id).then(function (r) {
+            if (!r.error) {
+              var own = (a.data || []).filter(function (x) { return !x.document_id; }).map(function (x) { return x.storage_path; });
+              if (own.length) sb.storage.from('marina-docs').remove(own);
+            }
+            return r;
+          });
+        }).then(function (r) {
           if (r.error) alert(r.error.code === '23503'
             ? 'This vote already has ballots cast, so it can\'t be deleted (the voting record is kept). Use Deactivate to hide it from members.'
             : r.error.message);
@@ -155,6 +165,7 @@
     $('evVoteOpen').value = ev ? D.toLocalInput(ev.vote_opens_at) : '';
     $('evVoteClose').value = ev ? D.toLocalInput(ev.vote_closes_at) : '';
     loadExclusionsFor(ev);
+    loadAttachmentsFor(ev);
     $('evSignupOn').checked = !!(ev && ev.signup_enabled);
     var sf = document.querySelectorAll('.ev-sf');
     sf.forEach(function (inp, i) { inp.value = ev && ev.signup_fields && ev.signup_fields[i] ? ev.signup_fields[i] : ''; });
@@ -218,12 +229,123 @@
     var q = id ? sb.from('events').update(row).eq('id', id).select('id').single() : sb.from('events').insert(row).select('id').single();
     q.then(function (r) {
       if (r.error) return showErr($('evError'), r.error.message);
-      return (isVoteNow ? saveExclusions(r.data.id) : Promise.resolve()).then(function (problem) {
+      var eid = r.data.id;
+      $('evError').hidden = true;
+      return (isVoteNow ? saveExclusions(eid) : Promise.resolve(null)).then(function (p1) {
+        return saveAttachments(eid).then(function (p2) { return p1 || p2; });
+      }).then(function (problem) {
         if (problem) return showErr($('evError'), 'The event was saved, but: ' + problem);
         $('evForm').hidden = true;
         loadEvents();
       });
     });
+  }
+
+  /* ---------- Documents for review (event attachments) ---------- */
+  var atList = [], atRemoved = [];
+
+  function setupAttachments() {
+    $('atFiles').addEventListener('change', function () {
+      var err = $('atError'); err.hidden = true;
+      Array.prototype.forEach.call($('atFiles').files, function (f) {
+        if (f.size > 25 * 1024 * 1024) { showErr(err, f.name + ' is larger than 25 MB.'); return; }
+        atList.push({ title: f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '), file_name: f.name, size_bytes: f.size, file: f });
+      });
+      $('atFiles').value = '';
+      drawAttachments();
+    });
+    $('atLibrary').addEventListener('change', function () {
+      var d = docs.find(function (x) { return x.id === $('atLibrary').value; });
+      $('atLibrary').value = '';
+      if (!d) return;
+      if (atList.some(function (a) { return a.document_id === d.id; })) return;
+      atList.push({ title: d.title, file_name: d.file_name, size_bytes: d.size_bytes, document_id: d.id, storage_path: d.storage_path, mime_type: d.mime_type });
+      drawAttachments();
+    });
+    $('atRows').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-at]');
+      if (!b) return;
+      var i = +b.getAttribute('data-i'), act = b.getAttribute('data-at');
+      if (act === 'rm') { var gone = atList.splice(i, 1)[0]; if (gone.id) atRemoved.push(gone); }
+      if (act === 'up' && i > 0) atList.splice(i - 1, 0, atList.splice(i, 1)[0]);
+      if (act === 'down' && i < atList.length - 1) atList.splice(i + 1, 0, atList.splice(i, 1)[0]);
+      if (act === 'open' && atList[i].storage_path) D.openDocument(sb, atList[i].storage_path, atList[i].file_name);
+      drawAttachments();
+    });
+    $('atRows').addEventListener('input', function (e) {
+      var inp = e.target.closest('input[data-at-title]');
+      if (inp) atList[+inp.getAttribute('data-at-title')].title = inp.value;
+    });
+  }
+
+  function fillLibrary() {
+    $('atLibrary').innerHTML = '<option value="">\u2026or attach from Marina Documents</option>' +
+      D.DOC_CATEGORIES.map(function (c) {
+        var list = (docs || []).filter(function (d) { return d.category === c.id; });
+        return list.length ? '<optgroup label="' + D.esc(c.label) + '">' + list.map(function (d) {
+          return '<option value="' + d.id + '">' + D.esc(d.title) + (d.doc_date ? ' (' + D.fmtDay(d.doc_date) + ')' : '') + (d.active ? '' : ' [hidden]') + '</option>';
+        }).join('') + '</optgroup>' : '';
+      }).join('');
+  }
+
+  function drawAttachments() {
+    $('atRows').innerHTML = atList.length ? atList.map(function (a, i) {
+      var src = a.file ? '<span class="badge badge-notice">New upload</span>' : a.document_id ? '<span class="badge badge-meeting">From Marina Documents</span>' : '<span class="badge badge-social">Uploaded</span>';
+      return '<tr><td style="min-width:200px"><input type="text" class="at-title" data-at-title="' + i + '" value="' + D.esc(a.title) + '" maxlength="150" aria-label="Title shown to members"></td>' +
+        '<td class="note">' + D.esc(a.file_name) + (a.size_bytes ? ' &middot; ' + D.fileSize(a.size_bytes) : '') + '<br>' + src + '</td>' +
+        '<td class="row-actions">' +
+          (a.storage_path ? '<button type="button" class="btn-sm" data-at="open" data-i="' + i + '">Open</button>' : '') +
+          '<button type="button" class="btn-sm" data-at="up" data-i="' + i + '"' + (i === 0 ? ' disabled' : '') + '>&#8593;</button>' +
+          '<button type="button" class="btn-sm" data-at="down" data-i="' + i + '"' + (i === atList.length - 1 ? ' disabled' : '') + '>&#8595;</button>' +
+          '<button type="button" class="btn-sm btn-danger" data-at="rm" data-i="' + i + '">Remove</button></td></tr>';
+    }).join('') : '<tr><td class="note">No documents attached.</td></tr>';
+  }
+
+  function loadAttachmentsFor(ev) {
+    atList = []; atRemoved = [];
+    $('atError').hidden = true;
+    fillLibrary();
+    if (!ev) { drawAttachments(); return; }
+    sb.from('event_attachments').select('*').eq('event_id', ev.id).order('sort_order').then(function (r) {
+      atList = (r.data || []).map(function (a) { return Object.assign({}, a, { _origTitle: a.title, _origOrder: a.sort_order }); });
+      drawAttachments();
+    });
+  }
+
+  function safeFileName(n) { return n.normalize('NFKD').replace(/[^\w.\-]+/g, '-').replace(/-+/g, '-').slice(-80); }
+
+  // Save the attachment list for an event. Returns a problem message, if any.
+  function saveAttachments(eventId) {
+    var problems = [];
+    var jobs = atRemoved.map(function (a) {
+      return sb.from('event_attachments').delete().eq('id', a.id).then(function () {
+        if (!a.document_id) return sb.storage.from('marina-docs').remove([a.storage_path]);
+      });
+    });
+    return Promise.all(jobs).then(function () {
+      return atList.reduce(function (chain, a, i) {
+        var order = (i + 1) * 10;
+        return chain.then(function () {
+          if (a.id) {
+            var title = (a.title || '').trim() || a.file_name;
+            if (title === a._origTitle && order === a._origOrder) return;
+            return sb.from('event_attachments').update({ title: title, sort_order: order }).eq('id', a.id);
+          }
+          if (a.document_id) {
+            return sb.from('event_attachments').insert({ event_id: eventId, document_id: a.document_id, storage_path: a.storage_path,
+              title: (a.title || '').trim() || a.file_name, file_name: a.file_name || '', mime_type: a.mime_type || '', size_bytes: a.size_bytes || 0, sort_order: order });
+          }
+          var path = 'events/' + eventId + '/' + Date.now() + '-' + safeFileName(a.file.name);
+          return sb.storage.from('marina-docs').upload(path, a.file, { contentType: a.file.type || 'application/octet-stream', upsert: false }).then(function (up) {
+            if (up.error) { problems.push(a.file.name + ': ' + (/mime/i.test(up.error.message) ? 'file type not allowed' : up.error.message)); return; }
+            return sb.from('event_attachments').insert({ event_id: eventId, storage_path: path, title: (a.title || '').trim() || a.file_name,
+              file_name: a.file.name, mime_type: a.file.type || '', size_bytes: a.file.size, sort_order: order }).then(function (ins) {
+              if (ins.error) { problems.push(a.file.name + ': ' + ins.error.message); sb.storage.from('marina-docs').remove([path]); }
+            });
+          });
+        });
+      }, Promise.resolve());
+    }).then(function () { return problems.length ? 'some documents were not attached (' + problems.join('; ') + ')' : null; });
   }
 
   /* ---------- Ineligible slips on the vote form ---------- */
