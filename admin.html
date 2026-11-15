@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611151123">
+<link rel="stylesheet" href="style.css?v=202611151135">
 </head>
 <body data-member-portal>
 
@@ -117,6 +117,18 @@
                 </label>
               </div>
               <p class="note" style="margin:10px 0 0">Each active slip gets one vote, and votes can't be changed once cast. No votes are accepted after the closing time.</p>
+              <div class="excl-box">
+                <h4>Ineligible slips <span class="note" id="exCount"></span></h4>
+                <p class="note" style="margin:0 0 8px">Slips listed here can't vote on this ballot and aren't counted in the totals. Type one or several slips (separated by commas or spaces), pick the reason, and click Add.</p>
+                <div class="excl-add">
+                  <input type="text" id="exAddSlips" placeholder="e.g. A12, B7, C30" list="exSlipList" autocapitalize="characters" spellcheck="false" aria-label="Slips to mark ineligible">
+                  <select id="exAddReason" class="reason-select" aria-label="Reason"></select>
+                  <button type="button" class="btn-sm btn-primary-sm" id="exAddBtn">Add</button>
+                </div>
+                <datalist id="exSlipList"></datalist>
+                <div class="member-login-error" id="exError" hidden></div>
+                <div class="admin-table-wrap"><table class="admin-table excl-table"><tbody id="exRows"></tbody></table></div>
+              </div>
             </fieldset>
             <fieldset class="full ballot-box signup-box" id="evSignup" hidden>
               <legend>Sign-up sheet</legend>
@@ -188,7 +200,7 @@
                 <input type="text" id="vrExSlips" placeholder="A12, B7, C30" autocapitalize="characters" spellcheck="false">
               </label>
               <label>Reason
-                <input type="text" id="vrExReason" value="In arrears" maxlength="100">
+                <select id="vrExReason" class="reason-select"></select>
               </label>
               <button type="submit" class="btn-sm btn-primary-sm">Mark Ineligible</button>
             </form>
@@ -453,9 +465,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611151123"></script>
-<script src="member-data.js?v=202611151123"></script>
-<script src="video-utils.js?v=202611151123"></script>
-<script src="admin.js?v=202611151123"></script>
+<script src="member-login.js?v=202611151135"></script>
+<script src="member-data.js?v=202611151135"></script>
+<script src="video-utils.js?v=202611151135"></script>
+<script src="admin.js?v=202611151135"></script>
 </body>
 </html>

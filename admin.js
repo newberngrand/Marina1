@@ -66,6 +66,7 @@
     $('evBallotKind').addEventListener('change', updateBallotBox);
     $('evSignupOn').addEventListener('change', updateBallotBox);
     setupResults();
+    setupExclusions();
     setupSignups();
     $('evRows').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-act]');
@@ -153,6 +154,7 @@
     $('evOptions').value = ev && ev.ballot_options ? ev.ballot_options.join('\n') : '';
     $('evVoteOpen').value = ev ? D.toLocalInput(ev.vote_opens_at) : '';
     $('evVoteClose').value = ev ? D.toLocalInput(ev.vote_closes_at) : '';
+    loadExclusionsFor(ev);
     $('evSignupOn').checked = !!(ev && ev.signup_enabled);
     var sf = document.querySelectorAll('.ev-sf');
     sf.forEach(function (inp, i) { inp.value = ev && ev.signup_fields && ev.signup_fields[i] ? ev.signup_fields[i] : ''; });
@@ -212,11 +214,137 @@
       row.signup_enabled = false;
     }
     if ($('evType').disabled) delete row.event_type;
-    var q = id ? sb.from('events').update(row).eq('id', id) : sb.from('events').insert(row);
+    var isVoteNow = (row.event_type || (events.find(function (x) { return x.id === id; }) || {}).event_type) === 'vote';
+    var q = id ? sb.from('events').update(row).eq('id', id).select('id').single() : sb.from('events').insert(row).select('id').single();
     q.then(function (r) {
       if (r.error) return showErr($('evError'), r.error.message);
-      $('evForm').hidden = true;
-      loadEvents();
+      return (isVoteNow ? saveExclusions(r.data.id) : Promise.resolve()).then(function (problem) {
+        if (problem) return showErr($('evError'), 'The event was saved, but: ' + problem);
+        $('evForm').hidden = true;
+        loadEvents();
+      });
+    });
+  }
+
+  /* ---------- Ineligible slips on the vote form ---------- */
+  var DEFAULT_REASON = 'In arrears on dues and/or assessment payments';
+  var reasons = [], voterSlips = {}, exList = [], exOriginal = {}, exVoted = {};
+
+  function loadReasons() {
+    return sb.from('exclusion_reasons').select('label').order('sort_order').order('label').then(function (r) {
+      reasons = (r.data || []).map(function (x) { return x.label; });
+      if (reasons.indexOf(DEFAULT_REASON) === -1) reasons.unshift(DEFAULT_REASON);
+      document.querySelectorAll('.reason-select').forEach(function (sel) { fillReasons(sel, sel.value); });
+    });
+  }
+  function fillReasons(sel, selected) {
+    var pick = selected && reasons.indexOf(selected) !== -1 ? selected : (selected && selected !== '__new' ? selected : reasons[0]);
+    var opts = reasons.slice();
+    if (pick && opts.indexOf(pick) === -1) opts.push(pick);       // keep an older custom reason visible
+    sel.innerHTML = opts.map(function (x) { return '<option' + (x === pick ? ' selected' : '') + '>' + D.esc(x) + '</option>'; }).join('') +
+      '<option value="__new">+ Add a new reason\u2026</option>';
+  }
+  // Choosing "+ Add a new reason..." in any reason drop-down.
+  document.addEventListener('change', function (e) {
+    var sel = e.target;
+    if (!sel.classList || !sel.classList.contains('reason-select') || sel.value !== '__new') return;
+    var label = (prompt('New reason a slip can be ineligible to vote:') || '').trim().slice(0, 120);
+    var prev = sel.getAttribute('data-prev') || reasons[0];
+    if (!label) { fillReasons(sel, prev); return; }
+    var add = reasons.indexOf(label) === -1 ? sb.from('exclusion_reasons').insert({ label: label }) : Promise.resolve({});
+    add.then(function () { return loadReasons(); }).then(function () {
+      fillReasons(sel, label);
+      sel.setAttribute('data-prev', label);
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+  document.addEventListener('focusin', function (e) {
+    if (e.target.classList && e.target.classList.contains('reason-select')) e.target.setAttribute('data-prev', e.target.value);
+  });
+
+  function setupExclusions() {
+    loadReasons();
+    sb.from('members').select('slip, owner_name, active, can_vote, is_admin').then(function (r) {
+      voterSlips = {};
+      (r.data || []).forEach(function (m) { if (m.active && m.can_vote && !m.is_admin) voterSlips[m.slip] = m.owner_name; });
+      $('exSlipList').innerHTML = Object.keys(voterSlips).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); })
+        .map(function (s) { return '<option value="' + D.esc(s) + '">' + D.esc(voterSlips[s]) + '</option>'; }).join('');
+    });
+    $('exAddBtn').addEventListener('click', addExclusions);
+    $('exAddSlips').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addExclusions(); } });
+    $('exRows').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-ex-rm]');
+      if (!b) return;
+      var slip = b.getAttribute('data-ex-rm');
+      exList = exList.filter(function (x) { return x.slip !== slip; });
+      drawExclusions();
+    });
+    $('exRows').addEventListener('change', function (e) {
+      var sel = e.target.closest('select[data-ex-slip]');
+      if (!sel || sel.value === '__new') return;
+      var x = exList.find(function (y) { return y.slip === sel.getAttribute('data-ex-slip'); });
+      if (x) x.reason = sel.value;
+    });
+  }
+
+  function addExclusions() {
+    var err = $('exError'); err.hidden = true;
+    var reason = $('exAddReason').value;
+    if (!reason || reason === '__new') reason = DEFAULT_REASON;
+    var slips = $('exAddSlips').value.toUpperCase().split(/[\s,;]+/).filter(Boolean);
+    var bad = [], voted = [];
+    slips.forEach(function (s) {
+      if (!voterSlips.hasOwnProperty(s)) { bad.push(s); return; }
+      if (exVoted[s]) { voted.push(s); return; }
+      var x = exList.find(function (y) { return y.slip === s; });
+      if (x) x.reason = reason; else exList.push({ slip: s, reason: reason });
+    });
+    exList.sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); });
+    var msg = [];
+    if (bad.length) msg.push('Not voting slips (check the number, or the slip is non-voting/inactive): ' + bad.join(', '));
+    if (voted.length) msg.push('Already voted, so they can\'t be made ineligible: ' + voted.join(', '));
+    if (msg.length) showErr(err, msg.join('. ') + '.');
+    $('exAddSlips').value = '';
+    drawExclusions();
+  }
+
+  function drawExclusions() {
+    $('exCount').textContent = exList.length ? '(' + exList.length + ')' : '';
+    $('exRows').innerHTML = exList.length ? exList.map(function (x) {
+      return '<tr><td><strong>' + D.esc(x.slip) + '</strong></td><td class="note">' + D.esc(voterSlips[x.slip] || '') + '</td>' +
+        '<td><select class="reason-select" data-ex-slip="' + D.esc(x.slip) + '" aria-label="Reason for ' + D.esc(x.slip) + '"></select></td>' +
+        '<td class="row-actions"><button type="button" class="btn-sm" data-ex-rm="' + D.esc(x.slip) + '">Remove</button></td></tr>';
+    }).join('') : '<tr><td class="note">No ineligible slips. Every voting slip can vote.</td></tr>';
+    exList.forEach(function (x) { fillReasons($('exRows').querySelector('select[data-ex-slip="' + x.slip + '"]'), x.reason); });
+  }
+
+  function loadExclusionsFor(ev) {
+    exList = []; exOriginal = {}; exVoted = {};
+    $('exError').hidden = true;
+    fillReasons($('exAddReason'), DEFAULT_REASON);
+    if (!ev || ev.event_type !== 'vote') { drawExclusions(); return; }
+    Promise.all([
+      sb.from('vote_exclusions').select('slip, reason').eq('event_id', ev.id),
+      sb.from('votes').select('slip').eq('event_id', ev.id)
+    ]).then(function (r) {
+      (r[0].data || []).forEach(function (x) { exList.push({ slip: x.slip, reason: x.reason }); exOriginal[x.slip] = x.reason; });
+      (r[1].data || []).forEach(function (v) { exVoted[v.slip] = true; });
+      exList.sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); });
+      drawExclusions();
+    });
+  }
+
+  // Bring the database in line with the list on the form. Returns a problem message, if any.
+  function saveExclusions(eventId) {
+    var keep = {}; exList.forEach(function (x) { keep[x.slip] = x.reason; });
+    var removed = Object.keys(exOriginal).filter(function (s) { return !keep.hasOwnProperty(s); });
+    var changed = exList.filter(function (x) { return exOriginal[x.slip] !== x.reason; });
+    var jobs = [];
+    if (removed.length) jobs.push(sb.from('vote_exclusions').delete().eq('event_id', eventId).in('slip', removed));
+    if (changed.length) jobs.push(sb.from('vote_exclusions').upsert(changed.map(function (x) { return { event_id: eventId, slip: x.slip, reason: x.reason }; })));
+    return Promise.all(jobs).then(function (res) {
+      var e = res.filter(function (r) { return r && r.error; })[0];
+      return e ? e.error.message : null;
     });
   }
 
@@ -326,16 +454,17 @@
       var slips = $('vrExSlips').value.toUpperCase().split(/[\s,;]+/).map(function (s) { return s.trim(); }).filter(Boolean);
       slips = slips.filter(function (s, i) { return slips.indexOf(s) === i; });
       if (!slips.length) return showErr($('vrExError'), 'Please type at least one slip.');
-      excludeSlips(slips, $('vrExReason').value.trim() || 'In arrears');
+      excludeSlips(slips, $('vrExReason').value || DEFAULT_REASON);
     });
     $('vrRows').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-ex]');
       if (!b || !current) return;
       var slip = b.getAttribute('data-slip');
       if (b.getAttribute('data-ex') === 'add') {
-        var reason = prompt('Make slip ' + slip + ' ineligible for "' + current.title + '".\n\nReason:', 'In arrears');
-        if (reason === null) return;
-        excludeSlips([slip], reason.trim() || 'In arrears');
+        var reason = $('vrExReason').value || DEFAULT_REASON;
+        if (!confirm('Make slip ' + slip + ' ineligible for "' + current.title + '"?\n\nReason: ' + reason +
+          '\n\n(To use a different reason, pick it in the "Make slips ineligible" box first.)')) return;
+        excludeSlips([slip], reason);
       } else {
         if (!confirm('Restore slip ' + slip + ' so it can vote on "' + current.title + '"?')) return;
         sb.from('vote_exclusions').delete().eq('event_id', current.id).eq('slip', slip).then(function (r) {

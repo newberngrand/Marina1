@@ -613,6 +613,13 @@ a.vote-tag.open { padding: 3px 10px; }
 .vr-bar { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; margin-top: 4px; max-width: 360px; }
 .vr-bar span { display: block; height: 100%; background: var(--gold); }
 .vr-filter { display: flex; gap: 10px; flex-wrap: wrap; }
+.excl-box { margin-top: 16px; padding-top: 14px; border-top: 1px dashed #e3c98f; }
+.excl-box h4 { margin: 0 0 4px; color: var(--navy); font-size: 0.98rem; }
+.excl-add { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.excl-add input { flex: 1 1 180px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+.excl-add select { flex: 2 1 240px; }
+.reason-select { padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 0.86rem; background: var(--white); max-width: 100%; }
+.excl-table td { padding: 6px 8px; }
 .vr-exclude { border: 1px solid #f1d3cd; background: #fdf6f4; border-radius: 8px; padding: 8px 14px; margin: 0 0 14px; }
 .vr-exclude summary { cursor: pointer; font-weight: 600; color: #9a3b2c; }
 .vr-exclude-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 10px; }
