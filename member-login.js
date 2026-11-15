@@ -10,6 +10,34 @@
   var SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
   var PORTAL_PAGE = 'member-portal.html';
 
+  /* ---------- Stay up to date ----------
+     The web host lets browsers keep a page for up to 10 minutes. After an update,
+     a page can check the tiny version.json file (never cached) and, if the site
+     has a newer version than the page was built with, load the fresh copy once. */
+  (function () {
+    try {
+      var me = document.currentScript && document.currentScript.src.match(/[?&]v=([\w.-]+)/);
+      var pageVersion = me ? me[1] : null;
+      var url = new URL(location.href);
+      if (url.searchParams.has('_v')) {           // just refreshed: tidy the address bar
+        url.searchParams.delete('_v');
+        history.replaceState(null, '', url.pathname + url.search + url.hash);
+      }
+      if (!pageVersion || window.top !== window.self) return;
+      fetch('version.json?ts=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (v) {
+          if (!v || !v.v || v.v === pageVersion) return;
+          var key = 'ngbm_reloaded_' + v.v;
+          if (sessionStorage.getItem(key)) return;  // only try once per version
+          sessionStorage.setItem(key, '1');
+          var fresh = new URL(location.href);
+          fresh.searchParams.set('_v', v.v);       // a new address skips the saved copy
+          location.replace(fresh.toString());
+        }).catch(function () {});
+    } catch (e) {}
+  })();
+
   /* ---------- Activity tracking ----------
      Sends small records to the log: page views, slip-finder searches and
      Reserve clicks for everyone; logins, documents, events, etc. for members.
