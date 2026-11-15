@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611151157">
+<link rel="stylesheet" href="style.css?v=202611151435">
 </head>
 <body data-member-portal>
 
@@ -59,6 +59,7 @@
         <button type="button" class="admin-tab" data-tab="docs" role="tab">Documents</button>
         <button type="button" class="admin-tab" data-tab="gallery" role="tab">Gallery</button>
         <button type="button" class="admin-tab" data-tab="members" role="tab">Members</button>
+        <button type="button" class="admin-tab" data-tab="email" role="tab">Email Members</button>
         <button type="button" class="admin-tab" data-tab="log" role="tab">Activity Log</button>
       </div>
 
@@ -346,6 +347,57 @@
         <div class="gal-admin-grid" id="vidList">Loading&hellip;</div>
       </div>
 
+      <!-- EMAIL MEMBERS -->
+      <div class="admin-panel" data-panel="email" hidden>
+        <div class="admin-panel-head"><h2>Email Members</h2></div>
+        <div class="email-layout">
+          <form class="portal-card admin-form" id="anForm">
+            <h3>New announcement</h3>
+            <div class="admin-grid">
+              <label>Send to
+                <select id="anAudience">
+                  <option value="all">All members with an email on file</option>
+                  <option value="voting">Voting slips only</option>
+                </select>
+              </label>
+              <label>Add a button to an event (optional)
+                <select id="anEvent"><option value="">No button</option></select>
+              </label>
+              <label class="full">Subject
+                <input type="text" id="anSubject" maxlength="200" required placeholder="e.g. Please vote: 2027 Budget">
+              </label>
+              <label class="full">Message (each owner's email starts with "Dear [owner name],"; web links become clickable)
+                <textarea id="anBody" rows="10" required placeholder="Type your announcement here."></textarea>
+              </label>
+            </div>
+            <p class="note" id="anCount" style="margin:8px 0 0"></p>
+            <div class="member-login-error" id="anError" hidden></div>
+            <div class="member-login-note" id="anDone" hidden></div>
+            <div class="an-test">
+              <input type="text" id="anTestTo" placeholder="Send a test to this address" autocomplete="off" spellcheck="false" aria-label="Test address">
+              <button type="button" class="btn-sm" id="anTest">Send test</button>
+            </div>
+            <div class="portal-actions">
+              <button type="submit" class="btn btn-gold" id="anSend">Send to members</button>
+            </div>
+          </form>
+          <div class="portal-card an-preview-card">
+            <h3>Preview</h3>
+            <div class="an-preview-subject" id="anPrevSubject">(no subject)</div>
+            <div class="an-preview" id="anPreview"></div>
+          </div>
+        </div>
+        <div class="portal-card">
+          <h3>Sent announcements</h3>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Sent</th><th>Subject</th><th>To</th><th>Delivered</th><th>Status</th><th></th></tr></thead>
+              <tbody id="anHistory"><tr><td colspan="6" class="note">Loading&hellip;</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- ACTIVITY LOG -->
       <div class="admin-panel" data-panel="log" hidden>
         <div class="admin-panel-head">
@@ -480,9 +532,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611151157"></script>
-<script src="member-data.js?v=202611151157"></script>
-<script src="video-utils.js?v=202611151157"></script>
-<script src="admin.js?v=202611151157"></script>
+<script src="member-login.js?v=202611151435"></script>
+<script src="member-data.js?v=202611151435"></script>
+<script src="video-utils.js?v=202611151435"></script>
+<script src="admin.js?v=202611151435"></script>
 </body>
 </html>

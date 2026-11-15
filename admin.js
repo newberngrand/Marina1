@@ -32,6 +32,7 @@
         setupLog();
         setupGallery();
         setupVideos();
+        setupAnnouncements();
       });
     }).catch(function (e) {
       $('adminLoading').textContent = e.message || 'Something went wrong.';
@@ -1155,6 +1156,111 @@
     })).then(loadVideos);
   }
 
+  /* ---------- Email members (announcements) ---------- */
+  var anWired = false, anCounts = {};
+
+  function callAnnounce(payload) {
+    return sb.functions.invoke('announce', { body: payload }).then(function (r) {
+      if (r.error) {
+        var ctx = r.error.context;
+        if (ctx && typeof ctx.json === 'function') {
+          return ctx.json().then(function (b) { throw new Error(b.error || r.error.message); }, function () { throw new Error(r.error.message); });
+        }
+        throw new Error(r.error.message);
+      }
+      if (r.data && r.data.error) throw new Error(r.data.error);
+      return r.data;
+    });
+  }
+
+  function setupAnnouncements() {
+    if (anWired) return;
+    anWired = true;
+    ['anSubject', 'anBody', 'anEvent'].forEach(function (id) { $(id).addEventListener('input', previewAnnouncement); $(id).addEventListener('change', previewAnnouncement); });
+    $('anAudience').addEventListener('change', updateAnCount);
+    $('anTest').addEventListener('click', function () {
+      var err = $('anError'), done = $('anDone'); err.hidden = true; done.hidden = true;
+      var to = $('anTestTo').value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return showErr(err, 'Type the email address to send the test to.');
+      var btn = $('anTest'); btn.disabled = true; btn.textContent = 'Sending…';
+      callAnnounce({ action: 'test', subject: $('anSubject').value, body: $('anBody').value, event_id: $('anEvent').value || null, to: to })
+        .then(function (r) { done.textContent = r.message + ' Check that inbox (and spam) before sending to everyone.'; done.hidden = false; })
+        .catch(function (ex) { showErr(err, ex.message); })
+        .then(function () { btn.disabled = false; btn.textContent = 'Send test'; });
+    });
+    $('anForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var err = $('anError'), done = $('anDone'); err.hidden = true; done.hidden = true;
+      var subject = $('anSubject').value.trim(), body = $('anBody').value.trim();
+      if (!subject || !body) return showErr(err, 'Please fill in the subject and message.');
+      var n = anCounts[$('anAudience').value];
+      if (!confirm('Send "' + subject + '" to ' + (n != null ? n + ' email addresses' : 'all members') + ' now?\n\nThis can\'t be undone. (Tip: send yourself a test first.)')) return;
+      var btn = $('anSend'); btn.disabled = true; btn.textContent = 'Sending… please wait';
+      callAnnounce({ action: 'send', subject: subject, body: body, audience: $('anAudience').value, event_id: $('anEvent').value || null })
+        .then(function (r) {
+          done.textContent = 'Sent to ' + r.sent + ' of ' + (r.sent + r.failed + r.pending) + ' addresses.' +
+            (r.pending ? ' ' + r.pending + ' still waiting: ' + r.note : '') + (r.failed ? ' ' + r.failed + ' failed.' : '');
+          done.hidden = false;
+          if (!r.pending) $('anForm').reset();
+          previewAnnouncement(); loadAnnouncements();
+        })
+        .catch(function (ex) { showErr(err, ex.message); })
+        .then(function () { btn.disabled = false; btn.textContent = 'Send to members'; updateAnCount(); });
+    });
+    $('anHistory').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-an-resume]');
+      if (!b) return;
+      b.disabled = true; b.textContent = 'Sending…';
+      callAnnounce({ action: 'resume', announcement_id: b.getAttribute('data-an-resume') })
+        .then(function (r) { alert('Sent ' + r.sent + ' so far' + (r.pending ? '; ' + r.pending + ' still waiting. ' + r.note : '. All done.')); })
+        .catch(function (ex) { alert(ex.message); })
+        .then(loadAnnouncements);
+    });
+    sb.from('events').select('id, title, event_type, active').eq('active', true).order('created_at', { ascending: false }).then(function (r) {
+      $('anEvent').innerHTML = '<option value="">No button</option>' + (r.data || []).map(function (ev) {
+        return '<option value="' + ev.id + '">' + D.esc(ev.title) + ' (' + D.eventTypeLabel(ev.event_type) + ')</option>';
+      }).join('');
+    });
+    updateAnCount();
+    previewAnnouncement();
+    loadAnnouncements();
+  }
+
+  function updateAnCount() {
+    var aud = $('anAudience').value;
+    $('anCount').textContent = 'Counting recipients…';
+    callAnnounce({ action: 'preview', audience: aud }).then(function (r) {
+      anCounts[aud] = r.count;
+      $('anCount').innerHTML = 'Goes to <strong>' + r.count + ' email addresses</strong> covering ' + r.slips + ' slips (owners with several slips get one email). Slips with no email on file are skipped.' +
+        (r.count > 100 ? '<br><span class="inactive">Note: the free email plan sends 100 per day, so this will pause partway and you can Resume the rest tomorrow.</span>' : '');
+      $('anSend').textContent = 'Send to ' + r.count + ' members';
+    }).catch(function (ex) { $('anCount').textContent = ex.message; });
+  }
+
+  function previewAnnouncement() {
+    var ev = $('anEvent').selectedOptions[0];
+    $('anPrevSubject').textContent = $('anSubject').value.trim() || '(no subject)';
+    $('anPreview').innerHTML = '<p>Dear [Owner name],</p><div>' + (D.richText($('anBody').value) || '<span class="note">Your message appears here.</span>') + '</div>' +
+      (ev && ev.value ? '<p><span class="an-btn">' + D.esc(ev.textContent.replace(/ \([^)]*\)$/, '')) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') +
+      '<p style="margin-top:18px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br>newberngrand.com</p>' +
+      '<p class="note an-foot">You\'re receiving this as the owner of record for slip [slips] at New Bern Grand Marina.</p>';
+  }
+
+  function loadAnnouncements() {
+    sb.from('announcements').select('*').order('created_at', { ascending: false }).limit(50).then(function (r) {
+      var rows = r.data || [];
+      $('anHistory').innerHTML = rows.length ? rows.map(function (a) {
+        var pending = a.total - a.sent - a.failed;
+        return '<tr><td class="note nowrap">' + D.esc(D.fmtWhen(a.created_at)) + '</td><td><strong>' + D.esc(a.subject) + '</strong>' +
+          (a.note ? '<div class="note">' + D.esc(a.note) + '</div>' : '') + '</td>' +
+          '<td class="note">' + (a.audience === 'voting' ? 'Voting slips' : 'All members') + '</td>' +
+          '<td>' + a.sent + ' of ' + a.total + (a.failed ? ' <span class="inactive">(' + a.failed + ' failed)</span>' : '') + '</td>' +
+          '<td>' + (a.status === 'done' ? 'Done' : '<span class="inactive">' + (a.status === 'paused' ? 'Paused' : 'Sending') + '</span>') + '</td>' +
+          '<td class="row-actions">' + (pending > 0 ? '<button type="button" class="btn-sm btn-primary-sm" data-an-resume="' + a.id + '">Resume (' + pending + ' left)</button>' : '') + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" class="note">Nothing sent yet.</td></tr>';
+    });
+  }
+
   /* ---------- Activity log ---------- */
   var LOG_ACTIONS = [
     ['Member activity', [
@@ -1169,7 +1275,7 @@
       ['document_uploaded', 'Document uploaded'], ['document_updated', 'Document updated'], ['document_deleted', 'Document deleted'],
       ['member_added', 'Slip added'], ['member_updated', 'Slip updated'], ['member_note_changed', 'Admin note changed'],
       ['password_set', 'Password set by admin'], ['ineligible_marked', 'Marked ineligible'], ['ineligible_removed', 'Eligibility restored'],
-      ['photo_added', 'Gallery photo added'], ['photo_updated', 'Gallery photo updated'], ['photo_deleted', 'Gallery photo deleted'],
+      ['announcement_sent', 'Email sent to members'], ['photo_added', 'Gallery photo added'], ['photo_updated', 'Gallery photo updated'], ['photo_deleted', 'Gallery photo deleted'],
       ['signup_added', 'Signed up for event'], ['signup_changed', 'Changed event sign-up'], ['signup_cancelled', 'Cancelled event sign-up'],
       ['video_added', 'Gallery video added'], ['video_updated', 'Gallery video updated'], ['video_deleted', 'Gallery video removed']
     ]],

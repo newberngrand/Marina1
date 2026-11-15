@@ -457,6 +457,17 @@ nav.main-nav a.active {
 .row-inactive td:first-child { opacity: 0.7; }
 .portal-card h3 .count { color: var(--muted); font-weight: 400; font-size: 0.9rem; }
 
+/* Email members */
+.email-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 20px; align-items: start; }
+.an-test { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.an-test input { flex: 1 1 220px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+.an-preview-card { position: sticky; top: 12px; }
+.an-preview-subject { font-weight: 700; color: var(--navy); padding: 8px 10px; background: #f2f6fa; border-radius: 6px; margin-bottom: 10px; }
+.an-preview { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-size: 0.92rem; line-height: 1.55; max-height: 520px; overflow-y: auto; }
+.an-btn { display: inline-block; padding: 10px 16px; background: var(--navy); color: #fff; border-radius: 6px; font-weight: 700; }
+.an-foot { border-top: 1px solid var(--line); padding-top: 8px; font-size: 0.78rem !important; }
+@media (max-width: 900px) { .email-layout { grid-template-columns: 1fr; } .an-preview-card { position: static; } }
+
 /* Admin gallery */
 .gal-admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 .gal-card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
