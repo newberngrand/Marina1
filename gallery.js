@@ -33,10 +33,20 @@
   function photos() { return Array.prototype.slice.call(grid.querySelectorAll('img')); }
 
   function prepare() {
+    // Each photo now carries its own description, so the old one-line summary isn't needed.
+    var line = document.querySelector('.gallery-caption');
+    if (line) line.hidden = true;
     photos().forEach(function (img) {
       img.tabIndex = 0;
       img.setAttribute('role', 'button');
       img.setAttribute('aria-label', 'View full size: ' + img.alt);
+      // Description under each photo.
+      var fig = img.closest('figure');
+      if (fig && img.alt && !fig.querySelector('figcaption')) {
+        var cap = document.createElement('figcaption');
+        cap.textContent = img.alt;
+        fig.appendChild(cap);
+      }
     });
   }
 
