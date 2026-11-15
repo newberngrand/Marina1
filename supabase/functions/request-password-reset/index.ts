@@ -7,7 +7,7 @@
 // Secrets (Supabase dashboard > Edge Functions > Secrets):
 //   RESEND_API_KEY  API key for sending email through Resend (resend.com)
 //   RESET_FROM      Sender, e.g. "New Bern Grand Marina <noreply@newberngrand.com>"
-//   SITE_URL        Optional, defaults to https://newberngrand.github.io/Marina1
+//   SITE_URL        Optional, defaults to https://newberngrand.com
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     return reply(200, generic);
   }
 
-  const site = (Deno.env.get("SITE_URL") ?? "https://newberngrand.github.io/Marina1").replace(/\/$/, "");
+  const site = (Deno.env.get("SITE_URL") ?? "https://newberngrand.com").replace(/\/$/, "");
   const resetUrl = `${site}/reset-password.html?token_hash=${encodeURIComponent(link.properties.hashed_token)}&slip=${encodeURIComponent(slip)}`;
 
   const apiKey = Deno.env.get("RESEND_API_KEY");
