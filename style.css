@@ -323,7 +323,9 @@ nav.main-nav a.active {
 .portal-details dd { margin: 0; color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
 .portal-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
 .portal-actions .btn { border: none; cursor: pointer; }
-.btn-outline {
+/* Dark outline buttons on the white member/admin cards only; the site's white
+   outline button (e.g. over the home page photo) keeps its own style. */
+.portal-actions .btn-outline {
   background: transparent;
   color: var(--navy);
   border: 1px solid var(--navy) !important;
