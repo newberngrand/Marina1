@@ -24,6 +24,7 @@
               });
             }
             renderAccount(sb, m);
+            MemberAuth.track('view_portal');
             loadEvents(sb, m);
             loadDocs(sb);
           });
@@ -74,6 +75,7 @@
       sb.auth.updateUser({ password: p1 }).then(function (res) {
         if (res.error) { err.textContent = res.error.message; err.hidden = false; return; }
         $('portalPwForm').reset();
+        MemberAuth.track('change_password');
         done.hidden = false;
       });
     });
@@ -152,7 +154,8 @@
   }
 
   function docLink(d) {
-    return '<li><button type="button" class="doc-link" data-path="' + D.esc(d.storage_path) + '" data-name="' + D.esc(d.file_name) + '">' +
+    return '<li><button type="button" class="doc-link" data-path="' + D.esc(d.storage_path) + '" data-name="' + D.esc(d.file_name) +
+      '" data-id="' + D.esc(d.id) + '" data-title="' + D.esc(d.title) + '" data-cat="' + D.esc(d.category) + '">' +
       D.esc(d.title) + '</button>' +
       (d.doc_date ? ' <span class="note">&middot; ' + D.fmtDay(d.doc_date) + '</span>' : '') +
       (d.description ? '<div class="note">' + D.esc(d.description) + '</div>' : '') + '</li>';
@@ -199,7 +202,8 @@
         $('portalDocs').innerHTML = '<div class="doc-grid">' + html + '</div>';
         $('portalDocs').addEventListener('click', function (e) {
           var b = e.target.closest('.doc-link');
-          if (b) D.openDocument(sb, b.getAttribute('data-path'), b.getAttribute('data-name'));
+          if (b) D.openDocument(sb, b.getAttribute('data-path'), b.getAttribute('data-name'),
+            { id: b.getAttribute('data-id'), title: b.getAttribute('data-title'), category: b.getAttribute('data-cat') });
         });
       });
   }

@@ -24,10 +24,12 @@
         }
         $('adminLoading').hidden = true;
         $('adminApp').hidden = false;
+        MemberAuth.track('view_admin');
         setupTabs();
         setupEvents();
         setupDocs();
         loadMembers();
+        setupLog();
       });
     }).catch(function (e) {
       $('adminLoading').textContent = e.message || 'Something went wrong.';
@@ -390,7 +392,7 @@
       var d = docs.find(function (x) { return x.id === b.getAttribute('data-id'); });
       if (!d) return;
       var act = b.getAttribute('data-act');
-      if (act === 'open') D.openDocument(sb, d.storage_path, d.file_name);
+      if (act === 'open') D.openDocument(sb, d.storage_path, d.file_name, { id: d.id, title: d.title, category: d.category });
       if (act === 'edit') openDocForm(d);
       if (act === 'toggle') sb.from('documents').update({ active: !d.active }).eq('id', d.id).then(loadDocs);
       if (act === 'delete' && confirm('Delete "' + d.title + '" and its file? This cannot be undone.\n\nTip: choose Hide instead to just remove it from the member page.')) {
@@ -526,6 +528,183 @@
       }).join('');
       $('docList').innerHTML = html;
     });
+  }
+
+  /* ---------- Activity log ---------- */
+  var LOG_ACTIONS = [
+    ['Member activity', [
+      ['login', 'Logged in'], ['logout', 'Logged out'], ['login_failed', 'Failed login'],
+      ['view_portal', 'Opened member portal'], ['view_event', 'Viewed event'], ['open_document', 'Opened document'],
+      ['vote_cast', 'Voted'], ['change_password', 'Changed own password'],
+      ['reset_requested', 'Requested password reset'], ['reset_password_done', 'Reset password (email link)']
+    ]],
+    ['Admin changes', [
+      ['view_admin', 'Opened admin page'],
+      ['event_created', 'Event created'], ['event_updated', 'Event updated'], ['event_deleted', 'Event deleted'],
+      ['document_uploaded', 'Document uploaded'], ['document_updated', 'Document updated'], ['document_deleted', 'Document deleted'],
+      ['member_added', 'Slip added'], ['member_updated', 'Slip updated'], ['member_note_changed', 'Admin note changed'],
+      ['password_set', 'Password set by admin'], ['ineligible_marked', 'Marked ineligible'], ['ineligible_removed', 'Eligibility restored']
+    ]],
+    ['Public website', [
+      ['page_view', 'Page view'], ['slip_search', 'Slip finder search'], ['reserve_click', 'Reserve button click']
+    ]]
+  ];
+  var LOG_LABEL = {};
+  LOG_ACTIONS.forEach(function (g) { g[1].forEach(function (a) { LOG_LABEL[a[0]] = a[1]; }); });
+  var LOG_PAGE = 200, logOffset = 0, logRowsData = [], logWired = false;
+
+  function setupLog() {
+    if (logWired) return;
+    logWired = true;
+    $('logAction').innerHTML = '<option value="">All activity</option>' + LOG_ACTIONS.map(function (g) {
+      return '<optgroup label="' + g[0] + '">' + g[1].map(function (a) { return '<option value="' + a[0] + '">' + a[1] + '</option>'; }).join('') + '</optgroup>';
+    }).join('');
+    $('logFilters').addEventListener('submit', function (e) { e.preventDefault(); loadLog(true); });
+    $('logClear').addEventListener('click', function () { $('logFilters').reset(); loadLog(true); });
+    $('logMore').addEventListener('click', function () { loadLog(false); });
+    $('logRefresh').addEventListener('click', function () { loadSummary(); loadLog(true); });
+    $('logCsv').addEventListener('click', logCsv);
+    $('logTops').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-filter-action]');
+      if (!b) return;
+      $('logFilters').reset();
+      $('logAction').value = b.getAttribute('data-filter-action');
+      $('logText').value = b.getAttribute('data-filter-text') || '';
+      loadLog(true);
+      $('logFilters').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.querySelector('[data-tab="log"]').addEventListener('click', function () {
+      if (!$('logRows').children.length) { loadSummary(); loadLog(true); }
+    });
+    if (!$('adminApp').querySelector('[data-panel="log"]').hidden) { loadSummary(); loadLog(true); }
+  }
+
+  function num(n) { return Number(n || 0).toLocaleString('en-US'); }
+
+  function loadSummary() {
+    sb.rpc('activity_summary').then(function (r) {
+      var s = r.data;
+      if (!s) { $('logStats').innerHTML = '<p class="note">Summary unavailable.</p>'; return; }
+      function card(title, big, sub) {
+        return '<div class="stat-card"><div class="stat-title">' + title + '</div><div class="stat-big">' + big + '</div><div class="stat-sub">' + sub + '</div></div>';
+      }
+      $('logStats').innerHTML =
+        card('Page views', num(s.views_today) + ' <small>today</small>', num(s.views_7d) + ' in 7 days &middot; ' + num(s.views_30d) + ' in 30 days &middot; ' + num(s.views_all) + ' total') +
+        card('Visitors', num(s.visitors_30d), 'different browsers in 30 days') +
+        card('Slip finder searches', num(s.searches_30d), 'in 30 days &middot; ' + num(s.searches_all) + ' total') +
+        card('Reserve button clicks', num(s.reserve_30d), 'in 30 days &middot; ' + num(s.reserve_all) + ' total') +
+        card('Member logins', num(s.logins_30d), num(s.members_30d) + ' different slips in 30 days') +
+        card('Failed logins', num(s.failed_30d), 'in 30 days');
+      function list(title, rows, key, action) {
+        if (!rows || !rows.length) return '';
+        return '<div class="stat-list"><div class="stat-title">' + title + '</div><ol>' + rows.map(function (x) {
+          return '<li><button type="button" class="linkish" data-filter-action="' + action + '" data-filter-text="' + D.esc(x[key]) + '">' +
+            D.esc(x[key]) + '</button> <span class="note">' + num(x.n) + '</span></li>';
+        }).join('') + '</ol></div>';
+      }
+      $('logTops').innerHTML = list('Most viewed pages (30 days)', s.top_pages, 'page', 'page_view') +
+        list('Most searched slips (30 days)', s.top_slips, 'slip', 'slip_search');
+    });
+  }
+
+  // YYYY-MM-DD in Eastern time -> ISO timestamp at local midnight.
+  function easternMidnight(ymd) { return ymd ? D.fromLocalInput(ymd + 'T00:00') : null; }
+
+  function logQuery() {
+    var q = sb.from('activity_log').select('*', { count: 'exact' }).order('at', { ascending: false });
+    var from = easternMidnight($('logFrom').value);
+    var to = $('logTo').value;
+    if (from) q = q.gte('at', from);
+    if (to) {
+      var p = to.split('-'); var next = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + 1));
+      q = q.lt('at', easternMidnight(next.toISOString().slice(0, 10)));
+    }
+    if ($('logAction').value) q = q.eq('action', $('logAction').value);
+    if ($('logWho').value === 'members') q = q.eq('is_member', true);
+    if ($('logWho').value === 'visitors') q = q.eq('is_member', false);
+    var slip = $('logSlip').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (slip) q = q.or('slip.eq.' + slip + ',target_id.eq.' + slip + ',details->>slip.eq.' + slip);
+    var t = $('logText').value.trim().replace(/[,()*%]/g, ' ').trim();
+    if (t) q = q.or('target_label.ilike.*' + t + '*,page.ilike.*' + t + '*,target_id.ilike.*' + t + '*');
+    return q;
+  }
+
+  function loadLog(reset) {
+    if (reset) { logOffset = 0; logRowsData = []; $('logRows').innerHTML = '<tr><td colspan="6">Loading&hellip;</td></tr>'; }
+    logQuery().range(logOffset, logOffset + LOG_PAGE - 1).then(function (r) {
+      if (r.error) { $('logRows').innerHTML = '<tr><td colspan="6" class="inactive">' + D.esc(r.error.message) + '</td></tr>'; return; }
+      var rows = r.data || [];
+      logRowsData = logRowsData.concat(rows);
+      logOffset += rows.length;
+      $('logCount').textContent = r.count != null ? 'Showing ' + num(logRowsData.length) + ' of ' + num(r.count) + ' entries' : '';
+      $('logMore').hidden = !(r.count != null && logOffset < r.count);
+      var html = logRowsData.map(logRow).join('');
+      $('logRows').innerHTML = html || '<tr><td colspan="6" class="note">No activity matches.</td></tr>';
+    });
+  }
+
+  function detailText(x) {
+    var d = x.details || {}, parts = [];
+    if (x.action === 'vote_cast') return 'Slip ' + (d.slip || '') + ': ' + (d.choice || '');
+    if (x.action === 'slip_search') return d.found ? 'Found' + (d.from_link ? ' (shared link)' : '') : 'Not found' + (d.query ? ' ("' + d.query + '")' : '');
+    if (x.action === 'ineligible_marked' || x.action === 'ineligible_removed') return 'Slip ' + (d.slip || '') + (d.reason ? ' (' + d.reason + ')' : '');
+    if (x.action === 'member_updated') {
+      if (d.owner) parts.push('Owner: ' + (d.owner[0] || '') + ' → ' + (d.owner[1] || ''));
+      if (d.email) parts.push('Email: ' + (d.email[0] || 'none') + ' → ' + (d.email[1] || 'none'));
+      if ('active' in d) parts.push(d.active ? 'Activated' : 'Deactivated');
+      if ('can_vote' in d) parts.push(d.can_vote ? 'Voting on' : 'Voting off');
+      return parts.join('; ');
+    }
+    if ('active' in d) parts.push(d.active ? 'Made active' : 'Made inactive');
+    if ('visible' in d) parts.push(d.visible ? 'Shown' : 'Hidden');
+    if (d.section) parts.push(D.categoryLabel(d.section));
+    if (d.type) parts.push(D.eventTypeLabel(d.type));
+    return parts.join('; ');
+  }
+
+  function whoText(x) {
+    if (x.slip && x.is_member) return '<strong>' + D.esc(x.slip) + '</strong>';
+    if (x.action === 'login_failed') return '<span class="note">Visitor (tried ' + D.esc(x.slip || '?') + ')</span>';
+    if (!x.user_id && !x.visitor_id) return '<span class="note">System</span>';
+    return '<span class="note">Visitor' + (x.visitor_id ? ' ' + D.esc(x.visitor_id.slice(0, 6)) : '') + '</span>';
+  }
+
+  function logRow(x) {
+    var item = x.target_label || x.target_id || '';
+    if (x.target_type === 'event' && x.target_id && x.action !== 'event_deleted') item = '<a href="event.html?id=' + D.esc(x.target_id) + '" target="_blank" rel="noopener">' + D.esc(item) + '</a>';
+    else item = D.esc(item);
+    var cls = /failed|deleted/.test(x.action) ? ' class="log-warn"' : '';
+    return '<tr' + cls + '><td class="nowrap">' + D.esc(D.fmtWhen(x.at)) + '</td><td>' + whoText(x) + '</td>' +
+      '<td>' + D.esc(LOG_LABEL[x.action] || x.action) + '</td><td>' + item + '</td>' +
+      '<td class="note">' + D.esc(detailText(x)) + '</td>' +
+      '<td class="note">' + D.esc(x.page || '') + (x.device ? (x.page ? ' &middot; ' : '') + x.device : '') + '</td></tr>';
+  }
+
+  function logCsv() {
+    // Export everything that matches the current search (up to 10,000 rows).
+    var btn = $('logCsv'); btn.disabled = true; btn.textContent = 'Preparing…';
+    var all = [];
+    function page(off) {
+      return logQuery().range(off, off + 999).then(function (r) {
+        var rows = r.data || [];
+        all = all.concat(rows);
+        if (rows.length === 1000 && all.length < 10000) return page(off + 1000);
+      });
+    }
+    page(0).then(function () {
+      function q(s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; }
+      var lines = [['When (Eastern)', 'Slip', 'Member', 'Activity', 'Item', 'Details', 'Page', 'Device', 'Visitor'].map(q).join(',')];
+      all.forEach(function (x) {
+        lines.push([D.fmtWhen(x.at), x.slip, x.is_member ? 'yes' : 'no', LOG_LABEL[x.action] || x.action,
+          x.target_label || x.target_id, detailText(x), x.page, x.device, x.visitor_id].map(q).join(','));
+      });
+      var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'activity_log_' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    }).then(function () { btn.disabled = false; btn.textContent = 'Download CSV'; });
   }
 
   /* ---------- Members ---------- */

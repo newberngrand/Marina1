@@ -93,7 +93,12 @@
     return (n / 1024 / 1024).toFixed(1) + ' MB';
   }
 
-  function openDocument(sb, path, fileName) {
+  function openDocument(sb, path, fileName, meta) {
+    meta = meta || {};
+    if (window.MemberAuth && MemberAuth.track) {
+      MemberAuth.track('open_document', { type: 'document', id: meta.id || path, label: meta.title || fileName,
+        details: meta.category ? { section: meta.category } : {} });
+    }
     var win = window.open('', '_blank');
     return sb.storage.from('marina-docs').createSignedUrl(path, 300).then(function (r) {
       if (r.error) { if (win) win.close(); alert('Sorry, that document could not be opened.'); return; }

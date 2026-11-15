@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=20261112h">
+<link rel="stylesheet" href="style.css?v=20261115a">
 </head>
 <body data-member-portal>
 
@@ -58,6 +58,7 @@
         <button type="button" class="admin-tab active" data-tab="events" role="tab">Current Events</button>
         <button type="button" class="admin-tab" data-tab="docs" role="tab">Documents</button>
         <button type="button" class="admin-tab" data-tab="members" role="tab">Members</button>
+        <button type="button" class="admin-tab" data-tab="log" role="tab">Activity Log</button>
       </div>
 
       <!-- EVENTS -->
@@ -222,6 +223,59 @@
         <div id="docList">Loading&hellip;</div>
       </div>
 
+      <!-- ACTIVITY LOG -->
+      <div class="admin-panel" data-panel="log" hidden>
+        <div class="admin-panel-head">
+          <h2>Activity Log</h2>
+          <button type="button" class="btn-sm" id="logRefresh">Refresh</button>
+        </div>
+
+        <div class="stat-grid" id="logStats"><p class="note">Loading&hellip;</p></div>
+        <div class="stat-lists" id="logTops"></div>
+
+        <form class="portal-card admin-form log-filters" id="logFilters">
+          <h3>Search the log</h3>
+          <div class="log-filter-grid">
+            <label>From
+              <input type="date" id="logFrom">
+            </label>
+            <label>To
+              <input type="date" id="logTo">
+            </label>
+            <label>Activity
+              <select id="logAction"></select>
+            </label>
+            <label>Who
+              <select id="logWho">
+                <option value="all">Everyone</option>
+                <option value="members">Logged-in members</option>
+                <option value="visitors">Visitors (not logged in)</option>
+              </select>
+            </label>
+            <label>Slip
+              <input type="text" id="logSlip" placeholder="e.g. B12" autocapitalize="characters" spellcheck="false">
+            </label>
+            <label>Item contains
+              <input type="text" id="logText" placeholder="event, document, page&hellip;">
+            </label>
+          </div>
+          <div class="portal-actions">
+            <button type="submit" class="btn btn-gold">Search</button>
+            <button type="button" class="btn btn-outline" id="logClear">Clear</button>
+            <button type="button" class="btn-sm" id="logCsv">Download CSV</button>
+            <span class="note" id="logCount"></span>
+          </div>
+        </form>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table log-table">
+            <thead><tr><th>When (Eastern)</th><th>Who</th><th>Activity</th><th>Item</th><th>Details</th><th>Page / device</th></tr></thead>
+            <tbody id="logRows"></tbody>
+          </table>
+        </div>
+        <div class="portal-actions"><button type="button" class="btn btn-outline" id="logMore" hidden>Load more</button></div>
+      </div>
+
       <!-- MEMBERS -->
       <div class="admin-panel" data-panel="members" hidden>
         <div class="admin-panel-head">
@@ -303,8 +357,8 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=20261112h"></script>
-<script src="member-data.js?v=20261112h"></script>
-<script src="admin.js?v=20261112h"></script>
+<script src="member-login.js?v=20261115a"></script>
+<script src="member-data.js?v=20261115a"></script>
+<script src="admin.js?v=20261115a"></script>
 </body>
 </html>

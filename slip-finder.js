@@ -155,6 +155,11 @@
     clear();
     var p = parse(text);
     var el = p && svg.querySelector('#slip-' + p.dock + '-' + p.num);
+    // Let the site log the search (counted on the admin Log page).
+    try {
+      window.dispatchEvent(new CustomEvent('slipsearch', { detail: {
+        query: String(text || '').trim().slice(0, 20), slip: p ? p.dock + p.num : null, found: !!el, fromLink: !scroll } }));
+    } catch (e) {}
     if (!el) {
       info.className = 'slip-info error';
       info.innerHTML = p

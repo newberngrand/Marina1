@@ -10,6 +10,58 @@
   var SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
   var PORTAL_PAGE = 'member-portal.html';
 
+  /* ---------- Activity tracking ----------
+     Sends small records to the log: page views, slip-finder searches and
+     Reserve clicks for everyone; logins, documents, events, etc. for members.
+     Uses a plain request (no login library needed) so it is light for visitors. */
+  function visitorId() {
+    try {
+      var v = localStorage.getItem('ngbm_vid');
+      if (!v) {
+        v = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+        localStorage.setItem('ngbm_vid', v);
+      }
+      return v;
+    } catch (e) { return null; }
+  }
+  function storedToken() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && /^sb-.*-auth-token$/.test(k)) {
+          var s = JSON.parse(localStorage.getItem(k) || '{}');
+          if (s && s.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now() + 30000)) return s.access_token;
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+  function track(action, o) {
+    o = o || {};
+    var body = JSON.stringify({
+      p_action: action,
+      p_target_type: o.type || null,
+      p_target_id: o.id != null ? String(o.id) : null,
+      p_label: o.label || null,
+      p_details: o.details || {},
+      p_page: (location.pathname.split('/').pop() || 'index.html'),
+      p_visitor: visitorId(),
+      p_device: /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+    });
+    function send(withToken) {
+      var h = { 'Content-Type': 'application/json', apikey: SUPABASE_KEY };
+      var t = withToken ? storedToken() : null;
+      if (t) h.Authorization = 'Bearer ' + t;
+      return fetch(SUPABASE_URL + '/rest/v1/rpc/log_event', { method: 'POST', headers: h, body: body, keepalive: true })
+        .then(function (r) { if ((r.status === 401 || r.status === 403) && t) return send(false); });
+    }
+    return send(true).catch(function () {});
+  }
+  // Wait for a log record briefly (e.g. before leaving the page), but never hang.
+  function trackThen(action, o) {
+    return Promise.race([track(action, o), new Promise(function (ok) { setTimeout(ok, 800); })]);
+  }
+
   var clientPromise = null;
   var overlay = null;
 
@@ -149,7 +201,10 @@
       setBusy(loginForm, true);
       getClient().then(function (sb) {
         return sb.auth.signInWithPassword({ email: slipEmail(slip), password: pwInput.value }).then(function (res) {
-          if (res.error) throw new Error('Incorrect slip or password. Please try again.');
+          if (res.error) {
+            track('login_failed', { type: 'slip', id: slip, label: slip });
+            throw new Error('Incorrect slip or password. Please try again.');
+          }
           return sb.from('members').select('slip, active').eq('slip', slip).maybeSingle().then(function (m) {
             if (!m.data || !m.data.active) {
               return signOutHere(sb).then(function () {
@@ -157,8 +212,10 @@
               });
             }
             closeModal(false);
-            if (document.body.hasAttribute('data-member-portal')) window.location.reload();
-            else window.location.href = PORTAL_PAGE;
+            return trackThen('login', { type: 'slip', id: slip, label: slip }).then(function () {
+              if (document.body.hasAttribute('data-member-portal')) window.location.reload();
+              else window.location.href = PORTAL_PAGE;
+            });
           });
         });
       }).catch(function (err) {
@@ -178,6 +235,7 @@
       showError(errorEl, '');
       doneEl.hidden = true;
       setBusy(forgotForm, true);
+      track('reset_requested', { type: 'slip', id: slip, label: slip });
       fetch(SUPABASE_URL + '/functions/v1/request-password-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
@@ -213,7 +271,8 @@
   window.MemberAuth = {
     getClient: getClient, openLogin: openModal, slipEmail: slipEmail,
     signOut: function () { return getClient().then(signOutHere, function () { clearLocalSession(); }); },
-    logOut: logOut
+    logOut: logOut,
+    track: track
   };
 
   function slipFromUser(user) {
@@ -228,7 +287,9 @@
   function logOut() {
     var btn = document.getElementById('memberBarLogout');
     if (btn) { btn.disabled = true; btn.textContent = 'Logging out…'; }
-    getClient().then(signOutHere, function () { clearLocalSession(); })
+    trackThen('logout')
+      .then(function () { return getClient(); })
+      .then(signOutHere, function () { clearLocalSession(); })
       .catch(function () { clearLocalSession(); })
       .then(function () { window.location.replace('index.html'); });
   }
@@ -281,6 +342,18 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    // Public counts: every page view, Reserve button clicks, slip-finder searches.
+    track('page_view', { type: 'page', label: document.title });
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href*="marinago.com"]');
+      if (a) track('reserve_click', { type: 'link', label: (a.textContent || '').trim().slice(0, 80) || 'Reserve' });
+    }, true);
+    window.addEventListener('slipsearch', function (e) {
+      var d = e.detail || {};
+      if (!d.query) return;
+      track('slip_search', { type: 'slip', id: d.slip || d.query, label: d.slip || String(d.query || '').toUpperCase(),
+        details: { found: !!d.found, query: d.query, from_link: !!d.fromLink } });
+    });
     // Only load the login service for visitors who have signed in before.
     if (hasStoredSession()) {
       getClient().then(function (sb) {

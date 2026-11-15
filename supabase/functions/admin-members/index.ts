@@ -45,6 +45,10 @@ Deno.serve(async (req) => {
     const { error } = await admin.auth.admin.updateUserById(m.user_id, { password });
     if (error) return reply(400, { error: error.message });
     console.log(`password set for slip ${slip} by ${me.slip}`);
+    await admin.from("activity_log").insert({
+      user_id: caller.user.id, slip: me.slip, is_member: true, action: "password_set",
+      target_type: "member", target_id: slip, target_label: slip,
+    });
     return reply(200, { ok: true, message: `Password updated for slip ${slip}.` });
   }
 

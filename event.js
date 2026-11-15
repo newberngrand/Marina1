@@ -21,6 +21,7 @@
         me = res[1].data;
         if (!ev) { $('evStatus').textContent = 'This event is no longer available.'; return; }
         renderEvent();
+        MemberAuth.track('view_event', { type: 'event', id: ev.id, label: ev.title, details: { type: ev.event_type } });
         if (ev.event_type === 'vote') loadBallot();
       });
     }).catch(function (e) { $('evStatus').textContent = e.message || 'Something went wrong.'; });

@@ -455,6 +455,24 @@ nav.main-nav a.active {
 .row-inactive td:first-child { opacity: 0.7; }
 .portal-card h3 .count { color: var(--muted); font-weight: 400; font-size: 0.9rem; }
 
+/* Activity log */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.stat-card { background: var(--white); border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: var(--radius); padding: 14px 16px; }
+.stat-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+.stat-big { font-size: 1.9rem; font-weight: 800; color: var(--navy); line-height: 1.2; margin: 4px 0; }
+.stat-big small { font-size: 0.9rem; font-weight: 600; color: var(--muted); }
+.stat-sub { font-size: 0.82rem; color: var(--muted); }
+.stat-lists { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.stat-list { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; }
+.stat-list ol { margin: 8px 0 0; padding-left: 20px; }
+.stat-list li { padding: 2px 0; }
+.linkish { background: none; border: none; padding: 0; font: inherit; color: var(--teal); text-decoration: underline; cursor: pointer; }
+.log-filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px 16px; }
+.log-filters .portal-actions { align-items: center; }
+.log-table td { font-size: 0.86rem; }
+.log-table td.nowrap { white-space: nowrap; }
+.log-table tr.log-warn td { background: #fdf3f1; }
+
 /* Voting */
 .admin-form .full { grid-column: 1 / -1; }
 .ballot-box { border: 1px solid var(--gold); border-radius: var(--radius); padding: 14px 16px 16px; background: #fffaf0; margin: 0; }
