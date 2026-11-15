@@ -1,5 +1,6 @@
 // Admin-only member announcements.
-//   { action: "preview", audience }                                  -> recipient count
+//   { action: "preview", audience, docks?, slips? }                  -> recipient count
+// audience: "all" | "voting" | "docks" (docks: ["A","C"]) | "slips" (slips: "A12, B7")
 //   { action: "test", subject, body, event_id?, to }                 -> one test email
 //   { action: "send", subject, body, audience, event_id? }           -> create + start sending
 //   { action: "resume", announcement_id }                            -> keep sending a paused one
@@ -71,21 +72,34 @@ Deno.serve(async (req) => {
   try { b = await req.json(); } catch { return reply(400, { error: "Invalid request" }); }
   const action = String(b.action ?? "");
 
-  async function recipients(audience: string): Promise<Recip[]> {
+  // Who an audience covers. Returns the recipients plus any slip numbers that didn't match.
+  function parseTarget() {
+    const audience = ["all", "voting", "docks", "slips"].includes(String(b.audience)) ? String(b.audience) : "all";
+    const docks = Array.isArray(b.docks) ? (b.docks as unknown[]).map((d) => String(d).toUpperCase()).filter((d) => /^[A-Z]$/.test(d)) : [];
+    const slips = String(b.slips ?? "").toUpperCase().split(/[\s,;]+/).filter((x) => /^[A-Z0-9-]{1,20}$/.test(x));
+    return { audience, docks: [...new Set(docks)].sort(), slips: [...new Set(slips)] };
+  }
+  async function recipients(t: { audience: string; docks: string[]; slips: string[] }): Promise<{ list: Recip[]; unknown: string[]; noEmail: string[] }> {
     let q = db.from("members").select("slip, owner_name, email, can_vote").eq("active", true).eq("is_admin", false);
-    if (audience === "voting") q = q.eq("can_vote", true);
-    const { data } = await q;
+    if (t.audience === "voting") q = q.eq("can_vote", true);
+    if (t.audience === "slips") q = q.in("slip", t.slips.length ? t.slips : ["-none-"]);
+    const { data: rows } = await q;
+    let data = rows ?? [];
+    if (t.audience === "docks") data = data.filter((m) => t.docks.includes(String(m.slip).charAt(0).toUpperCase()));
+    const found = new Set(data.map((m) => m.slip));
+    const unknown = t.audience === "slips" ? t.slips.filter((x) => !found.has(x)) : [];
+    const noEmail: string[] = [];
     const map = new Map<string, Recip>();
-    for (const m of data ?? []) {
+    for (const m of data) {
       const e = String(m.email ?? "").trim();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) continue;
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { noEmail.push(m.slip); continue; }
       const k = e.toLowerCase();
       const r = map.get(k) ?? { email: e, name: m.owner_name ?? "", slips: [] };
       r.slips.push(m.slip);
       map.set(k, r);
     }
     for (const r of map.values()) r.slips.sort((a, c) => a.localeCompare(c, undefined, { numeric: true }));
-    return [...map.values()];
+    return { list: [...map.values()], unknown, noEmail };
   }
   async function eventInfo(id: unknown) {
     if (!id) return null;
@@ -133,8 +147,9 @@ Deno.serve(async (req) => {
   }
 
   if (action === "preview") {
-    const list = await recipients(String(b.audience ?? "all"));
-    return reply(200, { count: list.length, slips: list.reduce((n, r) => n + r.slips.length, 0) });
+    const t = parseTarget();
+    const { list, unknown, noEmail } = await recipients(t);
+    return reply(200, { count: list.length, slips: list.reduce((n, r) => n + r.slips.length, 0), unknown, no_email: noEmail });
   }
 
   if (action === "test") {
@@ -152,17 +167,22 @@ Deno.serve(async (req) => {
   if (action === "send") {
     const t = checkText();
     if ("err" in t) return reply(400, { error: t.err });
-    const audience = b.audience === "voting" ? "voting" : "all";
-    const list = await recipients(audience);
-    if (!list.length) return reply(400, { error: "No members with an email address to send to." });
+    const target = parseTarget();
+    const audience = target.audience;
+    if (audience === "docks" && !target.docks.length) return reply(400, { error: "Pick at least one dock." });
+    if (audience === "slips" && !target.slips.length) return reply(400, { error: "Type at least one slip number." });
+    const { list, unknown } = await recipients(target);
+    if (unknown.length) return reply(400, { error: "These slips weren't found: " + unknown.join(", ") + ". Fix or remove them, then send again." });
+    if (!list.length) return reply(400, { error: "None of those slips have an email address on file." });
+    const targetText = audience === "docks" ? target.docks.join(", ") : audience === "slips" ? target.slips.join(", ") : "";
     const ev = await eventInfo(b.event_id);
     const { data: a, error } = await db.from("announcements").insert({
-      subject: t.subject, body: t.body, audience, event_id: ev?.id ?? null, sent_by: me.slip, total: list.length,
+      subject: t.subject, body: t.body, audience, target: targetText, event_id: ev?.id ?? null, sent_by: me.slip, total: list.length,
     }).select("id").single();
     if (error || !a) return reply(500, { error: error?.message ?? "Could not create the announcement." });
     await db.from("announcement_recipients").insert(list.map((r) => ({ announcement_id: a.id, email: r.email, name: r.name, slips: r.slips })));
     await db.from("activity_log").insert({ user_id: caller.user.id, slip: me.slip, is_member: true, action: "announcement_sent",
-      target_type: "announcement", target_id: a.id, target_label: t.subject, details: { recipients: list.length, audience } });
+      target_type: "announcement", target_id: a.id, target_label: t.subject, details: { recipients: list.length, audience, target: targetText } });
     return reply(200, await pump(a.id));
   }
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611151435">
+<link rel="stylesheet" href="style.css?v=202611151443">
 </head>
 <body data-member-portal>
 
@@ -358,7 +358,25 @@
                 <select id="anAudience">
                   <option value="all">All members with an email on file</option>
                   <option value="voting">Voting slips only</option>
+                  <option value="docks">Selected docks</option>
+                  <option value="slips">Specific slips</option>
                 </select>
+              </label>
+              <div class="full an-docks" id="anDocksWrap" hidden>
+                <span class="an-label">Docks</span>
+                <div class="an-dock-boxes" id="anDocks">
+                  <label><input type="checkbox" value="A"> A</label>
+                  <label><input type="checkbox" value="B"> B</label>
+                  <label><input type="checkbox" value="C"> C</label>
+                  <label><input type="checkbox" value="D"> D</label>
+                  <label><input type="checkbox" value="E"> E</label>
+                  <label><input type="checkbox" value="F"> F</label>
+                  <label><input type="checkbox" value="G"> G</label>
+                  <label><input type="checkbox" value="Z"> Z</label>
+                </div>
+              </div>
+              <label class="full" id="anSlipsWrap" hidden>Slips (separate with commas or spaces)
+                <input type="text" id="anSlips" placeholder="e.g. A12, B7, C30" autocapitalize="characters" spellcheck="false">
               </label>
               <label>Add a button to an event (optional)
                 <select id="anEvent"><option value="">No button</option></select>
@@ -532,9 +550,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611151435"></script>
-<script src="member-data.js?v=202611151435"></script>
-<script src="video-utils.js?v=202611151435"></script>
-<script src="admin.js?v=202611151435"></script>
+<script src="member-login.js?v=202611151443"></script>
+<script src="member-data.js?v=202611151443"></script>
+<script src="video-utils.js?v=202611151443"></script>
+<script src="admin.js?v=202611151443"></script>
 </body>
 </html>

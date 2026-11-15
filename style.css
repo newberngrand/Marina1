@@ -459,6 +459,10 @@ nav.main-nav a.active {
 
 /* Email members */
 .email-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 20px; align-items: start; }
+.an-label { display: block; font-size: 0.86rem; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+.an-dock-boxes { display: flex; flex-wrap: wrap; gap: 8px; }
+.an-dock-boxes label { flex-direction: row !important; align-items: center; gap: 6px !important; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-weight: 700; }
+.an-dock-boxes label:has(input:checked) { border-color: var(--navy); background: #eef3f8; }
 .an-test { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 .an-test input { flex: 1 1 220px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
 .an-preview-card { position: sticky; top: 12px; }

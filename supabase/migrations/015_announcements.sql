@@ -37,3 +37,8 @@ create policy announcements_admin_read on public.announcements for select to aut
 create policy announcement_recipients_admin_read on public.announcement_recipients for select to authenticated using ((select public.is_admin()));
 revoke all on public.announcements, public.announcement_recipients from anon, authenticated;
 grant select on public.announcements, public.announcement_recipients to authenticated;
+
+-- Later: send to chosen docks or a list of slips.
+alter table public.announcements drop constraint announcements_audience_check;
+alter table public.announcements add constraint announcements_audience_check check (audience in ('all', 'voting', 'docks', 'slips'));
+alter table public.announcements add column target text not null default '';  -- e.g. 'A, C' for docks or 'A12, B7' for slips

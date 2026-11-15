@@ -827,7 +827,7 @@
       var year = (row.doc_date || new Date().toISOString()).slice(0, 4);
       var path = row.category + '/' + year + '/' + Date.now() + '-' + safeName(file.name);
       showErr(err, '');
-      btn.textContent = 'Uploading…';
+      btn.textContent = 'Uploading\u2026';
       chain = sb.storage.from('marina-docs').upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
         .then(function (r) {
           if (r.error) throw new Error(r.error.message.indexOf('mime') !== -1 ? 'That file type is not allowed.' : r.error.message);
@@ -1004,7 +1004,7 @@
 
     files.reduce(function (chain, f, k) {
       return chain.then(function () {
-        btn.textContent = 'Uploading ' + (k + 1) + ' of ' + files.length + '…';
+        btn.textContent = 'Uploading ' + (k + 1) + ' of ' + files.length + '\u2026';
         return shrink(f).then(function (s) {
           var base = f.name.replace(/\.[^.]+$/, '');
           var path = new Date().getFullYear() + '/' + Date.now() + '-' + base.normalize('NFKD').replace(/[^\w-]+/g, '-').slice(0, 60) + '.' + s.ext;
@@ -1173,16 +1173,33 @@
     });
   }
 
+  function anTarget() {
+    var aud = $('anAudience').value;
+    var t = { audience: aud };
+    if (aud === 'docks') t.docks = Array.prototype.filter.call(document.querySelectorAll('#anDocks input'), function (c) { return c.checked; }).map(function (c) { return c.value; });
+    if (aud === 'slips') t.slips = $('anSlips').value;
+    return t;
+  }
+  function anTargetKey() { return JSON.stringify(anTarget()); }
+
   function setupAnnouncements() {
     if (anWired) return;
     anWired = true;
+    var countTimer = null;
+    function recount() { clearTimeout(countTimer); countTimer = setTimeout(updateAnCount, 400); }
+    $('anAudience').addEventListener('change', function () {
+      $('anDocksWrap').hidden = $('anAudience').value !== 'docks';
+      $('anSlipsWrap').hidden = $('anAudience').value !== 'slips';
+    });
+    $('anDocks').addEventListener('change', recount);
+    $('anSlips').addEventListener('input', recount);
     ['anSubject', 'anBody', 'anEvent'].forEach(function (id) { $(id).addEventListener('input', previewAnnouncement); $(id).addEventListener('change', previewAnnouncement); });
     $('anAudience').addEventListener('change', updateAnCount);
     $('anTest').addEventListener('click', function () {
       var err = $('anError'), done = $('anDone'); err.hidden = true; done.hidden = true;
       var to = $('anTestTo').value.trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return showErr(err, 'Type the email address to send the test to.');
-      var btn = $('anTest'); btn.disabled = true; btn.textContent = 'Sending…';
+      var btn = $('anTest'); btn.disabled = true; btn.textContent = 'Sending\u2026';
       callAnnounce({ action: 'test', subject: $('anSubject').value, body: $('anBody').value, event_id: $('anEvent').value || null, to: to })
         .then(function (r) { done.textContent = r.message + ' Check that inbox (and spam) before sending to everyone.'; done.hidden = false; })
         .catch(function (ex) { showErr(err, ex.message); })
@@ -1193,10 +1210,11 @@
       var err = $('anError'), done = $('anDone'); err.hidden = true; done.hidden = true;
       var subject = $('anSubject').value.trim(), body = $('anBody').value.trim();
       if (!subject || !body) return showErr(err, 'Please fill in the subject and message.');
-      var n = anCounts[$('anAudience').value];
+      var n = anCounts[anTargetKey()];
+      if (n === 0) return showErr(err, 'Nobody to send to: pick docks or type slips that have an email on file.');
       if (!confirm('Send "' + subject + '" to ' + (n != null ? n + ' email addresses' : 'all members') + ' now?\n\nThis can\'t be undone. (Tip: send yourself a test first.)')) return;
-      var btn = $('anSend'); btn.disabled = true; btn.textContent = 'Sending… please wait';
-      callAnnounce({ action: 'send', subject: subject, body: body, audience: $('anAudience').value, event_id: $('anEvent').value || null })
+      var btn = $('anSend'); btn.disabled = true; btn.textContent = 'Sending\u2026 please wait';
+      callAnnounce(Object.assign({ action: 'send', subject: subject, body: body, event_id: $('anEvent').value || null }, anTarget()))
         .then(function (r) {
           done.textContent = 'Sent to ' + r.sent + ' of ' + (r.sent + r.failed + r.pending) + ' addresses.' +
             (r.pending ? ' ' + r.pending + ' still waiting: ' + r.note : '') + (r.failed ? ' ' + r.failed + ' failed.' : '');
@@ -1210,7 +1228,7 @@
     $('anHistory').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-an-resume]');
       if (!b) return;
-      b.disabled = true; b.textContent = 'Sending…';
+      b.disabled = true; b.textContent = 'Sending\u2026';
       callAnnounce({ action: 'resume', announcement_id: b.getAttribute('data-an-resume') })
         .then(function (r) { alert('Sent ' + r.sent + ' so far' + (r.pending ? '; ' + r.pending + ' still waiting. ' + r.note : '. All done.')); })
         .catch(function (ex) { alert(ex.message); })
@@ -1227,13 +1245,19 @@
   }
 
   function updateAnCount() {
-    var aud = $('anAudience').value;
-    $('anCount').textContent = 'Counting recipients…';
-    callAnnounce({ action: 'preview', audience: aud }).then(function (r) {
-      anCounts[aud] = r.count;
-      $('anCount').innerHTML = 'Goes to <strong>' + r.count + ' email addresses</strong> covering ' + r.slips + ' slips (owners with several slips get one email). Slips with no email on file are skipped.' +
+    var t = anTarget(), key = JSON.stringify(t);
+    if (t.audience === 'docks' && !t.docks.length) { anCounts[key] = 0; $('anCount').textContent = 'Tick one or more docks.'; $('anSend').textContent = 'Send to members'; return; }
+    if (t.audience === 'slips' && !String(t.slips || '').trim()) { anCounts[key] = 0; $('anCount').textContent = 'Type the slip numbers to send to.'; $('anSend').textContent = 'Send to members'; return; }
+    $('anCount').textContent = 'Counting recipients\u2026';
+    callAnnounce(Object.assign({ action: 'preview' }, t)).then(function (r) {
+      if (key !== anTargetKey()) return;   // the choice changed while counting
+      anCounts[key] = r.count;
+      var who = t.audience === 'docks' ? ' on dock' + (t.docks.length > 1 ? 's ' : ' ') + t.docks.join(', ') : '';
+      $('anCount').innerHTML = 'Goes to <strong>' + r.count + ' email address' + (r.count === 1 ? '' : 'es') + '</strong> covering ' + r.slips + ' slip' + (r.slips === 1 ? '' : 's') + who + ' (owners with several slips get one email).' +
+        (r.unknown && r.unknown.length ? '<br><span class="inactive">Not found: ' + D.esc(r.unknown.join(', ')) + '. Check those slip numbers.</span>' : '') +
+        (r.no_email && r.no_email.length ? '<br><span class="inactive">No email on file, will be skipped: ' + D.esc(r.no_email.join(', ')) + '</span>' : '') +
         (r.count > 100 ? '<br><span class="inactive">Note: the free email plan sends 100 per day, so this will pause partway and you can Resume the rest tomorrow.</span>' : '');
-      $('anSend').textContent = 'Send to ' + r.count + ' members';
+      $('anSend').textContent = 'Send to ' + r.count + ' member' + (r.count === 1 ? '' : 's');
     }).catch(function (ex) { $('anCount').textContent = ex.message; });
   }
 
@@ -1253,7 +1277,7 @@
         var pending = a.total - a.sent - a.failed;
         return '<tr><td class="note nowrap">' + D.esc(D.fmtWhen(a.created_at)) + '</td><td><strong>' + D.esc(a.subject) + '</strong>' +
           (a.note ? '<div class="note">' + D.esc(a.note) + '</div>' : '') + '</td>' +
-          '<td class="note">' + (a.audience === 'voting' ? 'Voting slips' : 'All members') + '</td>' +
+          '<td class="note">' + ({ all: 'All members', voting: 'Voting slips', docks: 'Dock ' + D.esc(a.target), slips: 'Slips ' + D.esc(a.target) }[a.audience] || a.audience) + '</td>' +
           '<td>' + a.sent + ' of ' + a.total + (a.failed ? ' <span class="inactive">(' + a.failed + ' failed)</span>' : '') + '</td>' +
           '<td>' + (a.status === 'done' ? 'Done' : '<span class="inactive">' + (a.status === 'paused' ? 'Paused' : 'Sending') + '</span>') + '</td>' +
           '<td class="row-actions">' + (pending > 0 ? '<button type="button" class="btn-sm btn-primary-sm" data-an-resume="' + a.id + '">Resume (' + pending + ' left)</button>' : '') + '</td></tr>';
@@ -1436,7 +1460,7 @@
 
   function logCsv() {
     // Export everything that matches the current search (up to 10,000 rows).
-    var btn = $('logCsv'); btn.disabled = true; btn.textContent = 'Preparing…';
+    var btn = $('logCsv'); btn.disabled = true; btn.textContent = 'Preparing\u2026';
     var all = [];
     function page(off) {
       return logQuery().range(off, off + 999).then(function (r) {
