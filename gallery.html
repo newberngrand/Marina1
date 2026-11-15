@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gallery | New Bern Grand Marina</title>
 <meta name="description" content="Photos of New Bern Grand Marina and downtown New Bern, North Carolina, at the confluence of the Neuse and Trent Rivers.">
-<link rel="stylesheet" href="style.css?v=20261115f">
+<link rel="stylesheet" href="style.css?v=20261115g">
 </head>
 <body>
 
@@ -51,6 +51,13 @@
 </div>
 
 <section>
+  <div class="container">
+    <div class="gallery-tabs" role="tablist" aria-label="Gallery">
+      <button type="button" class="gallery-tab active" role="tab" aria-selected="true" data-view="photos" id="tabPhotos">Photos</button>
+      <button type="button" class="gallery-tab" role="tab" aria-selected="false" data-view="videos" id="tabVideos">Videos</button>
+    </div>
+  </div>
+  <div class="container video-grid" id="videoGrid" hidden></div>
   <div class="container gallery-grid">
     <figure class="photo-frame">
       <img src="images/marina-golden-hour.webp" alt="Sailboats lining the docks at New Bern Grand Marina at golden hour, downtown New Bern in the background">
@@ -134,7 +141,8 @@
   </a>
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=20261115f"></script>
-<script src="gallery.js?v=20261115f"></script>
+<script src="member-login.js?v=20261115g"></script>
+<script src="video-utils.js?v=20261115g"></script>
+<script src="gallery.js?v=20261115g"></script>
 </body>
 </html>

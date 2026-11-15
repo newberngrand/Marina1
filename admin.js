@@ -31,6 +31,7 @@
         loadMembers();
         setupLog();
         setupGallery();
+        setupVideos();
       });
     }).catch(function (e) {
       $('adminLoading').textContent = e.message || 'Something went wrong.';
@@ -668,6 +669,127 @@
     });
   }
 
+  /* ---------- Gallery videos ---------- */
+  var vids = [], vidWired = false, vidParsed = null;
+
+  function setupVideos() {
+    if (vidWired) return;
+    vidWired = true;
+    var V = window.VideoUtils;
+    var lookupTimer = null;
+    $('vidUrl').addEventListener('input', function () {
+      clearTimeout(lookupTimer);
+      lookupTimer = setTimeout(detectVideo, 400);
+    });
+    function detectVideo() {
+      var raw = $('vidUrl').value.trim();
+      vidParsed = raw ? V.parse(raw) : null;
+      if (!vidParsed) { $('vidDetected').textContent = 'For YouTube and Vimeo, the title and credit fill in automatically after you paste the link.'; return; }
+      if (vidParsed.error) { $('vidDetected').innerHTML = '<span class="inactive">' + D.esc(vidParsed.error) + '</span>'; return; }
+      $('vidDetected').textContent = V.name(vidParsed.provider) + ' video recognized' + (vidParsed.vertical ? ' (tall/vertical format)' : '') + '.';
+      var oembed = vidParsed.provider === 'youtube' ? 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + vidParsed.id)
+        : vidParsed.provider === 'vimeo' ? 'https://vimeo.com/api/oembed.json?url=' + encodeURIComponent('https://vimeo.com/' + vidParsed.id) : null;
+      if (!oembed) return;
+      fetch(oembed).then(function (r) { return r.ok ? r.json() : null; }).then(function (o) {
+        if (!o) return;
+        if (!$('vidTitle').value.trim() && o.title) $('vidTitle').value = o.title;
+        if (!$('vidCredit').value.trim() && o.author_name) $('vidCredit').value = o.author_name;
+      }).catch(function () {});
+    }
+
+    $('vidForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var err = $('vidError'), done = $('vidDone');
+      err.hidden = true; done.hidden = true;
+      var p = V.parse($('vidUrl').value);
+      if (p.error) return showErr(err, p.error);
+      var title = $('vidTitle').value.trim();
+      if (!title) return showErr(err, 'Please enter a title.');
+      if (vids.some(function (v) { return v.provider === p.provider && v.video_id === p.id; })) return showErr(err, 'That video is already in the list.');
+      var order = vids.reduce(function (m, v) { return Math.max(m, v.sort_order); }, 0) + 10;
+      $('vidSave').disabled = true;
+      sb.from('gallery_videos').insert({
+        url: p.url, provider: p.provider, video_id: p.id, title: title,
+        credit: $('vidCredit').value.trim(), description: $('vidDesc').value.trim(), sort_order: order
+      }).then(function (r) {
+        $('vidSave').disabled = false;
+        if (r.error) return showErr(err, r.error.message);
+        done.textContent = '"' + title + '" added to the end of the Videos page.';
+        done.hidden = false;
+        $('vidForm').reset();
+        $('vidDetected').textContent = 'For YouTube and Vimeo, the title and credit fill in automatically after you paste the link.';
+        loadVideos();
+      });
+    });
+
+    $('vidList').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-vid]');
+      if (!b) return;
+      var v = vids.find(function (x) { return x.id === b.getAttribute('data-id'); });
+      if (!v) return;
+      var act = b.getAttribute('data-vid');
+      if (act === 'up' || act === 'down') moveVideo(v, act === 'up' ? -1 : 1);
+      if (act === 'toggle') sb.from('gallery_videos').update({ active: !v.active }).eq('id', v.id).then(loadVideos);
+      if (act === 'save') {
+        var card = b.closest('.gal-card');
+        var upd = { title: card.querySelector('[data-f="title"]').value.trim(), credit: card.querySelector('[data-f="credit"]').value.trim(),
+                    description: card.querySelector('[data-f="desc"]').value.trim() };
+        if (!upd.title) return alert('Please enter a title.');
+        sb.from('gallery_videos').update(upd).eq('id', v.id).then(function (r) {
+          if (r.error) return alert(r.error.message);
+          Object.assign(v, upd);
+          b.textContent = 'Saved ✓';
+          setTimeout(function () { b.textContent = 'Save'; }, 1500);
+        });
+      }
+      if (act === 'delete' && confirm('Remove "' + v.title + '" from the gallery? (The video itself stays on ' + V.name(v.provider) + '.)')) {
+        sb.from('gallery_videos').delete().eq('id', v.id).then(loadVideos);
+      }
+    });
+    loadVideos();
+  }
+
+  function loadVideos() {
+    var V = window.VideoUtils;
+    return sb.from('gallery_videos').select('*').order('sort_order').order('created_at').then(function (r) {
+      vids = r.data || [];
+      var shown = vids.filter(function (v) { return v.active; }).length;
+      $('vidCount').textContent = vids.length + ' video' + (vids.length === 1 ? '' : 's') + ' · ' + shown + ' showing on the Videos page';
+      $('vidList').innerHTML = vids.length ? vids.map(function (v, i) {
+        var thumb = V.thumbUrl(v);
+        return '<div class="gal-card' + (v.active ? '' : ' hidden-photo') + '">' +
+          '<div class="gal-thumb video-thumb vt-' + D.esc(v.provider) + '">' +
+            (thumb ? '<img src="' + D.esc(thumb) + '" alt="" loading="lazy">' : '<span class="vt-name">' + D.esc(V.name(v.provider)) + '</span>') +
+            '<span class="gal-pos">' + (i + 1) + '</span>' + (v.active ? '' : '<span class="gal-flag">Hidden</span>') +
+            '<span class="video-source">' + D.esc(V.name(v.provider)) + '</span></div>' +
+          '<div class="vid-fields">' +
+            '<input type="text" data-f="title" maxlength="200" value="' + D.esc(v.title) + '" aria-label="Title">' +
+            '<input type="text" data-f="credit" maxlength="120" value="' + D.esc(v.credit) + '" placeholder="Credit" aria-label="Credit">' +
+            '<input type="text" data-f="desc" maxlength="300" value="' + D.esc(v.description) + '" placeholder="Short description" aria-label="Description">' +
+            '<a href="' + D.esc(v.url) + '" target="_blank" rel="noopener" class="note">Open on ' + D.esc(V.name(v.provider)) + ' &#8599;</a>' +
+          '</div>' +
+          '<div class="gal-actions">' +
+            '<button type="button" class="btn-sm" data-vid="up" data-id="' + v.id + '"' + (i === 0 ? ' disabled' : '') + ' title="Move earlier">&#8593;</button>' +
+            '<button type="button" class="btn-sm" data-vid="down" data-id="' + v.id + '"' + (i === vids.length - 1 ? ' disabled' : '') + ' title="Move later">&#8595;</button>' +
+            '<button type="button" class="btn-sm btn-primary-sm" data-vid="save" data-id="' + v.id + '">Save</button>' +
+            '<button type="button" class="btn-sm" data-vid="toggle" data-id="' + v.id + '">' + (v.active ? 'Hide' : 'Show') + '</button>' +
+            '<button type="button" class="btn-sm btn-danger" data-vid="delete" data-id="' + v.id + '">Remove</button>' +
+          '</div></div>';
+      }).join('') : '<p class="note">No videos yet.</p>';
+    });
+  }
+
+  function moveVideo(v, dir) {
+    var i = vids.indexOf(v), j = i + dir;
+    if (j < 0 || j >= vids.length) return;
+    var order = vids.slice();
+    order.splice(j, 0, order.splice(i, 1)[0]);
+    Promise.all(order.map(function (x, k) {
+      var want = (k + 1) * 10;
+      return x.sort_order === want ? null : sb.from('gallery_videos').update({ sort_order: want }).eq('id', x.id);
+    })).then(loadVideos);
+  }
+
   /* ---------- Activity log ---------- */
   var LOG_ACTIONS = [
     ['Member activity', [
@@ -682,10 +804,11 @@
       ['document_uploaded', 'Document uploaded'], ['document_updated', 'Document updated'], ['document_deleted', 'Document deleted'],
       ['member_added', 'Slip added'], ['member_updated', 'Slip updated'], ['member_note_changed', 'Admin note changed'],
       ['password_set', 'Password set by admin'], ['ineligible_marked', 'Marked ineligible'], ['ineligible_removed', 'Eligibility restored'],
-      ['photo_added', 'Gallery photo added'], ['photo_updated', 'Gallery photo updated'], ['photo_deleted', 'Gallery photo deleted']
+      ['photo_added', 'Gallery photo added'], ['photo_updated', 'Gallery photo updated'], ['photo_deleted', 'Gallery photo deleted'],
+      ['video_added', 'Gallery video added'], ['video_updated', 'Gallery video updated'], ['video_deleted', 'Gallery video removed']
     ]],
     ['Public website', [
-      ['page_view', 'Page view'], ['slip_search', 'Slip finder search'], ['reserve_click', 'Reserve button click']
+      ['page_view', 'Page view'], ['slip_search', 'Slip finder search'], ['reserve_click', 'Reserve button click'], ['video_play', 'Video played']
     ]]
   ];
   var LOG_LABEL = {};

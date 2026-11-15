@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=20261115f">
+<link rel="stylesheet" href="style.css?v=20261115g">
 </head>
 <body data-member-portal>
 
@@ -251,6 +251,36 @@
 
         <p class="note" id="galCount"></p>
         <div class="gal-admin-grid" id="galList">Loading&hellip;</div>
+
+        <div class="admin-panel-head" style="margin-top:36px">
+          <h2>Gallery Videos</h2>
+          <a href="gallery.html#videos" target="_blank" rel="noopener" class="btn-sm">View the Videos page &#8599;</a>
+        </div>
+        <form class="portal-card admin-form" id="vidForm">
+          <h3>Add a video</h3>
+          <div class="admin-grid">
+            <label class="full">Video link (YouTube, Vimeo, Instagram, TikTok or Facebook)
+              <input type="text" id="vidUrl" placeholder="https://youtu.be/..." autocomplete="off" spellcheck="false" required>
+            </label>
+            <label class="full">Title
+              <input type="text" id="vidTitle" maxlength="200" required>
+            </label>
+            <label>Credit (who made it, optional)
+              <input type="text" id="vidCredit" maxlength="120">
+            </label>
+            <label>Short description (optional)
+              <input type="text" id="vidDesc" maxlength="300">
+            </label>
+          </div>
+          <p class="note" id="vidDetected" style="margin:8px 0 0">For YouTube and Vimeo, the title and credit fill in automatically after you paste the link.</p>
+          <div class="member-login-error" id="vidError" hidden></div>
+          <div class="member-login-note" id="vidDone" hidden></div>
+          <div class="portal-actions">
+            <button type="submit" class="btn btn-gold" id="vidSave">Add Video</button>
+          </div>
+        </form>
+        <p class="note" id="vidCount"></p>
+        <div class="gal-admin-grid" id="vidList">Loading&hellip;</div>
       </div>
 
       <!-- ACTIVITY LOG -->
@@ -387,8 +417,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=20261115f"></script>
-<script src="member-data.js?v=20261115f"></script>
-<script src="admin.js?v=20261115f"></script>
+<script src="member-login.js?v=20261115g"></script>
+<script src="member-data.js?v=20261115g"></script>
+<script src="video-utils.js?v=20261115g"></script>
+<script src="admin.js?v=20261115g"></script>
 </body>
 </html>

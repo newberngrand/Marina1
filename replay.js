@@ -12,7 +12,7 @@
     view_portal: 'Opened the member portal', view_event: 'Viewed event', open_document: 'Opened document',
     vote_cast: 'Voted', change_password: 'Changed their password', reset_requested: 'Asked for a password reset',
     reset_password_done: 'Reset their password from the email link', slip_search: 'Searched the slip finder',
-    reserve_click: 'Clicked a Reserve button', view_admin: 'Opened the admin page',
+    reserve_click: 'Clicked a Reserve button', view_admin: 'Opened the admin page', video_play: 'Played a video',
     event_created: 'Created event', event_updated: 'Updated event', event_deleted: 'Deleted event',
     document_uploaded: 'Uploaded document', document_updated: 'Updated document', document_deleted: 'Deleted document',
     member_added: 'Added slip', member_updated: 'Updated slip', member_note_changed: 'Changed an admin note',

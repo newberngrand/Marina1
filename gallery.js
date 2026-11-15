@@ -106,6 +106,101 @@
 
   prepare();
 
+  /* ---------- Photos / Videos switch ---------- */
+  var vgrid = document.getElementById('videoGrid');
+  var tabs = document.querySelectorAll('.gallery-tab');
+  var caption = document.querySelector('.gallery-caption');
+  var videosLoaded = false;
+
+  function showView(view, fromHash) {
+    var vids = view === 'videos';
+    tabs.forEach(function (t) {
+      var on = t.getAttribute('data-view') === view;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    grid.hidden = vids;
+    if (vgrid) vgrid.hidden = !vids;
+    if (vids && !videosLoaded) loadVideos();
+    if (!fromHash) history.replaceState(null, '', vids ? '#videos' : location.pathname + location.search);
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function () { showView(t.getAttribute('data-view')); }); });
+  window.addEventListener('hashchange', function () { showView(location.hash === '#videos' ? 'videos' : 'photos', true); });
+
+  /* ---------- Videos ---------- */
+  var V = window.VideoUtils;
+  var vbox = document.createElement('div');
+  vbox.className = 'lightbox video-box';
+  vbox.setAttribute('role', 'dialog');
+  vbox.setAttribute('aria-modal', 'true');
+  vbox.setAttribute('aria-label', 'Video player');
+  vbox.innerHTML = '<button type="button" class="lb-close" aria-label="Close">&times;</button>' +
+    '<div class="vb-inner"><div class="vb-frame"></div><div class="vb-caption"></div></div>';
+  document.body.appendChild(vbox);
+  var videos = [];
+
+  function closeVideo() {
+    vbox.classList.remove('open');
+    vbox.querySelector('.vb-frame').innerHTML = '';   // stops playback
+    document.documentElement.classList.remove('lb-lock');
+  }
+  function openVideo(v) {
+    var frame = vbox.querySelector('.vb-frame');
+    frame.className = 'vb-frame' + (V.isVertical(v) ? ' vertical' : '');
+    frame.innerHTML = '<iframe src="' + esc(V.embedUrl(v)) + '" title="' + esc(v.title || 'Video') + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+    vbox.querySelector('.vb-caption').innerHTML = '<strong>' + esc(v.title) + '</strong>' +
+      (v.credit ? ' <span>&middot; ' + esc(v.credit) + '</span>' : '') +
+      (v.description ? '<div>' + esc(v.description) + '</div>' : '') +
+      '<div><a href="' + esc(v.url) + '" target="_blank" rel="noopener">Watch on ' + esc(V.name(v.provider)) + ' &#8599;</a></div>';
+    vbox.classList.add('open');
+    document.documentElement.classList.add('lb-lock');
+    vbox.querySelector('.lb-close').focus();
+    if (window.MemberAuth && MemberAuth.track) MemberAuth.track('video_play', { type: 'video', id: v.id, label: v.title, details: { provider: v.provider } });
+  }
+  vbox.querySelector('.lb-close').addEventListener('click', closeVideo);
+  vbox.addEventListener('click', function (e) { if (e.target === vbox || e.target.classList.contains('vb-inner')) closeVideo(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && vbox.classList.contains('open')) closeVideo(); });
+
+  function renderVideos() {
+    if (!videos.length) {
+      vgrid.innerHTML = '<p class="video-empty">No videos yet. Check back soon.</p>';
+      return;
+    }
+    vgrid.innerHTML = videos.map(function (v, i) {
+      var thumb = V.thumbUrl(v);
+      return '<button type="button" class="video-card" data-i="' + i + '" aria-label="Play video: ' + esc(v.title) + '">' +
+        '<span class="video-thumb vt-' + esc(v.provider) + '">' +
+          (thumb ? '<img src="' + esc(thumb) + '" alt="" loading="lazy">' : '<span class="vt-name">' + esc(V.name(v.provider)) + '</span>') +
+          '<span class="video-play" aria-hidden="true">&#9654;</span>' +
+          '<span class="video-source">' + esc(V.name(v.provider)) + '</span>' +
+        '</span>' +
+        '<span class="video-title">' + esc(v.title || 'Video') + '</span>' +
+        (v.credit ? '<span class="video-credit">' + esc(v.credit) + '</span>' : '') +
+      '</button>';
+    }).join('');
+  }
+  if (vgrid) vgrid.addEventListener('click', function (e) {
+    var c = e.target.closest('.video-card');
+    if (c) openVideo(videos[+c.getAttribute('data-i')]);
+  });
+
+  function loadVideos() {
+    videosLoaded = true;
+    var cfg = window.MemberAuth && MemberAuth.config;
+    if (!cfg || !vgrid) return;
+    vgrid.innerHTML = '<p class="video-empty">Loading videos&hellip;</p>';
+    fetch(cfg.url + '/rest/v1/gallery_videos?select=id,url,provider,video_id,title,description,credit&active=eq.true&order=sort_order.asc,created_at.asc', {
+      headers: { apikey: cfg.key }
+    }).then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+      videos = rows || [];
+      renderVideos();
+      var n = document.getElementById('tabVideos');
+      if (n) n.textContent = 'Videos (' + videos.length + ')';
+    }).catch(function () { vgrid.innerHTML = '<p class="video-empty">Videos couldn\'t be loaded right now.</p>'; });
+  }
+
+  if (location.hash === '#videos') showView('videos', true);
+
   /* ---------- Load the current photo list ---------- */
   var cfg = window.MemberAuth && MemberAuth.config;
   if (!cfg) return;
@@ -119,5 +214,14 @@
     var line = document.querySelector('.gallery-caption');
     if (line) line.hidden = true;
     prepare();
+    var t = document.getElementById('tabPhotos');
+    if (t) t.textContent = 'Photos (' + rows.length + ')';
   }).catch(function () {});
+  // Show the video count on the tab without waiting for a click.
+  if (window.MemberAuth && MemberAuth.config) {
+    fetch(MemberAuth.config.url + '/rest/v1/gallery_videos?select=id&active=eq.true', { headers: { apikey: MemberAuth.config.key } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) { var t = document.getElementById('tabVideos'); if (rows && t && !videosLoaded) t.textContent = 'Videos (' + rows.length + ')'; })
+      .catch(function () {});
+  }
 })();
