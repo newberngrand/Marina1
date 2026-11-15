@@ -556,7 +556,7 @@
   function setupLog() {
     if (logWired) return;
     logWired = true;
-    $('logAction').innerHTML = '<option value="">All activity</option>' + LOG_ACTIONS.map(function (g) {
+    $('logAction').innerHTML = '<option value="">All activity (except page views)</option><option value="*">Everything, including page views</option>' + LOG_ACTIONS.map(function (g) {
       return '<optgroup label="' + g[0] + '">' + g[1].map(function (a) { return '<option value="' + a[0] + '">' + a[1] + '</option>'; }).join('') + '</optgroup>';
     }).join('');
     $('logFilters').addEventListener('submit', function (e) { e.preventDefault(); loadLog(true); });
@@ -619,7 +619,9 @@
       var p = to.split('-'); var next = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + 1));
       q = q.lt('at', easternMidnight(next.toISOString().slice(0, 10)));
     }
-    if ($('logAction').value) q = q.eq('action', $('logAction').value);
+    var act = $('logAction').value;
+    if (act === '') q = q.neq('action', 'page_view');      // page views are counted at the top, not listed
+    else if (act !== '*') q = q.eq('action', act);
     if ($('logWho').value === 'members') q = q.eq('is_member', true);
     if ($('logWho').value === 'visitors') q = q.eq('is_member', false);
     var slip = $('logSlip').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
