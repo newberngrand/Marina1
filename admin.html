@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611151147">
+<link rel="stylesheet" href="style.css?v=202611151157">
 </head>
 <body data-member-portal>
 
@@ -114,6 +114,9 @@
                 </label>
                 <label>Voting closes (required)
                   <input type="datetime-local" id="evVoteClose">
+                </label>
+                <label class="full">Vote-counting committee email (gets a copy of every vote as it comes in; separate several with commas)
+                  <input type="text" id="evNotifyEmail" maxlength="500" placeholder="e.g. elections@newberngrand.com" autocomplete="off" spellcheck="false">
                 </label>
               </div>
               <p class="note" style="margin:10px 0 0">Each active slip gets one vote, and votes can't be changed once cast. No votes are accepted after the closing time.</p>
@@ -477,9 +480,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611151147"></script>
-<script src="member-data.js?v=202611151147"></script>
-<script src="video-utils.js?v=202611151147"></script>
-<script src="admin.js?v=202611151147"></script>
+<script src="member-login.js?v=202611151157"></script>
+<script src="member-data.js?v=202611151157"></script>
+<script src="video-utils.js?v=202611151157"></script>
+<script src="admin.js?v=202611151157"></script>
 </body>
 </html>

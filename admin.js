@@ -164,6 +164,7 @@
     $('evOptions').value = ev && ev.ballot_options ? ev.ballot_options.join('\n') : '';
     $('evVoteOpen').value = ev ? D.toLocalInput(ev.vote_opens_at) : '';
     $('evVoteClose').value = ev ? D.toLocalInput(ev.vote_closes_at) : '';
+    $('evNotifyEmail').value = ev ? (ev.vote_notify_email || '') : '';
     loadExclusionsFor(ev);
     loadAttachmentsFor(ev);
     $('evSignupOn').checked = !!(ev && ev.signup_enabled);
@@ -203,6 +204,10 @@
       row.vote_opens_at = D.fromLocalInput($('evVoteOpen').value);
       row.vote_closes_at = D.fromLocalInput($('evVoteClose').value);
       if (!row.vote_closes_at) return showErr($('evError'), 'Please set when voting closes.');
+      var mails = $('evNotifyEmail').value.split(/[,;\s]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      var badMail = mails.filter(function (x) { return !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x); });
+      if (badMail.length) return showErr($('evError'), 'This committee email doesn\'t look right: ' + badMail.join(', '));
+      row.vote_notify_email = mails.join(', ');
       if (row.vote_opens_at && row.vote_closes_at <= row.vote_opens_at) return showErr($('evError'), 'Voting must close after it opens.');
       if (!$('evBallotKind').disabled) {
         row.ballot_kind = $('evBallotKind').value;
