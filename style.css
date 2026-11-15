@@ -813,6 +813,48 @@ section.alt { background: var(--sand); }
   object-fit: cover;
   width: 100%;
 }
+.gallery-grid .photo-frame { position: relative; }
+.gallery-grid .photo-frame img { cursor: zoom-in; transition: transform 0.25s ease, filter 0.25s ease; }
+.gallery-grid .photo-frame:hover img, .gallery-grid .photo-frame img:focus-visible { filter: brightness(1.06); }
+.gallery-grid .photo-frame img:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.gallery-grid .photo-frame::after {
+  content: "\2922  Full size";
+  position: absolute; right: 10px; bottom: 10px;
+  background: rgba(7, 24, 41, 0.7); color: #fff;
+  font-size: 0.75rem; font-weight: 600; padding: 4px 9px; border-radius: 999px;
+  pointer-events: none; opacity: 0.85;
+}
+
+/* Full-size photo viewer */
+.lb-lock, .lb-lock body { overflow: hidden; }
+.lightbox {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(5, 14, 24, 0.94);
+  align-items: center; justify-content: center;
+}
+.lightbox.open { display: flex; }
+.lb-figure { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 56px 64px 72px; box-sizing: border-box; }
+.lb-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+.lb-caption { color: #e8edf2; font-size: 0.92rem; text-align: center; margin-top: 12px; max-width: 900px; }
+.lb-count { position: absolute; top: 18px; left: 20px; color: #c9d3dd; font-size: 0.85rem; }
+.lb-close {
+  position: absolute; top: 10px; right: 14px; z-index: 2;
+  background: none; border: none; color: #fff; font-size: 2.4rem; line-height: 1; cursor: pointer; padding: 4px 10px;
+}
+.lb-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 48px; height: 64px; border: none; border-radius: 8px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.12); color: #fff; font-size: 2.4rem; line-height: 1;
+}
+.lb-nav:hover, .lb-close:hover { background: rgba(255, 255, 255, 0.22); }
+.lb-prev { left: 10px; }
+.lb-next { right: 10px; }
+@media (max-width: 600px) {
+  .lb-figure { padding: 52px 8px 64px; }
+  .lb-nav { width: 40px; height: 52px; font-size: 2rem; background: rgba(255, 255, 255, 0.18); }
+  .lb-prev { left: 4px; } .lb-next { right: 4px; }
+}
+
 .gallery-caption {
   text-align: center;
   color: var(--muted);
