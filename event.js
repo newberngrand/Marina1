@@ -23,6 +23,7 @@
         renderEvent();
         MemberAuth.track('view_event', { type: 'event', id: ev.id, label: ev.title, details: { type: ev.event_type } });
         if (ev.event_type === 'vote') loadBallot();
+        if (ev.signup_enabled) loadSignup();
       });
     }).catch(function (e) { $('evStatus').textContent = e.message || 'Something went wrong.'; });
   });
@@ -209,6 +210,118 @@
     $('vcBack').addEventListener('click', close);
     $('vcCast').addEventListener('click', cast);
     document.addEventListener('keydown', onKey);
+  }
+
+  /* ---------- Sign-up sheet ---------- */
+  function signupIsOpen() {
+    return ev.active && (!ev.signup_closes_at || new Date(ev.signup_closes_at) > new Date());
+  }
+
+  function loadSignup() {
+    $('signupCard').hidden = false;
+    var open = signupIsOpen();
+    $('signupWindow').className = 'vote-state ' + (open ? 'vote-open' : 'vote-closed');
+    $('signupWindow').textContent = open
+      ? 'Sign-up is open' + (ev.signup_closes_at ? ' until ' + D.fmtWhen(ev.signup_closes_at) : '') + '.'
+      : 'Sign-up closed' + (ev.signup_closes_at ? ' ' + D.fmtWhen(ev.signup_closes_at) : '') + '.';
+    $('signupError').hidden = true;
+
+    var mine = me && !me.is_admin
+      ? Promise.all([
+          sb.from('event_signups').select('*').eq('event_id', ev.id).eq('slip', me.slip).maybeSingle(),
+          sb.from('members').select('owner_name, email').eq('slip', me.slip).maybeSingle()
+        ])
+      : Promise.resolve([{ data: null }, { data: null }]);
+    mine.then(function (res) {
+      var entry = res[0].data, profile = res[1].data || {};
+      if (!me) $('signupBody').innerHTML = '<p class="note">Your slip could not be found.</p>';
+      else if (me.is_admin) $('signupBody').innerHTML = '<p class="note">Admin accounts don\'t sign up. The full list with email and phone numbers is on the <a href="admin.html">Admin page</a> (Sign-ups button).</p>';
+      else if (entry) showMyEntry(entry, open);
+      else if (open) showSignupForm(null, profile);
+      else $('signupBody').innerHTML = '<p>Sign-up has closed. Slip <strong>' + D.esc(me.slip) + '</strong> did not sign up.</p>';
+      loadSignupList();
+      if (location.hash === '#signup') {
+        $('signupCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', location.pathname + location.search);
+      }
+    });
+  }
+
+  function showMyEntry(x, open) {
+    var fields = ev.signup_fields || [];
+    $('signupBody').innerHTML =
+      '<div class="member-login-note">You\'re signed up! <strong>' + D.esc(x.name) + '</strong> (slip ' + D.esc(x.slip) + ')' +
+      fields.map(function (f, k) { return (x.answers || [])[k] ? '<br>' + D.esc(f) + ': <strong>' + D.esc(x.answers[k]) + '</strong>' : ''; }).join('') +
+      '</div>' +
+      (open ? '<div class="portal-actions"><button type="button" class="btn btn-outline" id="suEdit">Change my sign-up</button>' +
+              '<button type="button" class="btn-sm btn-danger" id="suCancel">Cancel my sign-up</button></div>'
+            : '<p class="note" style="margin:10px 0 0">Sign-up has closed, so it can no longer be changed. Call the office if your plans change.</p>');
+    if (!open) return;
+    $('suEdit').addEventListener('click', function () { showSignupForm(x, {}); });
+    $('suCancel').addEventListener('click', function () {
+      if (!confirm('Cancel your sign-up for "' + ev.title + '"?')) return;
+      sb.from('event_signups').delete().eq('id', x.id).then(function (r) {
+        if (r.error) { $('signupError').textContent = r.error.message; $('signupError').hidden = false; return; }
+        loadSignup();
+      });
+    });
+  }
+
+  function showSignupForm(x, profile) {
+    var fields = ev.signup_fields || [];
+    function val(v) { return D.esc(v || ''); }
+    $('signupBody').innerHTML =
+      '<form class="member-form signup-form" id="suForm">' +
+        '<div class="signup-grid">' +
+          '<label>Name<input type="text" id="suName" maxlength="120" required value="' + val(x ? x.name : profile.owner_name) + '"></label>' +
+          '<label>Slip<input type="text" value="' + val(me.slip) + '" disabled></label>' +
+          '<label>Email<input type="email" id="suEmail" maxlength="254" value="' + val(x ? x.email : profile.email) + '"></label>' +
+          '<label>Phone<input type="tel" id="suPhone" maxlength="40" value="' + val(x ? x.phone : '') + '"></label>' +
+          fields.map(function (f, k) {
+            return '<label class="full">' + D.esc(f) + '<input type="text" class="su-ans" maxlength="200" value="' + val(x && x.answers ? x.answers[k] : '') + '"></label>';
+          }).join('') +
+        '</div>' +
+        '<div class="portal-actions" style="margin-top:4px"><button type="submit" class="btn btn-gold">' + (x ? 'Save Changes' : 'Sign Me Up') + '</button>' +
+        (x ? '<button type="button" class="btn btn-outline" id="suBack">Never mind</button>' : '') + '</div>' +
+        '<p class="note" style="margin:0">Your email and phone are only seen by the board.</p>' +
+      '</form>';
+    if (x) $('suBack').addEventListener('click', loadSignup);
+    $('suForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var row = {
+        name: $('suName').value.trim(),
+        email: $('suEmail').value.trim() || null,
+        phone: $('suPhone').value.trim() || null,
+        answers: Array.prototype.map.call(document.querySelectorAll('.su-ans'), function (i) { return i.value.trim(); })
+      };
+      if (!row.name) { $('signupError').textContent = 'Please enter your name.'; $('signupError').hidden = false; return; }
+      var q = x ? sb.from('event_signups').update(row).eq('id', x.id)
+                : sb.from('event_signups').insert(Object.assign({ event_id: ev.id, slip: me.slip }, row));
+      q.then(function (r) {
+        if (r.error) {
+          $('signupError').textContent = /row-level security/.test(r.error.message)
+            ? 'Sign-up for this event has closed.' : (r.error.code === '23505' ? 'Your slip is already signed up.' : r.error.message);
+          $('signupError').hidden = false;
+          return;
+        }
+        loadSignup();
+      });
+    });
+  }
+
+  function loadSignupList() {
+    if (!ev.signup_public && !(me && me.is_admin)) { $('signupList').innerHTML = ''; return; }
+    sb.rpc('signup_list', { p_event_id: ev.id }).then(function (r) {
+      var rows = r.data || [], fields = ev.signup_fields || [];
+      $('signupList').innerHTML = '<h4 class="signup-list-head">Who\'s coming (' + rows.length + ')</h4>' +
+        (rows.length ? '<div class="admin-table-wrap"><table class="admin-table signup-table"><thead><tr><th>Name</th><th>Slip</th>' +
+          fields.map(function (f) { return '<th>' + D.esc(f) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+          rows.map(function (x) {
+            return '<tr' + (me && x.slip === me.slip ? ' class="mine"' : '') + '><td>' + D.esc(x.name) + '</td><td>' + D.esc(x.slip) + '</td>' +
+              fields.map(function (f, k) { return '<td>' + D.esc((x.answers || [])[k] || '') + '</td>'; }).join('') + '</tr>';
+          }).join('') + '</tbody></table></div>'
+        : '<p class="note">Nobody has signed up yet. Be the first!</p>');
+    });
   }
 
   function loadResults() {

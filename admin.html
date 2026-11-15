@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=20261115h">
+<link rel="stylesheet" href="style.css?v=20261115i">
 </head>
 <body data-member-portal>
 
@@ -118,6 +118,23 @@
               </div>
               <p class="note" style="margin:10px 0 0">Each active slip gets one vote, and votes can't be changed once cast. No votes are accepted after the closing time.</p>
             </fieldset>
+            <fieldset class="full ballot-box signup-box" id="evSignup" hidden>
+              <legend>Sign-up sheet</legend>
+              <label class="check"><input type="checkbox" id="evSignupOn"> Include a sign-up sheet (name, slip, email and phone are always asked)</label>
+              <div id="evSignupOpts" hidden>
+                <p class="note" style="margin:10px 0 6px">Up to four extra questions (leave blank if not needed):</p>
+                <div class="admin-grid">
+                  <label>Extra field 1 <input type="text" class="ev-sf" maxlength="60" placeholder="e.g. Entr&eacute;e"></label>
+                  <label>Extra field 2 <input type="text" class="ev-sf" maxlength="60" placeholder="e.g. Side dish"></label>
+                  <label>Extra field 3 <input type="text" class="ev-sf" maxlength="60" placeholder="e.g. Dessert"></label>
+                  <label>Extra field 4 <input type="text" class="ev-sf" maxlength="60" placeholder="e.g. Beverage"></label>
+                  <label>Sign-up closes (blank = when the event starts)
+                    <input type="datetime-local" id="evSignupClose">
+                  </label>
+                  <label class="check" style="align-self:end"><input type="checkbox" id="evSignupPublic" checked> Members can see who has signed up (never their email or phone)</label>
+                </div>
+              </div>
+            </fieldset>
             <label class="full">Short description (shown in the list)
               <textarea id="evSummary" rows="2" maxlength="400" placeholder="One or two sentences."></textarea>
             </label>
@@ -132,6 +149,25 @@
             <button type="button" class="btn btn-outline" id="evCancel">Cancel</button>
           </div>
         </form>
+
+        <div class="portal-card" id="signupPanel" hidden>
+          <div class="admin-panel-head" style="margin-bottom:6px">
+            <h3 style="margin:0" id="spTitle">Sign-ups</h3>
+            <span class="portal-actions" style="margin:0">
+              <button type="button" class="btn-sm" id="spRefresh">Refresh</button>
+              <button type="button" class="btn-sm" id="spCsv">Download CSV</button>
+              <button type="button" class="btn-sm" id="spPrint">Print</button>
+              <button type="button" class="btn-sm" id="spClose">Close</button>
+            </span>
+          </div>
+          <p class="note" id="spStatus" style="margin:0 0 12px"></p>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead id="spHead"></thead>
+              <tbody id="spRows"></tbody>
+            </table>
+          </div>
+        </div>
 
         <div class="portal-card" id="voteResults" hidden>
           <div class="admin-panel-head" style="margin-bottom:6px">
@@ -417,9 +453,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=20261115h"></script>
-<script src="member-data.js?v=20261115h"></script>
-<script src="video-utils.js?v=20261115h"></script>
-<script src="admin.js?v=20261115h"></script>
+<script src="member-login.js?v=20261115i"></script>
+<script src="member-data.js?v=20261115i"></script>
+<script src="video-utils.js?v=20261115i"></script>
+<script src="admin.js?v=20261115i"></script>
 </body>
 </html>

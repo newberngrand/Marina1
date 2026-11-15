@@ -64,7 +64,9 @@
     $('evForm').addEventListener('submit', saveEvent);
     $('evType').addEventListener('change', updateBallotBox);
     $('evBallotKind').addEventListener('change', updateBallotBox);
+    $('evSignupOn').addEventListener('change', updateBallotBox);
     setupResults();
+    setupSignups();
     $('evRows').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-act]');
       if (!b) return;
@@ -73,6 +75,7 @@
       var act = b.getAttribute('data-act');
       if (act === 'edit') openEventForm(ev);
       if (act === 'results') showResults(ev);
+      if (act === 'signups') showSignups(ev);
       if (act === 'toggle') sb.from('events').update({ active: !ev.active }).eq('id', ev.id).then(loadEvents);
       if (act === 'delete' && confirm('Delete "' + ev.title + '"? This cannot be undone.\n\nTip: choose Deactivate instead to just hide it from members.')) {
         sb.from('events').delete().eq('id', ev.id).then(function (r) {
@@ -86,16 +89,18 @@
     loadEvents();
   }
 
-  var voteCounts = {};
+  var voteCounts = {}, signupCounts = {};
 
   function loadEvents() {
     return Promise.all([
       sb.from('events').select('*').order('starts_at', { ascending: false, nullsFirst: true }),
-      sb.from('votes').select('event_id')
+      sb.from('votes').select('event_id'),
+      sb.from('event_signups').select('event_id')
     ]).then(function (res) {
       var r = res[0];
-      voteCounts = {};
+      voteCounts = {}; signupCounts = {};
       (res[1].data || []).forEach(function (v) { voteCounts[v.event_id] = (voteCounts[v.event_id] || 0) + 1; });
+      (res[2].data || []).forEach(function (v) { signupCounts[v.event_id] = (signupCounts[v.event_id] || 0) + 1; });
       events = r.data || [];
       if (!events.length) {
         $('evRows').innerHTML = '<tr><td colspan="5">No events yet. Click <strong>+ Add Event</strong> to create one.</td></tr>';
@@ -110,6 +115,11 @@
             '<div class="note">' + (voteCounts[ev.id] || 0) + ' vote' + ((voteCounts[ev.id] || 0) === 1 ? '' : 's') + ' cast &middot; ' +
             D.esc(D.ballotChoices(ev).join(' / ')) + '</div>';
         }
+        if (ev.signup_enabled) {
+          var open = !ev.signup_closes_at || new Date(ev.signup_closes_at) > new Date();
+          voteInfo += '<div class="note">Sign-up sheet: ' + (signupCounts[ev.id] || 0) + ' signed up &middot; ' +
+            (open ? (ev.signup_closes_at ? 'closes ' + D.esc(D.fmtWhen(ev.signup_closes_at)) : 'open') : 'closed') + '</div>';
+        }
         return '<tr' + (ev.active ? '' : ' class="row-inactive"') + '>' +
           '<td><a href="event.html?id=' + ev.id + '" target="_blank" rel="noopener"><strong>' + D.esc(ev.title) + '</strong></a>' +
             (ev.summary ? '<div class="note">' + D.esc(ev.summary) + '</div>' : '') + '</td>' +
@@ -118,6 +128,7 @@
           '<td>' + (ev.active ? 'Active' : '<span class="inactive">Inactive</span>') + '</td>' +
           '<td class="row-actions">' +
             (isVote ? '<button type="button" class="btn-sm btn-primary-sm" data-act="results" data-id="' + ev.id + '">Results</button>' : '') +
+            (ev.signup_enabled ? '<button type="button" class="btn-sm btn-primary-sm" data-act="signups" data-id="' + ev.id + '">Sign-ups (' + (signupCounts[ev.id] || 0) + ')</button>' : '') +
             '<button type="button" class="btn-sm" data-act="edit" data-id="' + ev.id + '">Edit</button>' +
             '<button type="button" class="btn-sm" data-act="toggle" data-id="' + ev.id + '">' + (ev.active ? 'Deactivate' : 'Activate') + '</button>' +
             '<button type="button" class="btn-sm btn-danger" data-act="delete" data-id="' + ev.id + '">Delete</button>' +
@@ -142,6 +153,11 @@
     $('evOptions').value = ev && ev.ballot_options ? ev.ballot_options.join('\n') : '';
     $('evVoteOpen').value = ev ? D.toLocalInput(ev.vote_opens_at) : '';
     $('evVoteClose').value = ev ? D.toLocalInput(ev.vote_closes_at) : '';
+    $('evSignupOn').checked = !!(ev && ev.signup_enabled);
+    var sf = document.querySelectorAll('.ev-sf');
+    sf.forEach(function (inp, i) { inp.value = ev && ev.signup_fields && ev.signup_fields[i] ? ev.signup_fields[i] : ''; });
+    $('evSignupClose').value = ev ? D.toLocalInput(ev.signup_closes_at) : '';
+    $('evSignupPublic').checked = ev ? ev.signup_public !== false : true;
     var locked = !!(ev && voteCounts[ev.id]);
     $('evBallotLocked').hidden = !locked;
     $('evBallotKind').disabled = locked;
@@ -186,6 +202,15 @@
       if (!id && new Date(row.vote_closes_at) <= new Date() &&
           !confirm('The closing time is in the past, so this ballot will not accept any votes. Save anyway?')) return;
     }
+    if (row.event_type === 'social' && $('evSignupOn').checked) {
+      row.signup_enabled = true;
+      row.signup_fields = Array.prototype.map.call(document.querySelectorAll('.ev-sf'), function (i) { return i.value.trim(); }).filter(Boolean);
+      // Blank closing time = sign-up closes when the event starts.
+      row.signup_closes_at = D.fromLocalInput($('evSignupClose').value) || row.starts_at || null;
+      row.signup_public = $('evSignupPublic').checked;
+    } else if (row.event_type) {
+      row.signup_enabled = false;
+    }
     if ($('evType').disabled) delete row.event_type;
     var q = id ? sb.from('events').update(row).eq('id', id) : sb.from('events').insert(row);
     q.then(function (r) {
@@ -200,6 +225,90 @@
     $('evBallot').hidden = !isVote;
     $('evOptionsWrap').hidden = $('evBallotKind').value !== 'choice';
     $('evVoteClose').required = isVote;
+    var isSocial = $('evType').value === 'social';
+    $('evSignup').hidden = !isSocial;
+    $('evSignupOpts').hidden = !(isSocial && $('evSignupOn').checked);
+  }
+
+  /* ---------- Sign-up sheets ---------- */
+  var spEvent = null, spRows = [];
+
+  function setupSignups() {
+    $('spClose').addEventListener('click', function () { $('signupPanel').hidden = true; spEvent = null; });
+    $('spRefresh').addEventListener('click', function () { if (spEvent) showSignups(spEvent); });
+    $('spCsv').addEventListener('click', signupCsv);
+    $('spPrint').addEventListener('click', signupPrint);
+    $('spRows').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-sp-del]');
+      if (!b || !spEvent) return;
+      var row = spRows.find(function (x) { return x.id === b.getAttribute('data-sp-del'); });
+      if (row && confirm('Remove ' + row.name + ' (slip ' + row.slip + ') from the sign-up sheet?')) {
+        sb.from('event_signups').delete().eq('id', row.id).then(function () { showSignups(spEvent); loadEvents(); });
+      }
+    });
+  }
+
+  function showSignups(ev) {
+    var same = spEvent && spEvent.id === ev.id;
+    spEvent = ev;
+    $('spTitle').textContent = 'Sign-ups: ' + ev.title;
+    var open = !ev.signup_closes_at || new Date(ev.signup_closes_at) > new Date();
+    $('spStatus').textContent = (ev.starts_at ? D.fmtWhen(ev.starts_at, ev.ends_at) + ' · ' : '') +
+      (open ? 'Sign-up is open' + (ev.signup_closes_at ? ' until ' + D.fmtWhen(ev.signup_closes_at) : '') : 'Sign-up closed ' + D.fmtWhen(ev.signup_closes_at)) +
+      (ev.active ? '' : ' · event is inactive (members can\'t see it)');
+    var fields = ev.signup_fields || [];
+    $('spHead').innerHTML = '<tr><th>#</th><th>Name</th><th>Slip</th><th>Email</th><th>Phone</th>' +
+      fields.map(function (f) { return '<th>' + D.esc(f) + '</th>'; }).join('') + '<th>Signed up</th><th></th></tr>';
+    if (!same) $('spRows').innerHTML = '<tr><td colspan="' + (7 + fields.length) + '">Loading&hellip;</td></tr>';
+    $('signupPanel').hidden = false;
+    if (!same) $('signupPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    sb.from('event_signups').select('*').eq('event_id', ev.id).order('created_at').then(function (r) {
+      spRows = r.data || [];
+      $('spRows').innerHTML = spRows.length ? spRows.map(function (x, i) {
+        return '<tr><td>' + (i + 1) + '</td><td><strong>' + D.esc(x.name) + '</strong></td><td>' + D.esc(x.slip) + '</td>' +
+          '<td>' + (x.email ? '<a href="mailto:' + D.esc(x.email) + '">' + D.esc(x.email) + '</a>' : '') + '</td>' +
+          '<td>' + (x.phone ? '<a href="tel:' + D.esc(x.phone.replace(/[^\d+]/g, '')) + '">' + D.esc(x.phone) + '</a>' : '') + '</td>' +
+          fields.map(function (f, k) { return '<td>' + D.esc((x.answers || [])[k] || '') + '</td>'; }).join('') +
+          '<td class="note">' + D.esc(D.fmtWhen(x.created_at)) + '</td>' +
+          '<td class="row-actions"><button type="button" class="btn-sm btn-danger" data-sp-del="' + x.id + '">Remove</button></td></tr>';
+      }).join('') : '<tr><td colspan="' + (7 + fields.length) + '" class="note">Nobody has signed up yet.</td></tr>';
+      $('spStatus').textContent += ' · ' + spRows.length + ' signed up';
+    });
+  }
+
+  function signupCsv() {
+    if (!spEvent) return;
+    var fields = spEvent.signup_fields || [];
+    function q(s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; }
+    var lines = [['Name', 'Slip', 'Email', 'Phone'].concat(fields).concat(['Signed up (Eastern)']).map(q).join(',')];
+    spRows.forEach(function (x) {
+      lines.push([x.name, x.slip, x.email, x.phone].concat(fields.map(function (f, k) { return (x.answers || [])[k] || ''; }))
+        .concat([D.fmtWhen(x.created_at)]).map(q).join(','));
+    });
+    var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = spEvent.title.replace(/[^\w-]+/g, '_') + '_signups.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function signupPrint() {
+    if (!spEvent) return;
+    var fields = spEvent.signup_fields || [];
+    var w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + D.esc(spEvent.title) + ' sign-ups</title>' +
+      '<style>body{font-family:Arial,sans-serif;margin:24px;color:#111}table{border-collapse:collapse;width:100%;font-size:12px}' +
+      'td,th{border:1px solid #bbb;padding:5px 6px;text-align:left}th{background:#eee}</style></head><body>' +
+      '<h2>' + D.esc(spEvent.title) + '</h2><p>' + D.esc(spEvent.starts_at ? D.fmtWhen(spEvent.starts_at, spEvent.ends_at) : '') +
+      (spEvent.location ? ' &middot; ' + D.esc(spEvent.location) : '') + ' &middot; ' + spRows.length + ' signed up</p>' +
+      '<table><thead><tr><th>#</th><th>Name</th><th>Slip</th><th>Email</th><th>Phone</th>' + fields.map(function (f) { return '<th>' + D.esc(f) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      spRows.map(function (x, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + D.esc(x.name) + '</td><td>' + D.esc(x.slip) + '</td><td>' + D.esc(x.email || '') + '</td><td>' + D.esc(x.phone || '') + '</td>' +
+          fields.map(function (f, k) { return '<td>' + D.esc((x.answers || [])[k] || '') + '</td>'; }).join('') + '</tr>';
+      }).join('') + '</tbody></table></body></html>');
+    w.document.close(); w.focus(); w.print();
   }
 
   /* ---------- Vote results ---------- */
@@ -805,6 +914,7 @@
       ['member_added', 'Slip added'], ['member_updated', 'Slip updated'], ['member_note_changed', 'Admin note changed'],
       ['password_set', 'Password set by admin'], ['ineligible_marked', 'Marked ineligible'], ['ineligible_removed', 'Eligibility restored'],
       ['photo_added', 'Gallery photo added'], ['photo_updated', 'Gallery photo updated'], ['photo_deleted', 'Gallery photo deleted'],
+      ['signup_added', 'Signed up for event'], ['signup_changed', 'Changed event sign-up'], ['signup_cancelled', 'Cancelled event sign-up'],
       ['video_added', 'Gallery video added'], ['video_updated', 'Gallery video updated'], ['video_deleted', 'Gallery video removed']
     ]],
     ['Public website', [

@@ -98,27 +98,41 @@
     return '<div class="vote-state vote-' + st + '">' + D.esc(D.voteWindowText(ev)) + tag + '</div>';
   }
 
+  function signupTag(ev, voted, isAdmin) {
+    if (!ev.signup_enabled || isAdmin) return '';
+    var href = 'event.html?id=' + ev.id + '#signup';
+    var open = !ev.signup_closes_at || new Date(ev.signup_closes_at) > new Date();
+    if (voted.signedUp && voted.signedUp[ev.id]) return '<div class="vote-state"><a class="vote-tag signup" href="' + href + '">You\'re signed up &#10003;</a></div>';
+    if (open) return '<div class="vote-state">Sign-up sheet' + (ev.signup_closes_at ? ' open until ' + D.esc(D.fmtWhen(ev.signup_closes_at)) : '') +
+      ' <a class="vote-tag signup go" href="' + href + '">Sign up &rsaquo;</a></div>';
+    return '';
+  }
+
   function eventItem(ev, past, voted, isAdmin) {
     return '<li class="event-item' + (past ? ' past' : '') + '">' +
       '<a class="badge badge-' + ev.event_type + '" href="event.html?id=' + ev.id + (ev.event_type === 'vote' ? '#ballot' : '') + '">' + D.eventTypeLabel(ev.event_type) + '</a>' +
       '<div><a class="event-title" href="event.html?id=' + ev.id + '">' + D.esc(ev.title) + '</a>' +
       (ev.starts_at ? '<div class="event-when">' + D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) + (ev.location ? ' &middot; ' + D.esc(ev.location) : '') + '</div>' : '') +
       voteTag(ev, voted, isAdmin) +
+      signupTag(ev, voted, isAdmin) +
       (ev.summary ? '<p class="event-summary">' + D.esc(ev.summary) + '</p>' : '') +
       '</div></li>';
   }
 
   function loadEvents(sb, m) {
     Promise.all([
-      sb.from('events').select('id, title, summary, event_type, starts_at, ends_at, location, vote_opens_at, vote_closes_at').eq('active', true),
+      sb.from('events').select('id, title, summary, event_type, starts_at, ends_at, location, vote_opens_at, vote_closes_at, signup_enabled, signup_closes_at').eq('active', true),
       m.is_admin ? Promise.resolve({ data: [] }) : sb.from('votes').select('event_id, slip'),
       m.is_admin ? Promise.resolve({ data: [] }) : sb.rpc('my_slips'),
-      m.is_admin ? Promise.resolve({ data: [] }) : sb.from('vote_exclusions').select('event_id, slip')
+      m.is_admin ? Promise.resolve({ data: [] }) : sb.from('vote_exclusions').select('event_id, slip'),
+      m.is_admin ? Promise.resolve({ data: [] }) : sb.from('event_signups').select('event_id')
     ]).then(function (res) {
         var r = res[0];
         var mySlips = res[2].data || [];
         var voted = { total: mySlips.length ? mySlips.filter(function (s) { return s.can_vote; }).length : 1, excluded: {} };
         (res[3].data || []).forEach(function (x) { voted.excluded[x.event_id] = (voted.excluded[x.event_id] || 0) + 1; });
+        voted.signedUp = {};
+        (res[4].data || []).forEach(function (x) { voted.signedUp[x.event_id] = true; });
         (res[1].data || []).forEach(function (v) { voted[v.event_id] = (voted[v.event_id] || 0) + 1; });
         var isAdmin = m.is_admin;
         var list = r.data || [];

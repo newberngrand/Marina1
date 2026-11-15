@@ -474,6 +474,19 @@ nav.main-nav a.active {
 .gal-actions { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 10px 10px; border-top: 1px solid var(--line); }
 .gal-actions .btn-sm[disabled] { opacity: 0.35; cursor: default; }
 
+/* Event sign-up sheets */
+.signup-box .check { margin-top: 2px; }
+.signup-form { max-width: 620px !important; }
+.signup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+.signup-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 0.86rem; font-weight: 600; color: var(--navy); margin: 0; }
+.signup-grid label.full { grid-column: 1 / -1; }
+.signup-grid input:disabled { background: #f2f4f6; color: var(--muted); }
+.signup-list-head { margin: 22px 0 8px; color: var(--navy); font-size: 1rem; }
+.signup-table tr.mine td { background: #fff8e8; font-weight: 600; }
+.vote-tag.signup { background: #e6f3ee; color: #1f6b4a; }
+.vote-tag.signup.go { background: #1f6b4a; color: #fff; }
+@media (max-width: 560px) { .signup-grid { grid-template-columns: 1fr; } }
+
 /* Visit replay page */
 .replay-body { background: #eef2f6; min-height: 100vh; }
 .replay-top {
