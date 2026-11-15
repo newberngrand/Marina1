@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visit Replay | New Bern Grand Marina</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="style.css?v=20261115f">
+</head>
+<body class="replay-body" data-member-portal>
+
+<header class="replay-top">
+  <div class="replay-title">
+    <a href="admin.html" class="replay-back">&larr; Admin</a>
+    <h1 id="rpTitle">Visit replay</h1>
+  </div>
+  <form class="replay-pick" id="rpPick">
+    <input type="date" id="rpDate" aria-label="Date" required>
+    <input type="text" id="rpSlip" placeholder="Slip" aria-label="Slip" autocapitalize="characters" spellcheck="false" required>
+    <button type="submit" class="btn-sm">Load</button>
+  </form>
+</header>
+
+<div class="replay-controls" id="rpControls" hidden>
+  <select id="rpVisit" aria-label="Visit"></select>
+  <div class="replay-buttons">
+    <button type="button" class="rp-btn" id="rpFirst" title="Start of visit">&#8676; Start</button>
+    <button type="button" class="rp-btn" id="rpPrev" title="Previous step">&#8249; Back</button>
+    <button type="button" class="rp-btn rp-play" id="rpPlay" title="Play / pause (space bar)">&#9654; Play</button>
+    <button type="button" class="rp-btn" id="rpNext" title="Next step">Next &#8250;</button>
+  </div>
+  <select id="rpSpeed" aria-label="Speed">
+    <option value="real">Their pace (pauses up to 10 s)</option>
+    <option value="fast" selected>Fast (pauses up to 3 s)</option>
+    <option value="step">One step every 2 s</option>
+  </select>
+  <div class="replay-progress"><div class="replay-bar"><span id="rpBar"></span></div><span id="rpPos"></span></div>
+</div>
+
+<main class="replay-main">
+  <p class="replay-msg" id="rpMsg">Loading&hellip;</p>
+  <div class="replay-stage" id="rpStage" hidden>
+    <ol class="replay-steps" id="rpSteps"></ol>
+    <div class="replay-view">
+      <div class="replay-banner" id="rpBanner"></div>
+      <div class="replay-frame-wrap">
+        <iframe id="rpFrame" title="Page the member was on" src="about:blank"></iframe>
+      </div>
+      <p class="replay-note">Pages are shown as they look today, seen through your admin login. The member's own details (their slips, ballots) aren't re-created; the banner above says what they did at each step.</p>
+    </div>
+  </div>
+</main>
+
+<script src="member-login.js?v=20261115f"></script>
+<script src="member-data.js?v=20261115f"></script>
+<script src="replay.js?v=20261115f"></script>
+</body>
+</html>

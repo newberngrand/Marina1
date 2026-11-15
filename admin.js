@@ -733,7 +733,22 @@
         card('Slip finder searches', num(s.searches_30d), 'in 30 days &middot; ' + num(s.searches_all) + ' total') +
         card('Reserve button clicks', num(s.reserve_30d), 'in 30 days &middot; ' + num(s.reserve_all) + ' total') +
         card('Member logins', num(s.logins_30d), num(s.members_30d) + ' different slips in 30 days') +
-        card('Failed logins', num(s.failed_30d), 'in 30 days');
+        card('Failed logins', num(s.failed_30d), 'in 30 days') +
+        '<form class="stat-card replay-card" id="replayForm">' +
+          '<div class="stat-title">Visit replay</div>' +
+          '<div class="replay-inputs">' +
+            '<input type="date" id="replayDate" value="' + D.toLocalInput(new Date().toISOString()).slice(0, 10) + '" required aria-label="Date">' +
+            '<input type="text" id="replaySlip" placeholder="Slip" required autocapitalize="characters" spellcheck="false" aria-label="Slip">' +
+          '</div>' +
+          '<button type="submit" class="btn-sm btn-primary-sm">&#9654; Play visit</button>' +
+          '<div class="stat-sub">Opens in a new tab</div>' +
+        '</form>';
+      $('replayForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var slip = $('replaySlip').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+        if (!slip) return;
+        window.open('replay.html?slip=' + encodeURIComponent(slip) + '&date=' + encodeURIComponent($('replayDate').value), '_blank');
+      });
       function list(title, rows, key, action) {
         if (!rows || !rows.length) return '';
         return '<div class="stat-list"><div class="stat-title">' + title + '</div><ol>' + rows.map(function (x) {
@@ -804,7 +819,10 @@
   }
 
   function whoText(x) {
-    if (x.slip && x.is_member) return '<strong>' + D.esc(x.slip) + '</strong>';
+    if (x.slip && x.is_member) {
+      return '<strong>' + D.esc(x.slip) + '</strong> <a class="replay-link" title="Replay this slip\'s visit that day" target="_blank" rel="noopener" href="replay.html?slip=' +
+        encodeURIComponent(x.slip) + '&date=' + D.toLocalInput(x.at).slice(0, 10) + '&at=' + encodeURIComponent(x.at) + '">&#9654;</a>';
+    }
     if (x.action === 'login_failed') return '<span class="note">Visitor (tried ' + D.esc(x.slip || '?') + ')</span>';
     if (!x.user_id && !x.visitor_id) return '<span class="note">System</span>';
     return '<span class="note">Visitor' + (x.visitor_id ? ' ' + D.esc(x.visitor_id.slice(0, 6)) : '') + '</span>';

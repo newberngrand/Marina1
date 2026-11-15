@@ -37,6 +37,8 @@
     return null;
   }
   function track(action, o) {
+    // Pages shown inside the admin Visit Replay (an iframe) must not add to the log.
+    try { if (window.top !== window.self) return Promise.resolve(); } catch (e) { return Promise.resolve(); }
     o = o || {};
     var body = JSON.stringify({
       p_action: action,
