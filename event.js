@@ -298,11 +298,11 @@
       var entry = res[0].data, profile = res[1].data || {};
       if (!me) $('signupBody').innerHTML = '<p class="note">Your slip could not be found.</p>';
       else if (sharedLogin()) {
-        if (open) showSignupForm(null, {});
-        else $('signupBody').innerHTML = '<p>Sign-up has closed.</p>';
+        if (open) { showSignupForm(null, {}); showChangeBox(); }
+        else $('signupBody').innerHTML = '<p>Sign-up has closed. To change or cancel a sign-up, please call the marina office at (252) 638-0318.</p>';
         if (justSignedUp) {
           $('signupBody').insertAdjacentHTML('afterbegin', '<div class="member-login-note" style="margin-bottom:12px">Thank you! <strong>' + D.esc(justSignedUp) +
-            '</strong> is signed up. To sign up someone else, fill in the form again. To change or cancel a sign-up, please call the marina office at (252) 638-0318.</div>');
+            '</strong> is signed up. To sign up someone else, fill in the form again. To change or cancel a sign-up later, tick &ldquo;I need to change or cancel my sign-up&rdquo; below.</div>');
           justSignedUp = '';
         }
       }
@@ -348,7 +348,7 @@
         '<div class="signup-grid">' +
           '<label>Name<input type="text" id="suName" maxlength="120" required value="' + val(x ? x.name : profile.owner_name) + '"></label>' +
           '<label>' + (sharedLogin() ? 'Login' : 'Slip') + '<input type="text" value="' + val(me.slip) + '" disabled></label>' +
-          '<label>Email<input type="email" id="suEmail" maxlength="254" value="' + val(x ? x.email : profile.email) + '"></label>' +
+          '<label>' + (sharedLogin() ? 'Email (required)' : 'Email') + '<input type="email" id="suEmail" maxlength="254"' + (sharedLogin() ? ' required' : '') + ' value="' + val(x ? x.email : profile.email) + '"></label>' +
           '<label>Phone<input type="tel" id="suPhone" maxlength="40" value="' + val(x ? x.phone : '') + '"></label>' +
           fields.map(function (f, k) {
             return '<label class="full">' + D.esc(f) + '<input type="text" class="su-ans" maxlength="200" value="' + val(x && x.answers ? x.answers[k] : '') + '"></label>';
@@ -356,7 +356,8 @@
         '</div>' +
         '<div class="portal-actions" style="margin-top:4px"><button type="submit" class="btn btn-gold">' + (x ? 'Save Changes' : 'Sign Me Up') + '</button>' +
         (x ? '<button type="button" class="btn btn-outline" id="suBack">Never mind</button>' : '') + '</div>' +
-        '<p class="note" style="margin:0">Your email and phone are only seen by the board.</p>' +
+        '<p class="note" style="margin:0">Your email and phone are only seen by the board.' +
+          (sharedLogin() ? ' Your email is also how you prove it&rsquo;s you if you need to change or cancel your sign-up later.' : '') + '</p>' +
       '</form>';
     if (x) $('suBack').addEventListener('click', loadSignup);
     $('suForm').addEventListener('submit', function (e) {
@@ -368,6 +369,10 @@
         answers: Array.prototype.map.call(document.querySelectorAll('.su-ans'), function (i) { return i.value.trim(); })
       };
       if (!row.name) { $('signupError').textContent = 'Please enter your name.'; $('signupError').hidden = false; return; }
+      if (sharedLogin() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(row.email || '')) {
+        $('signupError').textContent = 'Please enter your email address. It is needed if you want to change or cancel your sign-up later.';
+        $('signupError').hidden = false; return;
+      }
       var q = x ? sb.from('event_signups').update(row).eq('id', x.id)
                 : sb.from('event_signups').insert(Object.assign({ event_id: ev.id, slip: me.slip }, row));
       q.then(function (r) {
@@ -382,6 +387,112 @@
         loadSignup();
       });
     });
+  }
+
+  /* Shared logins: change or cancel your own entry after an emailed code proves the email is yours. */
+  function showChangeBox() {
+    var st = { email: '', code: '' };
+    $('signupBody').insertAdjacentHTML('beforeend',
+      '<div class="signup-change">' +
+        '<label class="check"><input type="checkbox" id="scToggle"> I need to change or cancel my sign-up</label>' +
+        '<div id="scBox" hidden>' +
+          '<p class="note" style="margin:6px 0 8px">Type the email you used when you signed up. We&rsquo;ll email you a 6-digit code to prove it&rsquo;s you.</p>' +
+          '<div class="sc-row"><input type="email" id="scEmail" maxlength="254" placeholder="Your email" aria-label="Your email">' +
+            '<button type="button" class="btn-sm btn-primary-sm" id="scSend">Email me a code</button></div>' +
+          '<div class="sc-row" id="scCodeRow" hidden><input type="text" id="scCode" inputmode="numeric" maxlength="6" placeholder="6-digit code" aria-label="6-digit code" autocomplete="one-time-code">' +
+            '<button type="button" class="btn-sm btn-primary-sm" id="scGo">Continue</button></div>' +
+          '<div class="member-login-error" id="scErr" hidden></div>' +
+          '<div class="note" id="scMsg"></div>' +
+          '<div id="scEntries"></div>' +
+        '</div>' +
+      '</div>');
+    function err(m) { $('scErr').textContent = m || ''; $('scErr').hidden = !m; }
+    function msg(m) { $('scMsg').textContent = m || ''; }
+    $('scToggle').addEventListener('change', function () { $('scBox').hidden = !this.checked; if (this.checked) $('scEmail').focus(); });
+    $('scSend').addEventListener('click', function () {
+      var em = $('scEmail').value.trim();
+      err(''); msg('');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return err('Please type the email you used when you signed up.');
+      var btn = this; btn.disabled = true; btn.textContent = 'Sending…';
+      sb.functions.invoke('signup-code', { body: { event_id: ev.id, email: em } }).then(function (r) {
+        btn.disabled = false; btn.textContent = 'Email me a new code';
+        if (r.error) {
+          var ctx = r.error.context;
+          return (ctx && ctx.json ? ctx.json().catch(function () { return {}; }) : Promise.resolve({})).then(function (j) {
+            err(j.error || 'The code could not be sent. Please try again.');
+          });
+        }
+        st.email = em; st.code = '';
+        msg(r.data.message || 'Code sent.');
+        $('scCodeRow').hidden = false; $('scEntries').innerHTML = '';
+        $('scCode').value = ''; $('scCode').focus();
+      });
+    });
+    $('scGo').addEventListener('click', function () {
+      st.code = $('scCode').value.trim();
+      err('');
+      if (!/^\d{6}$/.test(st.code)) return err('Please type the 6-digit code from the email.');
+      loadEntries();
+    });
+    function loadEntries(done) {
+      sb.rpc('signup_code_entries', { p_event_id: ev.id, p_email: st.email, p_code: st.code }).then(function (r) {
+        var j = r.data || {};
+        if (r.error || !j.ok) return err((j && j.error) || (r.error && r.error.message) || 'Something went wrong.');
+        msg(done || '');
+        $('scCodeRow').hidden = true;
+        var list = j.entries || [], fields = ev.signup_fields || [];
+        $('scEntries').innerHTML = list.length ? list.map(function (x, i) {
+          return '<div class="sc-entry"><div><strong>' + D.esc(x.name) + '</strong>' +
+            fields.map(function (f, k) { return (x.answers || [])[k] ? '<br><span class="note">' + D.esc(f) + ':</span> ' + D.esc(x.answers[k]) : ''; }).join('') +
+            '</div><div class="row-actions"><button type="button" class="btn-sm" data-sc-edit="' + i + '">Change</button>' +
+            '<button type="button" class="btn-sm btn-danger" data-sc-del="' + i + '">Cancel sign-up</button></div></div>';
+        }).join('') : '<p class="note">There are no sign-ups left that use ' + D.esc(st.email) + '.</p>';
+        $('scEntries').onclick = function (e) {
+          var b = e.target.closest('[data-sc-edit],[data-sc-del]');
+          if (!b) return;
+          var x = list[+(b.getAttribute('data-sc-edit') || b.getAttribute('data-sc-del'))];
+          if (b.hasAttribute('data-sc-del')) {
+            if (!confirm('Cancel the sign-up for ' + x.name + '?')) return;
+            sb.rpc('signup_code_delete', { p_event_id: ev.id, p_email: st.email, p_code: st.code, p_id: x.id }).then(function (r) {
+              var j = r.data || {};
+              if (r.error || !j.ok) return err((j && j.error) || r.error.message);
+              loadSignupList();
+              loadEntries('The sign-up for ' + x.name + ' has been cancelled.');
+            });
+          } else editEntry(x);
+        };
+      });
+    }
+    function editEntry(x) {
+      var fields = ev.signup_fields || [];
+      function val(v) { return D.esc(v || ''); }
+      $('scEntries').innerHTML = '<form class="member-form signup-form" id="scForm"><div class="signup-grid">' +
+        '<label>Name<input type="text" id="scName" maxlength="120" required value="' + val(x.name) + '"></label>' +
+        '<label>Email (required)<input type="email" id="scNewEmail" maxlength="254" required value="' + val(x.email) + '"></label>' +
+        '<label>Phone<input type="tel" id="scPhone" maxlength="40" value="' + val(x.phone) + '"></label>' +
+        fields.map(function (f, k) { return '<label class="full">' + D.esc(f) + '<input type="text" class="sc-ans" maxlength="200" value="' + val((x.answers || [])[k]) + '"></label>'; }).join('') +
+        '</div><div class="portal-actions" style="margin-top:4px"><button type="submit" class="btn btn-gold">Save Changes</button>' +
+        '<button type="button" class="btn btn-outline" id="scBack">Never mind</button></div></form>';
+      $('scBack').addEventListener('click', function () { loadEntries(); });
+      $('scForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var newEmail = $('scNewEmail').value.trim();
+        sb.rpc('signup_code_save', {
+          p_event_id: ev.id, p_email: st.email, p_code: st.code, p_id: x.id,
+          p_name: $('scName').value.trim(), p_new_email: newEmail, p_phone: $('scPhone').value.trim(),
+          p_answers: Array.prototype.map.call(document.querySelectorAll('.sc-ans'), function (i) { return i.value.trim(); })
+        }).then(function (r) {
+          var j = r.data || {};
+          if (r.error || !j.ok) return err((j && j.error) || r.error.message);
+          err('');
+          loadSignupList();
+          if (newEmail.toLowerCase() !== st.email.toLowerCase()) {
+            $('scEntries').innerHTML = '';
+            msg('Saved. This sign-up now uses ' + newEmail + ', so use that email next time.');
+          } else loadEntries('Your changes have been saved.');
+        });
+      });
+    }
   }
 
   function loadSignupList() {

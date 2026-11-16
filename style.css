@@ -1372,3 +1372,12 @@ footer.site-footer {
 @media (prefers-reduced-motion: reduce) {
   .pin-drop, .pin-bob, .pin-shadow, .slip-map .pulse { animation: none; }
 }
+
+/* Shared logins: change or cancel a sign-up with an emailed code */
+.signup-change { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.signup-change .check { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--navy); cursor: pointer; }
+.sc-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.sc-row input { flex: 1 1 220px; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+#scCode { flex: 0 1 160px; letter-spacing: 4px; font-weight: 600; }
+.sc-entry { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; }
