@@ -98,7 +98,10 @@
     var tag = '';
     var href = 'event.html?id=' + ev.id + '#ballot';
     var total = voted.total - (voted.excluded[ev.id] || 0);
-    if (!isAdmin && voted.total > 0 && total <= 0) {
+    if (voted.shared) {
+      // Shared cruiser login: everyone on it votes by name, so just point to the ballot.
+      if (st === 'open') tag = '<a class="vote-tag open" href="' + href + '">Vote now &rsaquo;</a>';
+    } else if (!isAdmin && voted.total > 0 && total <= 0) {
       tag = '<a class="vote-tag ineligible" href="' + href + '">Not eligible</a>';
     } else if (!isAdmin && voted.total > 0) {
       var n = voted[ev.id] || 0;
@@ -142,6 +145,7 @@
         var mySlips = res[2].data || [];
         var voted = { total: mySlips.length ? mySlips.filter(function (s) { return s.can_vote; }).length : 1, excluded: {} };
         (res[3].data || []).forEach(function (x) { voted.excluded[x.event_id] = (voted.excluded[x.event_id] || 0) + 1; });
+        voted.shared = !m.is_admin && !!m.member_class && m.member_class !== 'certificated';
         voted.signedUp = {};
         (res[4].data || []).forEach(function (x) { voted.signedUp[x.event_id] = true; });
         (res[1].data || []).forEach(function (v) { voted[v.event_id] = (voted[v.event_id] || 0) + 1; });

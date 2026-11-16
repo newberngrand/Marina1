@@ -60,6 +60,7 @@
         'You can follow the voting on the <a href="admin.html">Admin page</a> (Results button).</p>';
       return loadResults();
     }
+    if (sharedLogin()) { renderGroupBallot(st); return loadResults(); }
 
     Promise.all([
       sb.rpc('my_slips'),
@@ -95,6 +96,39 @@
         $('ballotCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
         history.replaceState(null, '', location.pathname + location.search);
       }
+    });
+  }
+
+  // Shared cruiser login (LTC / STC): each person types their name and gets one vote.
+  var justVoted = '';
+  function renderGroupBallot(st) {
+    var html = '';
+    if (justVoted) {
+      html += '<div class="member-login-note" style="margin-bottom:12px">Thank you! The vote from <strong>' + D.esc(justVoted) +
+        '</strong> has been recorded. To vote for someone else on this login, fill in the ballot again.</div>';
+      justVoted = '';
+    }
+    if (st === 'upcoming') html += '<p>The ballot will appear here when voting opens.</p>';
+    else if (st === 'closed') html += '<p>Voting has closed.</p>';
+    else {
+      html += '<form id="ballotForm" class="ballot-form">' +
+        '<p style="margin:0">Everyone using this login gets one vote. Type your name and choose one:</p>' +
+        '<label class="ballot-name">Your name<input type="text" id="ballotName" maxlength="80" autocomplete="name" required></label>' +
+        radios('group', D.ballotChoices(ev)) +
+        '<button type="submit" class="btn btn-gold">Cast Vote</button>' +
+        '<p class="note" style="margin:8px 0 0">Votes are final and can&rsquo;t be changed.</p></form>';
+    }
+    $('ballotBody').innerHTML = html;
+    var form = $('ballotForm');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = $('ballotName').value.trim().replace(/\s+/g, ' ');
+      var r = form.querySelector('input[name="choice-group"]:checked');
+      var msg = !name ? 'Please type your name.' : !r ? 'Please choose one of the choices.' : '';
+      $('ballotError').textContent = msg;
+      $('ballotError').hidden = !msg;
+      if (!msg) openConfirm([{ slip: me.slip, name: name, choice: r.value }], 0);
     });
   }
 
@@ -174,7 +208,7 @@
     $('vcList').innerHTML =
       '<p>You are casting ' + (picks.length > 1 ? picks.length + ' votes' : 'this vote') + ':</p>' +
       '<ul class="vc-picks">' + picks.map(function (p) {
-        return '<li><span>Slip ' + D.esc(p.slip) + '</span><strong>' + D.esc(p.choice) + '</strong></li>';
+        return '<li><span>' + (p.name ? D.esc(p.name) : 'Slip ' + D.esc(p.slip)) + '</span><strong>' + D.esc(p.choice) + '</strong></li>';
       }).join('') + '</ul>' +
       (skipped ? '<p class="note">' + skipped + ' slip' + (skipped > 1 ? 's are' : ' is') + ' left blank and can vote later.</p>' : '');
     $('vcCast').textContent = picks.length > 1 ? 'Cast My Votes' : 'Cast My Vote';
@@ -194,8 +228,11 @@
       var errors = [];
       picks.reduce(function (chain, p) {
         return chain.then(function () {
-          return sb.rpc('cast_vote', { p_event_id: ev.id, p_choice: p.choice, p_slip: p.slip }).then(function (r) {
+          var args = { p_event_id: ev.id, p_choice: p.choice, p_slip: p.slip };
+          if (p.name) args.p_voter_name = p.name;
+          return sb.rpc('cast_vote', args).then(function (r) {
             if (r.error) errors.push(r.error.message);
+            else if (p.name) justVoted = p.name;
           });
         });
       }, Promise.resolve()).then(function () {
@@ -378,6 +415,16 @@
       $('resultsCard').hidden = false;
       $('resultsTitle').textContent = closed ? 'Final Results' : 'Running Totals';
       function pc(n, d) { return d ? Math.round(n * 1000 / d) / 10 : 0; }
+      if (!eligible) {
+        // Cruiser poll: no fixed list of voters, so show each choice as a share of the votes cast.
+        $('resultsBody').innerHTML = rows.map(function (x) {
+          var n = Number(x.votes), p = pc(n, cast);
+          return '<div class="result-row"><div class="result-label"><strong>' + D.esc(x.choice) + '</strong>' +
+            '<span>' + n + ' vote' + (n === 1 ? '' : 's') + ' (' + p + '%)</span></div>' +
+            '<div class="vr-bar"><span style="width:' + p + '%"></span></div></div>';
+        }).join('') + '<p class="note" style="margin:12px 0 0">' + cast + ' vote' + (cast === 1 ? '' : 's') + ' cast.</p>';
+        return;
+      }
       $('resultsBody').innerHTML = rows.map(function (x) {
         var n = Number(x.votes), p = pc(n, eligible);
         return '<div class="result-row"><div class="result-label"><strong>' + D.esc(x.choice) + '</strong>' +

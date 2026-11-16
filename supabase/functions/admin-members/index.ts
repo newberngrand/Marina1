@@ -42,7 +42,10 @@ Deno.serve(async (req) => {
     if (!password) return reply(400, { error: "Please enter the new password." });
     const { data: m } = await admin.from("members").select("user_id").eq("slip", slip).maybeSingle();
     if (!m?.user_id) return reply(404, { error: `Slip ${slip} has no login account.` });
+    // Shared LTC / STC logins refuse password changes unless the admin opens a short unlock window.
+    await admin.from("password_unlocks").upsert({ user_id: m.user_id, until: new Date(Date.now() + 60_000).toISOString() });
     const { error } = await admin.auth.admin.updateUserById(m.user_id, { password });
+    await admin.from("password_unlocks").delete().eq("user_id", m.user_id);
     if (error) return reply(400, { error: error.message });
     console.log(`password set for slip ${slip} by ${me.slip}`);
     await admin.from("activity_log").insert({

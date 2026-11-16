@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611161058">
+<link rel="stylesheet" href="style.css?v=202611161114">
 </head>
 <body data-member-portal>
 
@@ -93,6 +93,13 @@
               <legend>Ballot</legend>
               <p class="note" id="evBallotLocked" hidden>Votes have been cast, so the ballot choices are locked. You can still change the description, details and closing time.</p>
               <div class="admin-grid">
+                <label class="full">Who votes
+                  <select id="evVoters">
+                    <option value="certificated">Slip owners (one vote per slip)</option>
+                    <option value="ltc">Long-term cruisers (LTC login, one vote per person by name)</option>
+                    <option value="stc">Transients (STC login, one vote per person by name)</option>
+                  </select>
+                </label>
                 <label>Ballot choices
                   <select id="evBallotKind">
                     <option value="yes_no">Yea / Nay</option>
@@ -120,8 +127,9 @@
                   <input type="text" id="evNotifyEmail" maxlength="500" placeholder="e.g. elections@newberngrand.com" autocomplete="off" spellcheck="false">
                 </label>
               </div>
-              <p class="note" style="margin:10px 0 0">Each active slip gets one vote, and votes can't be changed once cast. No votes are accepted after the closing time.</p>
-              <div class="excl-box">
+              <p class="note" style="margin:10px 0 0" id="evVoteRuleNote">Each active slip gets one vote, and votes can't be changed once cast. No votes are accepted after the closing time.</p>
+              <p class="note" style="margin:10px 0 0" id="evGroupRuleNote" hidden>Everyone using the shared login types their name and gets one vote per name. Votes can't be changed once cast, and no votes are accepted after the closing time. Results are shown as a share of the votes cast. Only this group (and admins) can see this ballot.</p>
+              <div class="excl-box" id="evExclBox">
                 <h4>Ineligible slips <span class="note" id="exCount"></span></h4>
                 <p class="note" style="margin:0 0 8px">Slips listed here can't vote on this ballot and aren't counted in the totals. Type one or several slips (separated by commas or spaces), pick the reason, and click Add.</p>
                 <div class="excl-add">
@@ -151,7 +159,7 @@
                 </div>
               </div>
             </fieldset>
-            <div class="full an-docks">
+            <div class="full an-docks" id="evAudienceWrap">
               <span class="an-label">Who can see this</span>
               <div class="an-dock-boxes" id="evAudience">
                 <label><input type="checkbox" value="certificated" checked> Slip owners</label>
@@ -244,7 +252,7 @@
           </div>
           <div class="admin-table-wrap">
             <table class="admin-table vr-table">
-              <thead><tr><th>Slip</th><th>Owner</th><th>Vote</th><th>Cast</th><th></th></tr></thead>
+              <thead><tr><th>Slip</th><th id="vrOwnerHead">Owner</th><th>Vote</th><th>Cast</th><th></th></tr></thead>
               <tbody id="vrRows"></tbody>
               <tfoot id="vrTotals"></tfoot>
             </table>
@@ -573,9 +581,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611161058"></script>
-<script src="member-data.js?v=202611161058"></script>
-<script src="video-utils.js?v=202611161058"></script>
-<script src="admin.js?v=202611161058"></script>
+<script src="member-login.js?v=202611161114"></script>
+<script src="member-data.js?v=202611161114"></script>
+<script src="video-utils.js?v=202611161114"></script>
+<script src="admin.js?v=202611161114"></script>
 </body>
 </html>

@@ -42,11 +42,12 @@ const row = (k: string, v: string) =>
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
-  let eventId = "", slip = "";
+  let eventId = "", slip = "", voteId = "";
   try {
     const b = await req.json();
     eventId = String(b.event_id ?? "");
     slip = String(b.slip ?? "").toUpperCase();
+    voteId = String(b.vote_id ?? "");
   } catch { return json(400, { error: "Invalid request" }); }
   if (!/^[0-9a-f-]{36}$/i.test(eventId) || !/^[A-Z0-9-]{1,20}$/.test(slip)) return json(400, { error: "Invalid request" });
 
@@ -54,7 +55,9 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: vote } = await db.from("votes").select("*").eq("event_id", eventId).eq("slip", slip).maybeSingle();
+  // Shared cruiser logins can have many votes per ballot, so look the vote up by its id.
+  const q = db.from("votes").select("*").eq("event_id", eventId).eq("slip", slip);
+  const { data: vote } = await (/^[0-9a-f-]{36}$/i.test(voteId) ? q.eq("id", voteId) : q.is("voter_name", null)).maybeSingle();
   if (!vote) return json(404, { error: "No such vote" });
   const [{ data: ev }, { data: member }, { data: caster }] = await Promise.all([
     db.from("events").select("title, vote_closes_at, vote_notify_email, ballot_kind, ballot_options").eq("id", eventId).maybeSingle(),
@@ -66,19 +69,22 @@ Deno.serve(async (req) => {
   const receipt = await receiptNo(eventId, slip, vote.cast_at);
   const castBy = caster && caster.slip !== slip ? `${caster.slip} (${caster.owner_name})` : "";
   const result: Record<string, unknown> = { receipt };
+  // On a cruiser poll the voter is a named person on a shared login, and there is no fixed list of voters.
+  const named = vote.voter_name ? esc(vote.voter_name) + " &middot; " + esc(slip) + " login" : "";
+  const voterLabel = named || esc(slip) + (member?.owner_name ? " &middot; " + esc(member.owner_name) : "");
 
   // 1) Receipt to the voter.
   const voterEmail = (member?.email ?? "").trim();
   if (voterEmail && !vote.receipt_sent_at) {
     const { data: claimed } = await db.from("votes").update({ receipt_sent_at: new Date().toISOString() })
-      .eq("event_id", eventId).eq("slip", slip).is("receipt_sent_at", null).select("slip");
+      .eq("id", vote.id).is("receipt_sent_at", null).select("slip");
     if (claimed?.length) {
       const html = wrap(`
         <h2 style="color:#0b2540;margin:0 0 6px">Your vote has been recorded</h2>
         <p>Thank you for voting. This is your receipt; please keep it for your records.</p>
         <table style="border-collapse:collapse;margin:12px 0">
           ${row("Ballot", esc(ev.title))}
-          ${row("Slip", esc(slip) + (member?.owner_name ? " &middot; " + esc(member.owner_name) : ""))}
+          ${row(named ? "Voter" : "Slip", voterLabel)}
           ${row("Your vote", esc(vote.choice))}
           ${row("Recorded", esc(when(vote.cast_at)))}
           ${castBy ? row("Cast from login", esc(castBy)) : ""}
@@ -87,7 +93,7 @@ Deno.serve(async (req) => {
         <p style="color:#5c6b7a;font-size:13px">Votes are final and can't be changed. If you did not cast this vote, please contact the marina office right away.</p>`);
       const r = await send([voterEmail], `Vote receipt: ${ev.title} (slip ${slip})`, html);
       result.receipt_email = r;
-      if (!r.ok) await db.from("votes").update({ receipt_sent_at: null }).eq("event_id", eventId).eq("slip", slip);
+      if (!r.ok) await db.from("votes").update({ receipt_sent_at: null }).eq("id", vote.id);
     }
   } else if (!voterEmail) {
     result.receipt_email = { ok: false, error: "no email on file for slip" };
@@ -97,30 +103,35 @@ Deno.serve(async (req) => {
   const committee = (ev.vote_notify_email ?? "").split(/[,;\s]+/).map((x: string) => x.trim()).filter((x: string) => x.includes("@"));
   if (committee.length && !vote.committee_sent_at) {
     const { data: claimed } = await db.from("votes").update({ committee_sent_at: new Date().toISOString() })
-      .eq("event_id", eventId).eq("slip", slip).is("committee_sent_at", null).select("slip");
+      .eq("id", vote.id).is("committee_sent_at", null).select("slip");
     if (claimed?.length) {
       const { data: tally } = await db.rpc("vote_totals_internal", { p_event_id: eventId });
       const rows = (tally ?? []) as { choice: string; votes: number; eligible: number; cast_total: number }[];
       const cast = rows[0]?.cast_total ?? 0, eligible = rows[0]?.eligible ?? 0;
+      const pc = (n: number, d: number) => d ? Math.round(n * 1000 / d) / 10 : 0;
+      const tallyRows = eligible
+        ? rows.map((t) => row(esc(t.choice), `${t.votes} (${pc(t.votes, eligible)}% of eligible slips)`)).join("") +
+          row("Voted", `${cast} of ${eligible} eligible slips (${pc(cast, eligible)}%)`)
+        : rows.map((t) => row(esc(t.choice), `${t.votes} (${pc(t.votes, cast)}% of votes cast)`)).join("") +
+          row("Votes cast", String(cast));
       const html = wrap(`
         <h2 style="color:#0b2540;margin:0 0 6px">Vote received: ${esc(ev.title)}</h2>
         <table style="border-collapse:collapse;margin:12px 0">
-          ${row("Slip", esc(slip) + (member?.owner_name ? " &middot; " + esc(member.owner_name) : ""))}
+          ${row(named ? "Voter" : "Slip", voterLabel)}
           ${row("Vote", esc(vote.choice))}
           ${row("Recorded", esc(when(vote.cast_at)))}
           ${castBy ? row("Cast from login", esc(castBy)) : ""}
           ${row("Receipt no.", esc(receipt))}
-          ${row("Voter receipt", voterEmail ? "emailed to " + esc(voterEmail) : "<span style='color:#b3392f'>no email on file</span>")}
+          ${named ? "" : row("Voter receipt", voterEmail ? "emailed to " + esc(voterEmail) : "<span style='color:#b3392f'>no email on file</span>")}
         </table>
         <h3 style="color:#0b2540;margin:18px 0 6px">Running total</h3>
         <table style="border-collapse:collapse">
-          ${rows.map((t) => row(esc(t.choice), `${t.votes} (${eligible ? Math.round(t.votes * 1000 / eligible) / 10 : 0}% of eligible slips)`)).join("")}
-          ${row("Voted", `${cast} of ${eligible} eligible slips (${eligible ? Math.round(cast * 1000 / eligible) / 10 : 0}%)`)}
+          ${tallyRows}
         </table>
         <p style="color:#5c6b7a;font-size:13px">Voting closes ${esc(when(ev.vote_closes_at))}. The full slip-by-slip list is on the Admin page (Results).</p>`);
-      const r = await send(committee, `Vote received: ${ev.title} - slip ${slip}`, html);
+      const r = await send(committee, `Vote received: ${ev.title} - ${vote.voter_name ? vote.voter_name + " (" + slip + ")" : "slip " + slip}`, html);
       result.committee_email = r;
-      if (!r.ok) await db.from("votes").update({ committee_sent_at: null }).eq("event_id", eventId).eq("slip", slip);
+      if (!r.ok) await db.from("votes").update({ committee_sent_at: null }).eq("id", vote.id);
     }
   }
 

@@ -64,6 +64,7 @@
     $('evCancel').addEventListener('click', function () { $('evForm').hidden = true; });
     $('evForm').addEventListener('submit', saveEvent);
     $('evType').addEventListener('change', updateBallotBox);
+    $('evVoters').addEventListener('change', updateBallotBox);
     $('evBallotKind').addEventListener('change', updateBallotBox);
     $('evSignupOn').addEventListener('change', updateBallotBox);
     setupResults();
@@ -163,6 +164,7 @@
     $('evActive').checked = ev ? ev.active : true;
     var aud = ev && ev.audience && ev.audience.length ? ev.audience : ['certificated'];
     document.querySelectorAll('#evAudience input').forEach(function (c) { c.checked = aud.indexOf(c.value) !== -1; });
+    $('evVoters').value = ['ltc', 'stc'].indexOf(aud[0]) !== -1 ? aud[0] : 'certificated';
     $('evBallotKind').value = ev ? ev.ballot_kind : 'yes_no';
     $('evResults').value = ev ? ev.results_visibility : 'after_close';
     $('evOptions').value = ev && ev.ballot_options ? ev.ballot_options.join('\n') : '';
@@ -181,6 +183,7 @@
     $('evBallotKind').disabled = locked;
     $('evOptions').disabled = locked;
     $('evType').disabled = locked;
+    $('evVoters').disabled = locked;
     updateBallotBox();
     showErr($('evError'), '');
     $('evForm').hidden = false;
@@ -202,6 +205,8 @@
     };
     if (!row.title) return showErr($('evError'), 'Please enter a title.');
     row.audience = Array.prototype.filter.call(document.querySelectorAll('#evAudience input'), function (c) { return c.checked; }).map(function (c) { return c.value; });
+    // A ballot is for exactly one group: the "Who votes" choice also decides who can see it.
+    if ($('evType').value === 'vote') row.audience = [$('evVoters').value];
     if (!row.audience.length) return showErr($('evError'), 'Tick at least one group under "Who can see this".');
     if (row.starts_at && row.ends_at && row.ends_at < row.starts_at) return showErr($('evError'), 'The end time is before the start time.');
     var id = $('evId').value;
@@ -486,6 +491,11 @@
     $('evBallot').hidden = !isVote;
     $('evOptionsWrap').hidden = $('evBallotKind').value !== 'choice';
     $('evVoteClose').required = isVote;
+    var group = isVote && $('evVoters').value !== 'certificated';
+    $('evAudienceWrap').hidden = isVote;
+    $('evExclBox').hidden = group;
+    $('evVoteRuleNote').hidden = group;
+    $('evGroupRuleNote').hidden = !group;
     var isSocial = $('evType').value === 'social';
     $('evSignup').hidden = !isSocial;
     $('evSignupOpts').hidden = !(isSocial && $('evSignupOn').checked);
@@ -629,6 +639,9 @@
       });
   }
 
+  // Ballots for a shared cruiser login (LTC / STC): one vote per named person, no fixed voter list.
+  function groupBallot(ev) { return !!(ev && ev.audience && ev.audience.length === 1 && ['ltc', 'stc'].indexOf(ev.audience[0]) !== -1); }
+
   function showResults(ev) {
     var same = current && current.id === ev.id;
     current = ev;
@@ -643,9 +656,15 @@
     if (!same) $('voteResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
     Promise.all([
       sb.from('members').select('slip, owner_name, active, is_admin, can_vote').eq('is_admin', false),
-      sb.from('votes').select('slip, choice, cast_at').eq('event_id', ev.id),
+      sb.from('votes').select('slip, choice, cast_at, voter_name').eq('event_id', ev.id),
       sb.from('vote_exclusions').select('slip, reason').eq('event_id', ev.id)
     ]).then(function (r) {
+      $('vrOwnerHead').textContent = groupBallot(ev) ? 'Name' : 'Owner';
+      if (groupBallot(ev)) {
+        resultRows = (r[1].data || []).slice().sort(function (a, b) { return a.cast_at < b.cast_at ? -1 : 1; })
+          .map(function (v) { return { slip: v.slip, owner: v.voter_name || '', vote: v, excluded: null }; });
+        return drawResults();
+      }
       var votes = {}, excl = {};
       (r[1].data || []).forEach(function (v) { votes[v.slip] = v; });
       (r[2].data || []).forEach(function (x) { excl[x.slip] = x.reason; });
@@ -678,7 +697,7 @@
         '<td>' + status + '</td>' +
         '<td class="note">' + (r.vote ? D.esc(D.fmtWhen(r.vote.cast_at)) : '') + '</td>' +
         '<td class="row-actions">' + action + '</td></tr>';
-    }).join('') : '<tr><td colspan="5" class="note">No slips match.</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="note">' + (groupBallot(current) ? 'No votes yet.' : 'No slips match.') + '</td></tr>';
 
     // Running totals (all slips, not just the filtered rows). Ineligible slips don't count.
     var choices = D.ballotChoices(current);
@@ -691,6 +710,21 @@
     var eligible = resultRows.length - excluded;
     function pct(n, d) { return d ? (Math.round(n * 1000 / d) / 10) + '%' : '–'; }
     var maxCount = Math.max.apply(null, choices.map(function (c) { return counts[c]; }));
+    if (groupBallot(current)) {
+      // No fixed list of voters, so show each choice as a share of the votes cast.
+      $('vrTurnout').innerHTML = '<strong>' + cast + '</strong> vote' + (cast === 1 ? '' : 's') + ' cast<br>' +
+        choices.map(function (c) { return D.esc(c) + ': <strong>' + counts[c] + '</strong> (' + pct(counts[c], cast) + ')'; }).join(' &middot; ');
+      $('vrTotals').innerHTML =
+        '<tr class="vr-total-head"><td>Running total</td><td>Votes</td><td colspan="3">% of votes cast</td></tr>' +
+        choices.map(function (c) {
+          var lead = cast && counts[c] === maxCount;
+          return '<tr class="vr-total' + (lead ? ' lead' : '') + '"><td><strong>' + D.esc(c) + '</strong></td>' +
+            '<td><strong>' + counts[c] + '</strong></td>' +
+            '<td colspan="3"><strong>' + pct(counts[c], cast) + '</strong><div class="vr-bar"><span style="width:' + (cast ? counts[c] * 100 / cast : 0) + '%"></span></div></td></tr>';
+        }).join('') +
+        '<tr class="vr-total"><td>Votes cast</td><td><strong>' + cast + '</strong></td><td colspan="3"></td></tr>';
+      return;
+    }
     $('vrTurnout').innerHTML = '<strong>' + cast + '</strong> of <strong>' + eligible + '</strong> eligible slips have voted &middot; <strong>' +
       pct(cast, eligible) + '</strong> turnout' +
       (excluded ? ' &middot; <span class="inactive">' + excluded + ' ineligible</span>' : '') + '<br>' +
@@ -717,7 +751,7 @@
   function downloadCsv() {
     if (!current) return;
     function q(s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; }
-    var lines = [['Slip', 'Owner', 'Vote', 'Cast at (Eastern)'].map(q).join(',')];
+    var lines = [['Slip', groupBallot(current) ? 'Name' : 'Owner', 'Vote', 'Cast at (Eastern)'].map(q).join(',')];
     resultRows.forEach(function (r) {
       lines.push([r.slip, r.owner, rowStatus(r), r.vote ? D.fmtWhen(r.vote.cast_at) : ''].map(q).join(','));
     });
@@ -737,7 +771,7 @@
       '<style>body{font-family:Arial,sans-serif;margin:24px;color:#111}table{border-collapse:collapse;width:100%;font-size:12px}' +
       'td,th{border-bottom:1px solid #ccc;padding:4px 6px;text-align:left}tfoot td{font-weight:bold;border-top:2px solid #000}.vr-bar{display:none}</style></head><body>' +
       '<h2>' + D.esc(current.title) + '</h2><p>' + D.esc(D.voteWindowText(current)) + '. Printed ' + D.esc(D.fmtWhen(new Date().toISOString())) + '.</p>' +
-      '<table><thead><tr><th>Slip</th><th>Owner</th><th>Vote</th><th>Cast</th><th></th></tr></thead><tbody>' +
+      '<table><thead><tr><th>Slip</th><th>' + (groupBallot(current) ? 'Name' : 'Owner') + '</th><th>Vote</th><th>Cast</th><th></th></tr></thead><tbody>' +
       resultRows.map(function (r) {
         return '<tr><td>' + D.esc(r.slip) + '</td><td>' + D.esc(r.owner) + '</td><td>' + D.esc(rowStatus(r)) + '</td><td>' + (r.vote ? D.esc(D.fmtWhen(r.vote.cast_at)) : '') + '</td><td></td></tr>';
       }).join('') + '</tbody><tfoot>' + $('vrTotals').innerHTML + '</tfoot></table></body></html>');

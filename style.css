@@ -622,6 +622,8 @@ a.vote-tag.open { padding: 3px 10px; }
 .ballot-choice:has(input:checked) { border-color: var(--navy); background: #f2f6fa; }
 .ballot-form .btn { border: none; cursor: pointer; margin-top: 6px; align-self: flex-start; }
 .ballot-form.multi { max-width: 560px; }
+.ballot-name { display: flex; flex-direction: column; gap: 4px; font-weight: 600; color: var(--navy); }
+.ballot-name input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-weight: 400; }
 .ballot-fill { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.9rem; color: var(--muted); }
 .ballot-slip { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; margin: 0; }
 .ballot-slip legend { font-weight: 700; color: var(--navy); padding: 0 6px; }
