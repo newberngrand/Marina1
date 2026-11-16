@@ -64,7 +64,7 @@
     $('evCancel').addEventListener('click', function () { $('evForm').hidden = true; });
     $('evForm').addEventListener('submit', saveEvent);
     $('evType').addEventListener('change', updateBallotBox);
-    $('evVoters').addEventListener('change', updateBallotBox);
+    document.querySelectorAll('#evAudience input').forEach(function (c) { c.addEventListener('change', updateBallotBox); });
     $('evBallotKind').addEventListener('change', updateBallotBox);
     $('evSignupOn').addEventListener('change', updateBallotBox);
     setupResults();
@@ -164,7 +164,6 @@
     $('evActive').checked = ev ? ev.active : true;
     var aud = ev && ev.audience && ev.audience.length ? ev.audience : ['certificated'];
     document.querySelectorAll('#evAudience input').forEach(function (c) { c.checked = aud.indexOf(c.value) !== -1; });
-    $('evVoters').value = ['ltc', 'stc'].indexOf(aud[0]) !== -1 ? aud[0] : 'certificated';
     $('evBallotKind').value = ev ? ev.ballot_kind : 'yes_no';
     $('evResults').value = ev ? ev.results_visibility : 'after_close';
     $('evOptions').value = ev && ev.ballot_options ? ev.ballot_options.join('\n') : '';
@@ -183,7 +182,8 @@
     $('evBallotKind').disabled = locked;
     $('evOptions').disabled = locked;
     $('evType').disabled = locked;
-    $('evVoters').disabled = locked;
+    // Once votes are in, the groups on the ballot can be added to but not taken away.
+    document.querySelectorAll('#evAudience input').forEach(function (c) { c.disabled = locked && c.checked; });
     updateBallotBox();
     showErr($('evError'), '');
     $('evForm').hidden = false;
@@ -205,8 +205,6 @@
     };
     if (!row.title) return showErr($('evError'), 'Please enter a title.');
     row.audience = Array.prototype.filter.call(document.querySelectorAll('#evAudience input'), function (c) { return c.checked; }).map(function (c) { return c.value; });
-    // A ballot is for exactly one group: the "Who votes" choice also decides who can see it.
-    if ($('evType').value === 'vote') row.audience = [$('evVoters').value];
     if (!row.audience.length) return showErr($('evError'), 'Tick at least one group under "Who can see this".');
     if (row.starts_at && row.ends_at && row.ends_at < row.starts_at) return showErr($('evError'), 'The end time is before the start time.');
     var id = $('evId').value;
@@ -491,11 +489,10 @@
     $('evBallot').hidden = !isVote;
     $('evOptionsWrap').hidden = $('evBallotKind').value !== 'choice';
     $('evVoteClose').required = isVote;
-    var group = isVote && $('evVoters').value !== 'certificated';
-    $('evAudienceWrap').hidden = isVote;
-    $('evExclBox').hidden = group;
-    $('evVoteRuleNote').hidden = group;
-    $('evGroupRuleNote').hidden = !group;
+    var aud = Array.prototype.filter.call(document.querySelectorAll('#evAudience input'), function (c) { return c.checked; }).map(function (c) { return c.value; });
+    $('evAudienceLabel').textContent = isVote ? 'Who can see and vote on this' : 'Who can see this';
+    $('evExclBox').hidden = isVote && aud.indexOf('certificated') === -1;
+    $('evGroupRuleNote').hidden = !aud.some(function (a) { return a !== 'certificated'; });
     var isSocial = $('evType').value === 'social';
     $('evSignup').hidden = !isSocial;
     $('evSignupOpts').hidden = !(isSocial && $('evSignupOn').checked);
@@ -639,8 +636,9 @@
       });
   }
 
-  // Ballots for a shared cruiser login (LTC / STC): one vote per named person, no fixed voter list.
-  function groupBallot(ev) { return !!(ev && ev.audience && ev.audience.length === 1 && ['ltc', 'stc'].indexOf(ev.audience[0]) !== -1); }
+  // Ballots that include shared logins (LTC / STC / staff): those vote by name, so there is no fixed voter list.
+  function groupBallot(ev) { return !!(ev && (ev.audience || []).some(function (a) { return a !== 'certificated'; })); }
+  function ownersBallot(ev) { return !ev || !ev.audience || !ev.audience.length || ev.audience.indexOf('certificated') !== -1; }
 
   function showResults(ev) {
     var same = current && current.id === ev.id;
@@ -659,19 +657,20 @@
       sb.from('votes').select('slip, choice, cast_at, voter_name').eq('event_id', ev.id),
       sb.from('vote_exclusions').select('slip, reason').eq('event_id', ev.id)
     ]).then(function (r) {
-      $('vrOwnerHead').textContent = groupBallot(ev) ? 'Name' : 'Owner';
-      if (groupBallot(ev)) {
-        resultRows = (r[1].data || []).slice().sort(function (a, b) { return a.cast_at < b.cast_at ? -1 : 1; })
-          .map(function (v) { return { slip: v.slip, owner: v.voter_name || '', vote: v, excluded: null }; });
-        return drawResults();
-      }
+      $('vrOwnerHead').textContent = groupBallot(ev) ? 'Owner / name' : 'Owner';
+      var all = r[1].data || [];
+      var named = all.filter(function (v) { return v.voter_name; })
+        .sort(function (a, b) { return a.cast_at < b.cast_at ? -1 : 1; })
+        .map(function (v) { return { slip: v.slip, owner: v.voter_name, vote: v, excluded: null, named: true }; });
       var votes = {}, excl = {};
-      (r[1].data || []).forEach(function (v) { votes[v.slip] = v; });
+      all.forEach(function (v) { if (!v.voter_name) votes[v.slip] = v; });
       (r[2].data || []).forEach(function (x) { excl[x.slip] = x.reason; });
       resultRows = (r[0].data || [])
         .filter(function (m) { return (m.active && m.can_vote) || votes[m.slip]; })
         .sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); })
         .map(function (m) { return { slip: m.slip, owner: m.owner_name, vote: votes[m.slip] || null, excluded: excl[m.slip] || null }; });
+      if (!ownersBallot(ev)) resultRows = resultRows.filter(function (x) { return x.vote; });
+      resultRows = resultRows.concat(named);
       drawResults();
     });
   }
@@ -707,12 +706,15 @@
       if (r.excluded) { excluded++; return; }
       if (r.vote) { cast++; counts[r.vote.choice] = (counts[r.vote.choice] || 0) + 1; }
     });
-    var eligible = resultRows.length - excluded;
+    var eligible = resultRows.filter(function (x) { return !x.named; }).length - excluded;
     function pct(n, d) { return d ? (Math.round(n * 1000 / d) / 10) + '%' : '–'; }
     var maxCount = Math.max.apply(null, choices.map(function (c) { return counts[c]; }));
     if (groupBallot(current)) {
       // No fixed list of voters, so show each choice as a share of the votes cast.
-      $('vrTurnout').innerHTML = '<strong>' + cast + '</strong> vote' + (cast === 1 ? '' : 's') + ' cast<br>' +
+      var namedCast = resultRows.filter(function (x) { return x.named; }).length, ownerCast = cast - namedCast;
+      $('vrTurnout').innerHTML = '<strong>' + cast + '</strong> vote' + (cast === 1 ? '' : 's') + ' cast' +
+        (ownersBallot(current) ? ' &middot; ' + ownerCast + ' of ' + eligible + ' owner slips (' + pct(ownerCast, eligible) + ') &middot; ' + namedCast + ' by name on shared logins' : '') +
+        (excluded ? ' &middot; <span class="inactive">' + excluded + ' ineligible</span>' : '') + '<br>' +
         choices.map(function (c) { return D.esc(c) + ': <strong>' + counts[c] + '</strong> (' + pct(counts[c], cast) + ')'; }).join(' &middot; ');
       $('vrTotals').innerHTML =
         '<tr class="vr-total-head"><td>Running total</td><td>Votes</td><td colspan="3">% of votes cast</td></tr>' +

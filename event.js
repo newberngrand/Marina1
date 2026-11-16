@@ -415,8 +415,8 @@
       $('resultsCard').hidden = false;
       $('resultsTitle').textContent = closed ? 'Final Results' : 'Running Totals';
       function pc(n, d) { return d ? Math.round(n * 1000 / d) / 10 : 0; }
-      if (!eligible) {
-        // Cruiser poll: no fixed list of voters, so show each choice as a share of the votes cast.
+      if (!eligible || (ev.audience || []).some(function (a) { return a !== 'certificated'; })) {
+        // Ballot includes cruisers voting by name: no fixed list of voters, so show each choice as a share of the votes cast.
         $('resultsBody').innerHTML = rows.map(function (x) {
           var n = Number(x.votes), p = pc(n, cast);
           return '<div class="result-row"><div class="result-label"><strong>' + D.esc(x.choice) + '</strong>' +

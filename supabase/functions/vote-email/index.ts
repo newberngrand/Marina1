@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
   const { data: vote } = await (/^[0-9a-f-]{36}$/i.test(voteId) ? q.eq("id", voteId) : q.is("voter_name", null)).maybeSingle();
   if (!vote) return json(404, { error: "No such vote" });
   const [{ data: ev }, { data: member }, { data: caster }] = await Promise.all([
-    db.from("events").select("title, vote_closes_at, vote_notify_email, ballot_kind, ballot_options").eq("id", eventId).maybeSingle(),
+    db.from("events").select("title, vote_closes_at, vote_notify_email, ballot_kind, ballot_options, audience").eq("id", eventId).maybeSingle(),
     db.from("members").select("owner_name, email").eq("slip", slip).maybeSingle(),
     db.from("members").select("slip, owner_name").eq("user_id", vote.cast_by).maybeSingle(),
   ]);
@@ -109,7 +109,9 @@ Deno.serve(async (req) => {
       const rows = (tally ?? []) as { choice: string; votes: number; eligible: number; cast_total: number }[];
       const cast = rows[0]?.cast_total ?? 0, eligible = rows[0]?.eligible ?? 0;
       const pc = (n: number, d: number) => d ? Math.round(n * 1000 / d) / 10 : 0;
-      const tallyRows = eligible
+      // Ballots that include cruisers (voting by name) have no fixed voter list: show shares of votes cast.
+      const byName = ((ev.audience ?? []) as string[]).some((a) => a !== "certificated");
+      const tallyRows = eligible && !byName
         ? rows.map((t) => row(esc(t.choice), `${t.votes} (${pc(t.votes, eligible)}% of eligible slips)`)).join("") +
           row("Voted", `${cast} of ${eligible} eligible slips (${pc(cast, eligible)}%)`)
         : rows.map((t) => row(esc(t.choice), `${t.votes} (${pc(t.votes, cast)}% of votes cast)`)).join("") +
