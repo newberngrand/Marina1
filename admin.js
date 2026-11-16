@@ -1532,7 +1532,7 @@
   function loadMembers() {
     if (!memWired) { wireMembers(); memWired = true; }
     return Promise.all([
-      sb.from('members').select('slip, owner_name, email, active, is_admin, can_vote, user_id, member_class'),
+      sb.from('members').select('slip, owner_name, email, active, is_admin, admin_rights, can_vote, user_id, member_class'),
       sb.from('member_notes').select('slip, note')
     ]).then(function (r) {
       if (r[0].error) return;
@@ -1552,6 +1552,7 @@
       if (show === 'noemail' && (m.email || m.is_admin)) return false;
       if (show === 'nonvoting' && (m.can_vote || m.is_admin)) return false;
       if (show === 'inactive' && m.active) return false;
+      if (show === 'admins' && !m.is_admin && !m.admin_rights) return false;
       if (show.indexOf('c:') === 0 && m.member_class !== show.slice(2)) return false;
       return !f || (m.slip + ' ' + m.owner_name + ' ' + (m.email || '') + ' ' + (memNotes[m.slip] || '')).toLowerCase().indexOf(f) !== -1;
     }).map(function (m) {
@@ -1560,6 +1561,7 @@
         '</td><td>' + (m.email ? D.esc(m.email) : '<em>none</em>') + '</td>' +
         '<td>' + (m.is_admin ? 'Admin' : (m.active ? 'Active' : '<span class="inactive">Inactive</span>')) +
         (!m.is_admin && !m.can_vote ? '<div class="note">Non-voting</div>' : '') +
+        (m.admin_rights ? '<div><span class="badge badge-admin">Admin</span></div>' : '') +
         (!m.is_admin && m.member_class && m.member_class !== 'certificated' ? '<div><span class="badge badge-class-' + m.member_class + '">' + CLASS_LABEL[m.member_class] + '</span></div>' : '') + '</td>' +
         '<td class="row-actions"><button type="button" class="btn-sm" data-slip="' + D.esc(m.slip) + '">Edit</button></td></tr>';
     }).join('') || '<tr><td colspan="5" class="note">No slips match.</td></tr>';
@@ -1602,6 +1604,9 @@
     $('memClass').disabled = !isNew && m.is_admin;
     $('memActive').disabled = !isNew && m.is_admin;
     $('memCanVote').disabled = !isNew && m.is_admin;
+    $('memAdminWrap').hidden = !isNew && m.is_admin;   // BOD-style board accounts are always admins
+    $('memAdmin').checked = !isNew && !!m.admin_rights;
+    $('memAdmin').disabled = $('memClass').value !== 'certificated';
     $('memPw').value = '';
     $('memPwLegend').textContent = isNew ? 'Starting password (required)' : 'Set a new password';
     $('memPwSet').hidden = isNew;
@@ -1620,6 +1625,9 @@
   function wireMembers() {
     $('memClass').addEventListener('change', function () {
       if (!memEditing && $('memClass').value !== 'certificated') $('memCanVote').checked = false;
+      // Only owner slips can be admins (never a shared cruiser or staff login).
+      $('memAdmin').disabled = $('memClass').value !== 'certificated';
+      if ($('memAdmin').disabled) $('memAdmin').checked = false;
     });
     $('memNew').addEventListener('click', function () { openMemberForm(null); });
     $('memCancel').addEventListener('click', function () { $('memForm').hidden = true; memEditing = null; });
@@ -1670,14 +1678,22 @@
             return Promise.all([
               note ? sb.from('member_notes').upsert({ slip: slip, note: note }) : null,
               $('memActive').checked ? null : sb.from('members').update({ active: false }).eq('slip', slip),
-              $('memClass').value === 'certificated' ? null : sb.from('members').update({ member_class: $('memClass').value }).eq('slip', slip)
+              $('memClass').value === 'certificated' ? null : sb.from('members').update({ member_class: $('memClass').value }).eq('slip', slip),
+              $('memAdmin').checked ? sb.from('members').update({ admin_rights: true }).eq('slip', slip) : null
             ]);
           })
           .then(function () { return 'Slip ' + slip + ' added. Starting password: ' + pw; });
       } else {
         var m = memEditing;
         var row = { owner_name: owner, email: email || null };
-        if (!m.is_admin) { row.active = $('memActive').checked; row.can_vote = $('memCanVote').checked; row.member_class = $('memClass').value; }
+        if (!m.is_admin) {
+          row.active = $('memActive').checked; row.can_vote = $('memCanVote').checked; row.member_class = $('memClass').value;
+          row.admin_rights = $('memAdmin').checked && row.member_class === 'certificated';
+          if (m.admin_rights && !row.admin_rights &&
+              !confirm('Remove admin rights from slip ' + m.slip + '? They will no longer be able to use the Admin page.')) { btn.disabled = false; return; }
+          if (!m.admin_rights && row.admin_rights &&
+              !confirm('Give slip ' + m.slip + ' (' + owner + ') admin rights? They will be able to use everything on the Admin page.')) { btn.disabled = false; return; }
+        }
         work = sb.from('members').update(row).eq('slip', m.slip).then(function (r) {
           if (r.error) throw new Error(r.error.message);
           var hadNote = !!memNotes[m.slip];

@@ -15,7 +15,7 @@
       if (!id) { $('evStatus').textContent = 'Event not found.'; return; }
       return Promise.all([
         sb.from('events').select('*').eq('id', id).maybeSingle(),
-        sb.from('members').select('slip, is_admin, member_class').eq('user_id', r.data.session.user.id).maybeSingle()
+        sb.from('members').select('slip, is_admin, admin_rights, member_class').eq('user_id', r.data.session.user.id).maybeSingle()
       ]).then(function (res) {
         ev = res[0].data;
         me = res[1].data;
@@ -309,7 +309,7 @@
       else if (entry) showMyEntry(entry, open);
       else if (open) showSignupForm(null, profile);
       else $('signupBody').innerHTML = '<p>Sign-up has closed. Slip <strong>' + D.esc(me.slip) + '</strong> did not sign up.</p>';
-      if (me && me.is_admin) {
+      if (me && (me.is_admin || me.admin_rights)) {
         $('signupBody').insertAdjacentHTML('beforeend', '<p class="note" style="margin:10px 0 0">Admin: the full list with email and phone numbers is on the <a href="admin.html">Admin page</a> (Sign-ups button).</p>');
       }
       loadSignupList();
@@ -385,7 +385,7 @@
   }
 
   function loadSignupList() {
-    if (!ev.signup_public && !(me && me.is_admin)) { $('signupList').innerHTML = ''; return; }
+    if (!ev.signup_public && !(me && (me.is_admin || me.admin_rights))) { $('signupList').innerHTML = ''; return; }
     sb.rpc('signup_list', { p_event_id: ev.id }).then(function (r) {
       var rows = r.data || [], fields = ev.signup_fields || [];
       $('signupList').innerHTML = '<h4 class="signup-list-head">Who\'s coming (' + rows.length + ')</h4>' +

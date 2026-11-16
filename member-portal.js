@@ -13,7 +13,7 @@
           return;
         }
         return sb.from('members')
-          .select('slip, owner_name, email, is_admin, active, member_class')
+          .select('slip, owner_name, email, is_admin, admin_rights, active, member_class')
           .eq('user_id', session.user.id)
           .maybeSingle()
           .then(function (res) {
@@ -67,7 +67,7 @@
         $('portalSlipsNote').hidden = false;
       }
     });
-    if (m.is_admin) $('portalAdminLink').hidden = false;
+    if (m.is_admin || m.admin_rights) $('portalAdminLink').hidden = false;
 
     $('portalLogout').addEventListener('click', function () {
       MemberAuth.logOut();

@@ -288,6 +288,7 @@ nav.main-nav a.active {
 
 /* Class badges (admin member list) */
 .badge-class-ltc { background: #e6f1f3; color: #1c5d6e; }
+.badge-admin { background: #0b2540; color: #fff; }
 .badge-class-stc { background: #f8f1e3; color: #7a5a1f; }
 .badge-class-employee { background: #efeaf7; color: #5b3f8c; }
 
