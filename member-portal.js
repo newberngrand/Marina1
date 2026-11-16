@@ -27,7 +27,7 @@
             MemberAuth.track('view_portal');
             loadEvents(sb, m);
             // Marina Documents are for slip owners (and admins).
-            if (m.is_admin || !m.member_class || m.member_class === 'certificated') loadDocs(sb);
+            if (m.is_admin || m.admin_rights || !m.member_class || m.member_class === 'certificated') loadDocs(sb);
             else $('portalDocsCard').hidden = true;
           });
       });
@@ -47,7 +47,8 @@
       $('portalSlipLabel').textContent = kind + ' login';
       $('portalSlipsHead').hidden = true;
       $('portalSlipsWrap').hidden = true;
-      $('portalPwActions').hidden = true;
+      // Shared logins can't change the password here; an employee with admin rights has their own login and can.
+      if (!m.admin_rights) $('portalPwActions').hidden = true;
     }
     $('portalSlipTop').textContent = m.slip;
     $('portalSlip').textContent = 'Slip ' + m.slip;

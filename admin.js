@@ -1607,7 +1607,7 @@
     $('memCanVote').disabled = !isNew && m.is_admin;
     $('memAdminWrap').hidden = !isNew && m.is_admin;   // BOD-style board accounts are always admins
     $('memAdmin').checked = !isNew && !!m.admin_rights;
-    $('memAdmin').disabled = $('memClass').value !== 'certificated';
+    $('memAdmin').disabled = !adminAllowed();
     $('memPw').value = '';
     $('memPwLegend').textContent = isNew ? 'Starting password (required)' : 'Set a new password';
     $('memPwSet').hidden = isNew;
@@ -1621,13 +1621,14 @@
     (isNew ? $('memSlip') : $('memOwner')).focus();
   }
 
+  function adminAllowed() { return $('memClass').value === 'certificated' || $('memClass').value === 'employee'; }
   var CLASS_LABEL = { certificated: 'Owner', ltc: 'Long-term cruiser', stc: 'Transient', employee: 'Employee' };
   var CLASS_SHORT = { certificated: 'Owners', ltc: 'LTC', stc: 'STC', employee: 'Employees' };
   function wireMembers() {
     $('memClass').addEventListener('change', function () {
       if (!memEditing && $('memClass').value !== 'certificated') $('memCanVote').checked = false;
-      // Only owner slips can be admins (never a shared cruiser or staff login).
-      $('memAdmin').disabled = $('memClass').value !== 'certificated';
+      // Owners and employees can be admins (never the shared LTC / STC logins).
+      $('memAdmin').disabled = !adminAllowed();
       if ($('memAdmin').disabled) $('memAdmin').checked = false;
     });
     $('memNew').addEventListener('click', function () { openMemberForm(null); });
@@ -1689,7 +1690,7 @@
         var row = { owner_name: owner, email: email || null };
         if (!m.is_admin) {
           row.active = $('memActive').checked; row.can_vote = $('memCanVote').checked; row.member_class = $('memClass').value;
-          row.admin_rights = $('memAdmin').checked && row.member_class === 'certificated';
+          row.admin_rights = $('memAdmin').checked && (row.member_class === 'certificated' || row.member_class === 'employee');
           if (m.admin_rights && !row.admin_rights &&
               !confirm('Remove admin rights from slip ' + m.slip + '? They will no longer be able to use the Admin page.')) { btn.disabled = false; return; }
           if (!m.admin_rights && row.admin_rights &&
