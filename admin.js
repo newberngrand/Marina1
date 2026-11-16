@@ -1615,7 +1615,7 @@
       ? 'Give this password to the owner privately. They can change it after logging in.'
       : 'Sets the password right away. Give it to the owner privately; they can change it after logging in.';
     $('memSave').textContent = isNew ? 'Add Slip' : 'Save Changes';
-    ['memError', 'memDone', 'memPwDone'].forEach(function (id) { $(id).hidden = true; });
+    ['memError', 'memDone', 'memPwDone', 'memAdded'].forEach(function (id) { $(id).hidden = true; });
     $('memForm').hidden = false;
     $('memForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
     (isNew ? $('memSlip') : $('memOwner')).focus();
@@ -1712,9 +1712,10 @@
         done.hidden = false;
         return loadMembers().then(function () {
           if (!memEditing) {
-            var slipNow = $('memSlip').value.trim().toUpperCase();
-            var created = memRows.find(function (x) { return x.slip === slipNow; });
-            if (created) { memEditing = created; $('memSlip').readOnly = true; $('memFormTitle').textContent = 'Edit Slip ' + created.slip; $('memSave').textContent = 'Save Changes'; $('memPwSet').hidden = false; $('memPwLegend').textContent = 'Set a new password'; $('memPw').value = ''; }
+            // New slip added: clear the form for the next one, keeping the confirmation (and starting password) visible.
+            openMemberForm(null);
+            $('memAdded').textContent = msg + '  (The form is cleared for the next slip.)';
+            $('memAdded').hidden = false;
           } else {
             memEditing = memRows.find(function (x) { return x.slip === memEditing.slip; }) || memEditing;
           }
