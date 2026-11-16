@@ -788,7 +788,12 @@
     $('docCategory').innerHTML = D.DOC_CATEGORIES.map(function (c) {
       return '<option value="' + c.id + '">' + c.label + '</option>';
     }).join('');
-    $('docCategory').addEventListener('change', updateDateLabel);
+    $('docCategory').addEventListener('change', function () {
+      updateDateLabel();
+      // New uploads: suggest Public for permits, rules and forms until the box is changed by hand.
+      if (!$('docId').value && !docPublicTouched) $('docPublic').checked = PUBLIC_BY_DEFAULT.indexOf($('docCategory').value) !== -1;
+    });
+    $('docPublic').addEventListener('change', function () { docPublicTouched = true; });
     $('docNew').addEventListener('click', function () { openDocForm(null); });
     $('docCancel').addEventListener('click', function () { $('docForm').hidden = true; });
     $('docForm').addEventListener('submit', saveDoc);
@@ -814,6 +819,8 @@
     loadDocs();
   }
 
+  var PUBLIC_BY_DEFAULT = ['permits', 'rules', 'forms'], docPublicTouched = false;
+
   function updateDateLabel() {
     var cat = D.DOC_CATEGORIES.find(function (c) { return c.id === $('docCategory').value; });
     $('docDateLabel').textContent = cat.dateLabel + (cat.id === 'minutes' ? ' (required)' : ' (optional)');
@@ -829,6 +836,8 @@
     $('docTitle').value = d ? d.title : '';
     $('docDesc').value = d ? d.description : '';
     $('docActive').checked = d ? d.active : true;
+    docPublicTouched = false;
+    $('docPublic').checked = d ? !!d.is_public : PUBLIC_BY_DEFAULT.indexOf('minutes') !== -1;
     $('docFile').value = '';
     $('docFile').required = !d;
     $('docFileWrap').firstChild.textContent = d
@@ -853,7 +862,8 @@
       title: $('docTitle').value.trim(),
       description: $('docDesc').value.trim(),
       doc_date: $('docDate').value || null,
-      active: $('docActive').checked
+      active: $('docActive').checked,
+      is_public: $('docPublic').checked
     };
     var err = $('docError');
     if (!row.title) return showErr(err, 'Please enter a title.');
@@ -903,7 +913,8 @@
       '<td><strong>' + D.esc(d.title) + '</strong>' + (d.description ? '<div class="note">' + D.esc(d.description) + '</div>' : '') + '</td>' +
       '<td>' + (d.doc_date ? D.fmtDay(d.doc_date) : '') + '</td>' +
       '<td class="note">' + D.esc(d.file_name) + '<br>' + D.fileSize(d.size_bytes) + '</td>' +
-      '<td>' + (d.active ? 'Visible' : '<span class="inactive">Hidden</span>') + '</td>' +
+      '<td>' + (d.active ? 'Visible' : '<span class="inactive">Hidden</span>') +
+        '<div>' + (d.is_public ? '<span class="badge badge-public">Public</span>' : '<span class="badge badge-private">Members only</span>') + '</div></td>' +
       '<td class="row-actions">' +
         '<button type="button" class="btn-sm" data-act="open" data-id="' + d.id + '">Open</button>' +
         '<button type="button" class="btn-sm" data-act="edit" data-id="' + d.id + '">Edit</button>' +
