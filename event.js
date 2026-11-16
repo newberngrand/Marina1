@@ -105,15 +105,16 @@
     var html = '';
     if (justVoted) {
       html += '<div class="member-login-note" style="margin-bottom:12px">Thank you! The vote from <strong>' + D.esc(justVoted) +
-        '</strong> has been recorded. To vote for someone else on this login, fill in the ballot again.</div>';
+        '</strong> has been recorded. If an email was given, a receipt is on its way to it. To vote for someone else on this login, fill in the ballot again.</div>';
       justVoted = '';
     }
     if (st === 'upcoming') html += '<p>The ballot will appear here when voting opens.</p>';
     else if (st === 'closed') html += '<p>Voting has closed.</p>';
     else {
       html += '<form id="ballotForm" class="ballot-form">' +
-        '<p style="margin:0">Everyone using this login gets one vote. Type your name and choose one:</p>' +
+        '<p style="margin:0">Everyone using this login gets one vote. Type your name' + (emailRequired() ? ' and email' : '') + ' and choose one:</p>' +
         '<label class="ballot-name">Your name<input type="text" id="ballotName" maxlength="80" autocomplete="name" required></label>' +
+        '<label class="ballot-name">Your email' + (emailRequired() ? '' : ' (optional)') + '<input type="email" id="ballotEmail" maxlength="254" autocomplete="email"' + (emailRequired() ? ' required' : '') + '></label>' +
         radios('group', D.ballotChoices(ev)) +
         '<button type="submit" class="btn btn-gold">Cast Vote</button>' +
         '<p class="note" style="margin:8px 0 0">Votes are final and can&rsquo;t be changed.</p></form>';
@@ -124,11 +125,16 @@
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var name = $('ballotName').value.trim().replace(/\s+/g, ' ');
+      var email = $('ballotEmail').value.trim();
       var r = form.querySelector('input[name="choice-group"]:checked');
-      var msg = !name ? 'Please type your name.' : !r ? 'Please choose one of the choices.' : '';
+      var okEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+      var msg = !name ? 'Please type your name.'
+        : (emailRequired() && !email) ? 'Please type your email address.'
+        : (email && !okEmail) ? 'That email address doesn’t look right.'
+        : !r ? 'Please choose one of the choices.' : '';
       $('ballotError').textContent = msg;
       $('ballotError').hidden = !msg;
-      if (!msg) openConfirm([{ slip: me.slip, name: name, choice: r.value }], 0);
+      if (!msg) openConfirm([{ slip: me.slip, name: name, email: email, choice: r.value }], 0);
     });
   }
 
@@ -208,7 +214,7 @@
     $('vcList').innerHTML =
       '<p>You are casting ' + (picks.length > 1 ? picks.length + ' votes' : 'this vote') + ':</p>' +
       '<ul class="vc-picks">' + picks.map(function (p) {
-        return '<li><span>' + (p.name ? D.esc(p.name) : 'Slip ' + D.esc(p.slip)) + '</span><strong>' + D.esc(p.choice) + '</strong></li>';
+        return '<li><span>' + (p.name ? D.esc(p.name) + (p.email ? '<br><small>' + D.esc(p.email) + '</small>' : '') : 'Slip ' + D.esc(p.slip)) + '</span><strong>' + D.esc(p.choice) + '</strong></li>';
       }).join('') + '</ul>' +
       (skipped ? '<p class="note">' + skipped + ' slip' + (skipped > 1 ? 's are' : ' is') + ' left blank and can vote later.</p>' : '');
     $('vcCast').textContent = picks.length > 1 ? 'Cast My Votes' : 'Cast My Vote';
@@ -230,6 +236,7 @@
         return chain.then(function () {
           var args = { p_event_id: ev.id, p_choice: p.choice, p_slip: p.slip };
           if (p.name) args.p_voter_name = p.name;
+          if (p.email) args.p_voter_email = p.email;
           return sb.rpc('cast_vote', args).then(function (r) {
             if (r.error) errors.push(r.error.message);
             else if (p.name) justVoted = p.name;

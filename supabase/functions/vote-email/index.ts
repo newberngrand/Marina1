@@ -74,7 +74,8 @@ Deno.serve(async (req) => {
   const voterLabel = named || esc(slip) + (member?.owner_name ? " &middot; " + esc(member.owner_name) : "");
 
   // 1) Receipt to the voter.
-  const voterEmail = (member?.email ?? "").trim();
+  // Shared-login voters (LTC / STC) give their own email on the ballot.
+  const voterEmail = (vote.voter_email ?? member?.email ?? "").trim();
   if (voterEmail && !vote.receipt_sent_at) {
     const { data: claimed } = await db.from("votes").update({ receipt_sent_at: new Date().toISOString() })
       .eq("id", vote.id).is("receipt_sent_at", null).select("slip");
@@ -91,12 +92,12 @@ Deno.serve(async (req) => {
           ${row("Receipt no.", esc(receipt))}
         </table>
         <p style="color:#5c6b7a;font-size:13px">Votes are final and can't be changed. If you did not cast this vote, please contact the marina office right away.</p>`);
-      const r = await send([voterEmail], `Vote receipt: ${ev.title} (slip ${slip})`, html);
+      const r = await send([voterEmail], `Vote receipt: ${ev.title}${vote.voter_name ? "" : ` (slip ${slip})`}`, html);
       result.receipt_email = r;
       if (!r.ok) await db.from("votes").update({ receipt_sent_at: null }).eq("id", vote.id);
     }
   } else if (!voterEmail) {
-    result.receipt_email = { ok: false, error: "no email on file for slip" };
+    result.receipt_email = { ok: false, error: "no email for this voter" };
   }
 
   // 2) Notice to the vote-counting committee, with the running tally.
@@ -124,7 +125,7 @@ Deno.serve(async (req) => {
           ${row("Recorded", esc(when(vote.cast_at)))}
           ${castBy ? row("Cast from login", esc(castBy)) : ""}
           ${row("Receipt no.", esc(receipt))}
-          ${named ? "" : row("Voter receipt", voterEmail ? "emailed to " + esc(voterEmail) : "<span style='color:#b3392f'>no email on file</span>")}
+          ${row("Voter receipt", voterEmail ? "emailed to " + esc(voterEmail) : "<span style='color:#b3392f'>no email on file</span>")}
         </table>
         <h3 style="color:#0b2540;margin:18px 0 6px">Running total</h3>
         <table style="border-collapse:collapse">

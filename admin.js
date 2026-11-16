@@ -654,14 +654,14 @@
     if (!same) $('voteResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
     Promise.all([
       sb.from('members').select('slip, owner_name, active, is_admin, can_vote').eq('is_admin', false),
-      sb.from('votes').select('slip, choice, cast_at, voter_name').eq('event_id', ev.id),
+      sb.from('votes').select('slip, choice, cast_at, voter_name, voter_email').eq('event_id', ev.id),
       sb.from('vote_exclusions').select('slip, reason').eq('event_id', ev.id)
     ]).then(function (r) {
       $('vrOwnerHead').textContent = groupBallot(ev) ? 'Owner / name' : 'Owner';
       var all = r[1].data || [];
       var named = all.filter(function (v) { return v.voter_name; })
         .sort(function (a, b) { return a.cast_at < b.cast_at ? -1 : 1; })
-        .map(function (v) { return { slip: v.slip, owner: v.voter_name, vote: v, excluded: null, named: true }; });
+        .map(function (v) { return { slip: v.slip, owner: v.voter_name, email: v.voter_email || '', vote: v, excluded: null, named: true }; });
       var votes = {}, excl = {};
       all.forEach(function (v) { if (!v.voter_name) votes[v.slip] = v; });
       (r[2].data || []).forEach(function (x) { excl[x.slip] = x.reason; });
@@ -683,7 +683,7 @@
       if (show === 'voted' && !r.vote) return false;
       if (show === 'not' && (r.vote || r.excluded)) return false;
       if (show === 'excluded' && !r.excluded) return false;
-      return !f || (r.slip + ' ' + r.owner).toLowerCase().indexOf(f) !== -1;
+      return !f || (r.slip + ' ' + r.owner + ' ' + (r.email || '')).toLowerCase().indexOf(f) !== -1;
     });
     $('vrRows').innerHTML = rows.length ? rows.map(function (r) {
       var status = r.vote ? '<span class="vote-choice">' + D.esc(r.vote.choice) + '</span>'
@@ -692,7 +692,8 @@
       var action = r.vote ? ''
         : r.excluded ? '<button type="button" class="btn-sm" data-ex="remove" data-slip="' + D.esc(r.slip) + '">Restore</button>'
         : (open ? '<button type="button" class="btn-sm btn-danger" data-ex="add" data-slip="' + D.esc(r.slip) + '">Ineligible</button>' : '');
-      return '<tr' + (r.excluded ? ' class="row-inactive"' : '') + '><td><strong>' + D.esc(r.slip) + '</strong></td><td>' + D.esc(r.owner) + '</td>' +
+      return '<tr' + (r.excluded ? ' class="row-inactive"' : '') + '><td><strong>' + D.esc(r.slip) + '</strong></td><td>' + D.esc(r.owner) +
+        (r.email ? '<div class="note">' + D.esc(r.email) + '</div>' : '') + '</td>' +
         '<td>' + status + '</td>' +
         '<td class="note">' + (r.vote ? D.esc(D.fmtWhen(r.vote.cast_at)) : '') + '</td>' +
         '<td class="row-actions">' + action + '</td></tr>';
@@ -753,9 +754,9 @@
   function downloadCsv() {
     if (!current) return;
     function q(s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; }
-    var lines = [['Slip', groupBallot(current) ? 'Name' : 'Owner', 'Vote', 'Cast at (Eastern)'].map(q).join(',')];
+    var lines = [['Slip', groupBallot(current) ? 'Owner / name' : 'Owner', 'Email (shared logins)', 'Vote', 'Cast at (Eastern)'].map(q).join(',')];
     resultRows.forEach(function (r) {
-      lines.push([r.slip, r.owner, rowStatus(r), r.vote ? D.fmtWhen(r.vote.cast_at) : ''].map(q).join(','));
+      lines.push([r.slip, r.owner, r.email || '', rowStatus(r), r.vote ? D.fmtWhen(r.vote.cast_at) : ''].map(q).join(','));
     });
     var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
