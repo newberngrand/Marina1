@@ -1,6 +1,7 @@
 // Admin-only member announcements.
 //   { action: "preview", audience, docks?, slips? }                  -> recipient count
-// audience: "all" | "voting" | "docks" (docks: ["A","C"]) | "slips" (slips: "A12, B7")
+// audience: "all" | "voting" | "docks" (docks: ["A","C"]) | "slips" (slips: "A12, B7") | "ltc" | "stc" | "employee"
+// all / voting / docks mean slip owners (certificated); ltc / stc / employee are those logins.
 //   { action: "test", subject, body, event_id?, to }                 -> one test email
 //   { action: "send", subject, body, audience, event_id? }           -> create + start sending
 //   { action: "resume", announcement_id }                            -> keep sending a paused one
@@ -74,13 +75,15 @@ Deno.serve(async (req) => {
 
   // Who an audience covers. Returns the recipients plus any slip numbers that didn't match.
   function parseTarget() {
-    const audience = ["all", "voting", "docks", "slips"].includes(String(b.audience)) ? String(b.audience) : "all";
+    const audience = ["all", "voting", "docks", "slips", "ltc", "stc", "employee"].includes(String(b.audience)) ? String(b.audience) : "all";
     const docks = Array.isArray(b.docks) ? (b.docks as unknown[]).map((d) => String(d).toUpperCase()).filter((d) => /^[A-Z]$/.test(d)) : [];
     const slips = String(b.slips ?? "").toUpperCase().split(/[\s,;]+/).filter((x) => /^[A-Z0-9-]{1,20}$/.test(x));
     return { audience, docks: [...new Set(docks)].sort(), slips: [...new Set(slips)] };
   }
   async function recipients(t: { audience: string; docks: string[]; slips: string[] }): Promise<{ list: Recip[]; unknown: string[]; noEmail: string[] }> {
     let q = db.from("members").select("slip, owner_name, email, can_vote").eq("active", true).eq("is_admin", false);
+    if (["all", "voting", "docks"].includes(t.audience)) q = q.eq("member_class", "certificated");
+    if (["ltc", "stc", "employee"].includes(t.audience)) q = q.eq("member_class", t.audience);
     if (t.audience === "voting") q = q.eq("can_vote", true);
     if (t.audience === "slips") q = q.in("slip", t.slips.length ? t.slips : ["-none-"]);
     const { data: rows } = await q;

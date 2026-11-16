@@ -15,7 +15,7 @@
       if (!id) { $('evStatus').textContent = 'Event not found.'; return; }
       return Promise.all([
         sb.from('events').select('*').eq('id', id).maybeSingle(),
-        sb.from('members').select('slip, is_admin').eq('user_id', r.data.session.user.id).maybeSingle()
+        sb.from('members').select('slip, is_admin, member_class').eq('user_id', r.data.session.user.id).maybeSingle()
       ]).then(function (res) {
         ev = res[0].data;
         me = res[1].data;
@@ -233,6 +233,11 @@
   }
 
   /* ---------- Sign-up sheet ---------- */
+  // Group logins (LTC / STC / staff) are shared by many people: each person adds
+  // their own sign-up, and changes go through the office.
+  function sharedLogin() { return !!(me && !me.is_admin && me.member_class && me.member_class !== 'certificated'); }
+  var justSignedUp = '';
+
   function signupIsOpen() {
     return ev.active && (!ev.signup_closes_at || new Date(ev.signup_closes_at) > new Date());
   }
@@ -255,6 +260,15 @@
     mine.then(function (res) {
       var entry = res[0].data, profile = res[1].data || {};
       if (!me) $('signupBody').innerHTML = '<p class="note">Your slip could not be found.</p>';
+      else if (sharedLogin()) {
+        if (open) showSignupForm(null, {});
+        else $('signupBody').innerHTML = '<p>Sign-up has closed.</p>';
+        if (justSignedUp) {
+          $('signupBody').insertAdjacentHTML('afterbegin', '<div class="member-login-note" style="margin-bottom:12px">Thank you! <strong>' + D.esc(justSignedUp) +
+            '</strong> is signed up. To sign up someone else, fill in the form again. To change or cancel a sign-up, please call the marina office at (252) 638-0318.</div>');
+          justSignedUp = '';
+        }
+      }
       else if (entry) showMyEntry(entry, open);
       else if (open) showSignupForm(null, profile);
       else $('signupBody').innerHTML = '<p>Sign-up has closed. Slip <strong>' + D.esc(me.slip) + '</strong> did not sign up.</p>';
@@ -296,7 +310,7 @@
       '<form class="member-form signup-form" id="suForm">' +
         '<div class="signup-grid">' +
           '<label>Name<input type="text" id="suName" maxlength="120" required value="' + val(x ? x.name : profile.owner_name) + '"></label>' +
-          '<label>Slip<input type="text" value="' + val(me.slip) + '" disabled></label>' +
+          '<label>' + (sharedLogin() ? 'Login' : 'Slip') + '<input type="text" value="' + val(me.slip) + '" disabled></label>' +
           '<label>Email<input type="email" id="suEmail" maxlength="254" value="' + val(x ? x.email : profile.email) + '"></label>' +
           '<label>Phone<input type="tel" id="suPhone" maxlength="40" value="' + val(x ? x.phone : '') + '"></label>' +
           fields.map(function (f, k) {
@@ -322,10 +336,12 @@
       q.then(function (r) {
         if (r.error) {
           $('signupError').textContent = /row-level security/.test(r.error.message)
-            ? 'Sign-up for this event has closed.' : (r.error.code === '23505' ? 'Your slip is already signed up.' : r.error.message);
+            ? 'Sign-up for this event has closed.'
+            : (r.error.code === '23505' ? (sharedLogin() ? 'Someone named ' + row.name + ' is already signed up from this login.' : 'Your slip is already signed up.') : r.error.message);
           $('signupError').hidden = false;
           return;
         }
+        if (sharedLogin()) justSignedUp = row.name;
         loadSignup();
       });
     });

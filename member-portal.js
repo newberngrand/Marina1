@@ -13,7 +13,7 @@
           return;
         }
         return sb.from('members')
-          .select('slip, owner_name, email, is_admin, active')
+          .select('slip, owner_name, email, is_admin, active, member_class')
           .eq('user_id', session.user.id)
           .maybeSingle()
           .then(function (res) {
@@ -26,7 +26,9 @@
             renderAccount(sb, m);
             MemberAuth.track('view_portal');
             loadEvents(sb, m);
-            loadDocs(sb);
+            // Marina Documents are for slip owners (and admins).
+            if (m.is_admin || !m.member_class || m.member_class === 'certificated') loadDocs(sb);
+            else $('portalDocsCard').hidden = true;
           });
       });
     }).catch(function (err) {
@@ -38,6 +40,15 @@
     $('portalLoading').hidden = true;
     $('portalMember').hidden = false;
     $('portalWelcome').textContent = 'Welcome, ' + (m.owner_name || 'Member');
+    var shared = !m.is_admin && m.member_class && m.member_class !== 'certificated';
+    if (shared) {
+      // Group logins (LTC / STC / staff) are shared, so no slip list or password change here.
+      var kind = { ltc: 'Long-term cruiser', stc: 'Transient cruiser', employee: 'Marina staff' }[m.member_class] || '';
+      $('portalSlipLabel').textContent = kind + ' login';
+      $('portalSlipsHead').hidden = true;
+      $('portalSlipsWrap').hidden = true;
+      $('portalPwActions').hidden = true;
+    }
     $('portalSlipTop').textContent = m.slip;
     $('portalSlip').textContent = 'Slip ' + m.slip;
     $('portalEmail').textContent = m.email || 'None on file';

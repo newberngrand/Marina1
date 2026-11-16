@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611151443">
+<link rel="stylesheet" href="style.css?v=202611161058">
 </head>
 <body data-member-portal>
 
@@ -151,6 +151,15 @@
                 </div>
               </div>
             </fieldset>
+            <div class="full an-docks">
+              <span class="an-label">Who can see this</span>
+              <div class="an-dock-boxes" id="evAudience">
+                <label><input type="checkbox" value="certificated" checked> Slip owners</label>
+                <label><input type="checkbox" value="ltc"> Long-term cruisers (LTC)</label>
+                <label><input type="checkbox" value="stc"> Transients (STC)</label>
+                <label><input type="checkbox" value="employee"> Employees</label>
+              </div>
+            </div>
             <label class="full">Short description (shown in the list)
               <textarea id="evSummary" rows="2" maxlength="400" placeholder="One or two sentences."></textarea>
             </label>
@@ -356,8 +365,10 @@
             <div class="admin-grid">
               <label>Send to
                 <select id="anAudience">
-                  <option value="all">All members with an email on file</option>
+                  <option value="all">All slip owners with an email on file</option>
                   <option value="voting">Voting slips only</option>
+                  <option value="ltc">Long-term cruisers (LTC logins)</option>
+                  <option value="stc">Transients (STC logins)</option>
                   <option value="docks">Selected docks</option>
                   <option value="slips">Specific slips</option>
                 </select>
@@ -495,6 +506,15 @@
             <label class="full">Admin note (only admins see this)
               <textarea id="memNote" rows="2" maxlength="500"></textarea>
             </label>
+            <label>Type
+              <select id="memClass">
+                <option value="certificated">Certificated (slip owner)</option>
+                <option value="ltc">Long-term cruiser (LTC)</option>
+                <option value="stc">Transient / short-term cruiser (STC)</option>
+                <option value="employee">Employee</option>
+              </select>
+            </label>
+            <p class="note" id="memClassHelp" style="margin:0;align-self:end">Controls which events and notices this login can see.</p>
             <label class="check"><input type="checkbox" id="memActive"> Active (can log in)</label>
             <label class="check"><input type="checkbox" id="memCanVote"> Can vote</label>
           </div>
@@ -529,6 +549,9 @@
             <option value="noemail">No email on file</option>
             <option value="nonvoting">Non-voting</option>
             <option value="inactive">Inactive</option>
+            <option value="c:ltc">Long-term cruisers (LTC)</option>
+            <option value="c:stc">Transients (STC)</option>
+            <option value="c:employee">Employees</option>
           </select>
         </div>
         <div class="admin-table-wrap">
@@ -550,9 +573,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611151443"></script>
-<script src="member-data.js?v=202611151443"></script>
-<script src="video-utils.js?v=202611151443"></script>
-<script src="admin.js?v=202611151443"></script>
+<script src="member-login.js?v=202611161058"></script>
+<script src="member-data.js?v=202611161058"></script>
+<script src="video-utils.js?v=202611161058"></script>
+<script src="admin.js?v=202611161058"></script>
 </body>
 </html>

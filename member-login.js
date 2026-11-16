@@ -159,7 +159,7 @@
       '<div class="member-login-modal" role="dialog" aria-modal="true" aria-labelledby="memberLoginTitle">' +
         '<button type="button" class="member-login-close" aria-label="Close">&times;</button>' +
         '<div data-view="login">' +
-          '<h3 id="memberLoginTitle">Member Login</h3>' +
+          '<h3 id="memberLoginTitle">Marina Login</h3>' +
           '<p>Sign in with your slip number and password.</p>' +
           '<form id="memberLoginForm" class="member-form">' +
             '<input type="text" id="memberLoginSlip" placeholder="Slip (e.g. A12)" autocomplete="username" autocapitalize="characters" spellcheck="false" required>' +
@@ -242,6 +242,7 @@
               });
             }
             closeModal(false);
+            markActive(true);
             return trackThen('login', { type: 'slip', id: slip, label: slip }).then(function () {
               if (document.body.hasAttribute('data-member-portal')) window.location.reload();
               else window.location.href = PORTAL_PAGE;
@@ -315,14 +316,53 @@
     return String(s).toUpperCase();
   }
 
-  function logOut() {
+  function logOut(reason) {
     var btn = document.getElementById('memberBarLogout');
     if (btn) { btn.disabled = true; btn.textContent = 'Logging out…'; }
     trackThen('logout')
       .then(function () { return getClient(); })
       .then(signOutHere, function () { clearLocalSession(); })
       .catch(function () { clearLocalSession(); })
-      .then(function () { window.location.replace('index.html'); });
+      .then(function () { window.location.replace(reason === 'idle' ? 'index.html?loggedout=idle' : 'index.html'); });
+  }
+
+  /* ---------- Automatic logout after 30 minutes without activity ----------
+     Activity = opening a page, clicking, typing, scrolling or touching the screen.
+     The time is shared between tabs, so working in one tab keeps the others alive. */
+  var IDLE_LIMIT = 30 * 60 * 1000, IDLE_KEY = 'ngbm_last_active', lastMark = 0;
+  function markActive(force) {
+    var now = Date.now();
+    if (!force && now - lastMark < 15000) return;   // no need to write more than every 15 s
+    lastMark = now;
+    try { localStorage.setItem(IDLE_KEY, String(now)); } catch (e) {}
+  }
+  function idleTooLong() {
+    var last = 0;
+    try { last = +localStorage.getItem(IDLE_KEY) || 0; } catch (e) {}
+    return last > 0 && Date.now() - last > IDLE_LIMIT;
+  }
+  function showIdleNotice() {
+    if (document.getElementById('idleNotice')) return;
+    var n = document.createElement('div');
+    n.id = 'idleNotice';
+    n.className = 'idle-notice';
+    n.setAttribute('role', 'status');
+    n.innerHTML = 'For your security, you were logged out after 30 minutes without activity. ' +
+      '<button type="button">OK</button>';
+    n.querySelector('button').addEventListener('click', function () { n.remove(); });
+    document.body.appendChild(n);
+    setTimeout(function () { if (n.parentNode) n.remove(); }, 15000);
+  }
+  function startIdleWatch() {
+    ['click', 'keydown', 'scroll', 'touchstart', 'mousemove', 'input'].forEach(function (ev) {
+      window.addEventListener(ev, function () { markActive(false); }, { passive: true, capture: true });
+    });
+    setInterval(function () {
+      if (hasStoredSession() && idleTooLong()) logOut('idle');
+    }, 30000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && hasStoredSession() && idleTooLong()) logOut('idle');
+    });
   }
 
   // "Logged in as slip X" bar plus Log Out, shown on every page while signed in.
@@ -385,6 +425,19 @@
       track('slip_search', { type: 'slip', id: d.slip || d.query, label: d.slip || String(d.query || '').toUpperCase(),
         details: { found: !!d.found, query: d.query, from_link: !!d.fromLink } });
     });
+    // Logged out for inactivity? Say so once, then tidy the address.
+    if (/[?&]loggedout=idle/.test(location.search)) {
+      showIdleNotice();
+      history.replaceState(null, '', location.pathname + location.hash);
+    }
+    // A saved login that has sat unused for 30+ minutes ends before anything shows.
+    if (hasStoredSession() && idleTooLong() && window.top === window.self) {
+      clearLocalSession();
+      getClient().then(signOutHere).catch(function () {});
+      showIdleNotice();
+      if (document.body.hasAttribute('data-member-portal')) { window.location.replace('index.html?loggedout=idle'); return; }
+    }
+    if (window.top === window.self) { markActive(true); startIdleWatch(); }
     // Only load the login service for visitors who have signed in before.
     if (hasStoredSession()) {
       getClient().then(function (sb) {

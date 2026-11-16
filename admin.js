@@ -135,7 +135,8 @@
         return '<tr' + (ev.active ? '' : ' class="row-inactive"') + '>' +
           '<td><a href="event.html?id=' + ev.id + '" target="_blank" rel="noopener"><strong>' + D.esc(ev.title) + '</strong></a>' +
             (ev.summary ? '<div class="note">' + D.esc(ev.summary) + '</div>' : '') + '</td>' +
-          '<td><span class="badge badge-' + ev.event_type + '">' + D.eventTypeLabel(ev.event_type) + '</span></td>' +
+          '<td><span class="badge badge-' + ev.event_type + '">' + D.eventTypeLabel(ev.event_type) + '</span>' +
+            '<div class="note" style="margin-top:4px">' + (ev.audience || ['certificated']).map(function (a) { return CLASS_SHORT[a] || a; }).join(', ') + '</div></td>' +
           '<td>' + (ev.starts_at ? D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) : (isVote ? '' : '<span class="note">No date</span>')) + voteInfo + '</td>' +
           '<td>' + (ev.active ? 'Active' : '<span class="inactive">Inactive</span>') + '</td>' +
           '<td class="row-actions">' +
@@ -160,6 +161,8 @@
     $('evSummary').value = ev ? ev.summary : '';
     $('evDetails').value = ev ? ev.details : '';
     $('evActive').checked = ev ? ev.active : true;
+    var aud = ev && ev.audience && ev.audience.length ? ev.audience : ['certificated'];
+    document.querySelectorAll('#evAudience input').forEach(function (c) { c.checked = aud.indexOf(c.value) !== -1; });
     $('evBallotKind').value = ev ? ev.ballot_kind : 'yes_no';
     $('evResults').value = ev ? ev.results_visibility : 'after_close';
     $('evOptions').value = ev && ev.ballot_options ? ev.ballot_options.join('\n') : '';
@@ -198,6 +201,8 @@
       active: $('evActive').checked
     };
     if (!row.title) return showErr($('evError'), 'Please enter a title.');
+    row.audience = Array.prototype.filter.call(document.querySelectorAll('#evAudience input'), function (c) { return c.checked; }).map(function (c) { return c.value; });
+    if (!row.audience.length) return showErr($('evError'), 'Tick at least one group under "Who can see this".');
     if (row.starts_at && row.ends_at && row.ends_at < row.starts_at) return showErr($('evError'), 'The end time is before the start time.');
     var id = $('evId').value;
     if (row.event_type === 'vote') {
@@ -1277,7 +1282,7 @@
         var pending = a.total - a.sent - a.failed;
         return '<tr><td class="note nowrap">' + D.esc(D.fmtWhen(a.created_at)) + '</td><td><strong>' + D.esc(a.subject) + '</strong>' +
           (a.note ? '<div class="note">' + D.esc(a.note) + '</div>' : '') + '</td>' +
-          '<td class="note">' + ({ all: 'All members', voting: 'Voting slips', docks: 'Dock ' + D.esc(a.target), slips: 'Slips ' + D.esc(a.target) }[a.audience] || a.audience) + '</td>' +
+          '<td class="note">' + ({ all: 'All owners', voting: 'Voting slips', docks: 'Dock ' + D.esc(a.target), slips: 'Slips ' + D.esc(a.target), ltc: 'Long-term cruisers', stc: 'Transients', employee: 'Employees' }[a.audience] || a.audience) + '</td>' +
           '<td>' + a.sent + ' of ' + a.total + (a.failed ? ' <span class="inactive">(' + a.failed + ' failed)</span>' : '') + '</td>' +
           '<td>' + (a.status === 'done' ? 'Done' : '<span class="inactive">' + (a.status === 'paused' ? 'Paused' : 'Sending') + '</span>') + '</td>' +
           '<td class="row-actions">' + (pending > 0 ? '<button type="button" class="btn-sm btn-primary-sm" data-an-resume="' + a.id + '">Resume (' + pending + ' left)</button>' : '') + '</td></tr>';
@@ -1491,7 +1496,7 @@
   function loadMembers() {
     if (!memWired) { wireMembers(); memWired = true; }
     return Promise.all([
-      sb.from('members').select('slip, owner_name, email, active, is_admin, can_vote, user_id'),
+      sb.from('members').select('slip, owner_name, email, active, is_admin, can_vote, user_id, member_class'),
       sb.from('member_notes').select('slip, note')
     ]).then(function (r) {
       if (r[0].error) return;
@@ -1511,13 +1516,15 @@
       if (show === 'noemail' && (m.email || m.is_admin)) return false;
       if (show === 'nonvoting' && (m.can_vote || m.is_admin)) return false;
       if (show === 'inactive' && m.active) return false;
+      if (show.indexOf('c:') === 0 && m.member_class !== show.slice(2)) return false;
       return !f || (m.slip + ' ' + m.owner_name + ' ' + (m.email || '') + ' ' + (memNotes[m.slip] || '')).toLowerCase().indexOf(f) !== -1;
     }).map(function (m) {
       return '<tr' + (m.active ? '' : ' class="row-inactive"') + '><td><strong>' + D.esc(m.slip) + '</strong></td><td>' + D.esc(m.owner_name) +
         (memNotes[m.slip] ? '<div class="note">' + D.esc(memNotes[m.slip]) + '</div>' : '') +
         '</td><td>' + (m.email ? D.esc(m.email) : '<em>none</em>') + '</td>' +
         '<td>' + (m.is_admin ? 'Admin' : (m.active ? 'Active' : '<span class="inactive">Inactive</span>')) +
-        (!m.is_admin && !m.can_vote ? '<div class="note">Non-voting</div>' : '') + '</td>' +
+        (!m.is_admin && !m.can_vote ? '<div class="note">Non-voting</div>' : '') +
+        (!m.is_admin && m.member_class && m.member_class !== 'certificated' ? '<div><span class="badge badge-class-' + m.member_class + '">' + CLASS_LABEL[m.member_class] + '</span></div>' : '') + '</td>' +
         '<td class="row-actions"><button type="button" class="btn-sm" data-slip="' + D.esc(m.slip) + '">Edit</button></td></tr>';
     }).join('') || '<tr><td colspan="5" class="note">No slips match.</td></tr>';
   }
@@ -1555,6 +1562,8 @@
     $('memNote').value = isNew ? '' : (memNotes[m.slip] || '');
     $('memActive').checked = isNew ? true : m.active;
     $('memCanVote').checked = isNew ? true : m.can_vote;
+    $('memClass').value = isNew ? 'certificated' : (m.member_class || 'certificated');
+    $('memClass').disabled = !isNew && m.is_admin;
     $('memActive').disabled = !isNew && m.is_admin;
     $('memCanVote').disabled = !isNew && m.is_admin;
     $('memPw').value = '';
@@ -1570,7 +1579,12 @@
     (isNew ? $('memSlip') : $('memOwner')).focus();
   }
 
+  var CLASS_LABEL = { certificated: 'Owner', ltc: 'Long-term cruiser', stc: 'Transient', employee: 'Employee' };
+  var CLASS_SHORT = { certificated: 'Owners', ltc: 'LTC', stc: 'STC', employee: 'Employees' };
   function wireMembers() {
+    $('memClass').addEventListener('change', function () {
+      if (!memEditing && $('memClass').value !== 'certificated') $('memCanVote').checked = false;
+    });
     $('memNew').addEventListener('click', function () { openMemberForm(null); });
     $('memCancel').addEventListener('click', function () { $('memForm').hidden = true; memEditing = null; });
     $('memSearch').addEventListener('input', drawMembers);
@@ -1619,14 +1633,15 @@
           .then(function () {
             return Promise.all([
               note ? sb.from('member_notes').upsert({ slip: slip, note: note }) : null,
-              $('memActive').checked ? null : sb.from('members').update({ active: false }).eq('slip', slip)
+              $('memActive').checked ? null : sb.from('members').update({ active: false }).eq('slip', slip),
+              $('memClass').value === 'certificated' ? null : sb.from('members').update({ member_class: $('memClass').value }).eq('slip', slip)
             ]);
           })
           .then(function () { return 'Slip ' + slip + ' added. Starting password: ' + pw; });
       } else {
         var m = memEditing;
         var row = { owner_name: owner, email: email || null };
-        if (!m.is_admin) { row.active = $('memActive').checked; row.can_vote = $('memCanVote').checked; }
+        if (!m.is_admin) { row.active = $('memActive').checked; row.can_vote = $('memCanVote').checked; row.member_class = $('memClass').value; }
         work = sb.from('members').update(row).eq('slip', m.slip).then(function (r) {
           if (r.error) throw new Error(r.error.message);
           var hadNote = !!memNotes[m.slip];

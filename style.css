@@ -278,6 +278,19 @@ nav.main-nav a.active {
   align-self: center;
 }
 
+/* Logged out for inactivity */
+.idle-notice {
+  position: fixed; left: 50%; top: 16px; transform: translateX(-50%); z-index: 400;
+  background: var(--navy); color: #fff; padding: 12px 16px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  max-width: min(560px, calc(100% - 32px)); font-size: 0.92rem; display: flex; gap: 12px; align-items: center;
+}
+.idle-notice button { background: var(--gold); color: var(--navy-dark); border: none; border-radius: 6px; padding: 5px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+
+/* Class badges (admin member list) */
+.badge-class-ltc { background: #e6f1f3; color: #1c5d6e; }
+.badge-class-stc { background: #f8f1e3; color: #7a5a1f; }
+.badge-class-employee { background: #efeaf7; color: #5b3f8c; }
+
 /* Signed-in member bar (all pages) */
 .member-bar {
   background: var(--gold);
