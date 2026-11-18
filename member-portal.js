@@ -40,10 +40,16 @@
     $('portalLoading').hidden = true;
     $('portalMember').hidden = false;
     $('portalWelcome').textContent = 'Welcome, ' + (m.owner_name || 'Member');
-    // Board members: a reminder when minutes are waiting for their approval.
+    // Board members: a Board button (the only way in to the Board page), plus a reminder
+    // when minutes are waiting for their approval.
     sb.rpc('board_status').then(function (r) {
       var st = (r && r.data) || {}, n = st.pending || 0;
-      if (!st.is_board || !n || document.getElementById('boardAlert')) return;
+      if (!st.is_board) return;
+      var bl = $('portalBoardLink');
+      bl.innerHTML = 'Board<span class="board-count"' + (n ? '' : ' hidden') + '>' + n + '</span>';
+      bl.title = n ? n + ' set' + (n > 1 ? 's' : '') + ' of minutes waiting for your approval' : 'Board of Directors: minutes and approvals';
+      bl.hidden = false;
+      if (!n || document.getElementById('boardAlert')) return;
       $('portalMember').insertAdjacentHTML('afterbegin', '<div class="board-alert" id="boardAlert">Board of Directors: <strong>' + n +
         ' set' + (n > 1 ? 's' : '') + ' of meeting minutes</strong> ' + (n > 1 ? 'are' : 'is') + ' waiting for your approval. ' +
         '<a href="board.html">Review now &rarr;</a></div>');
