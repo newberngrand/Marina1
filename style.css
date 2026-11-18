@@ -1382,3 +1382,10 @@ footer.site-footer {
   padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; }
 .badge-public { background: #e3f3e6; color: #1f6b33; }
 .badge-private { background: #eef1f4; color: #4a5866; }
+
+/* Marina Map: sailboat that sails in to the slip (sailboat.js) */
+#sbBoat .sb-bob { animation: sbBob 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+#sbBoat.sb-docked .sb-bob { animation-duration: 3.2s; }
+#sbBoat.sb-docked .sb-spray { opacity: 0; transition: opacity .6s; }
+@keyframes sbBob { 0%, 100% { transform: translateY(0) rotate(-2.5deg); } 50% { transform: translateY(-3px) rotate(2.5deg); } }
+@media (prefers-reduced-motion: reduce) { #sbBoat .sb-bob { animation: none; } }

@@ -145,6 +145,7 @@
     svg.classList.remove('finding');
     if (current) current.classList.remove('hit');
     hidePin(); hidePulse();
+    try { window.dispatchEvent(new CustomEvent('slipcleared', { detail: { svg: svg } })); } catch (e) {}
     current = null; zoomed = false;
     holder.classList.remove('zoomed');
     svg.setAttribute('viewBox', fullBox.join(' '));
@@ -178,6 +179,8 @@
     center = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
     zoomBtn.innerHTML = '&#43; Zoom in';
     dropPin();
+    // Optional extras (e.g. sailboat.js) can react to a slip being shown.
+    try { window.dispatchEvent(new CustomEvent('slipshown', { detail: { svg: svg, slip: el, center: center } })); } catch (e) {}
 
     var size = el.getAttribute('data-size');
     var sizeTxt = el.getAttribute('data-dock') === 'G' && size === '60' ? "60'+" : size + "'";
