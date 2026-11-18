@@ -10,7 +10,8 @@
   var CELL = 6;                      // route grid size (map units)
   var CLEAR = 9;                     // closest the boat may ever come to docks and slips (map units)
   var KEEP = 130;                    // closer than this, the route prefers to move toward the middle of the water
-  var grid = null, gridSvg = null, raf = 0, woodLines = [], shoreLine = [];
+  var FULL_W = 1920;                 // width of the whole map in map units (the "Whole marina" view)
+  var grid = null, gridSvg = null, raf = 0, woodLines = [], shoreLine = [], zoomWatch = null;
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   window.addEventListener('slipshown', function (e) { sail(e.detail.svg, e.detail.slip); });
@@ -22,6 +23,7 @@
   function stop(svg) {
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
+    if (zoomWatch) { zoomWatch.disconnect(); zoomWatch = null; }
     if (!svg) return;
     ['#sbTrail', '#sbBoat'].forEach(function (s) { var n = svg.querySelector(s); if (n) n.remove(); });
   }
@@ -285,7 +287,10 @@
     addDefs(svg);
 
     var mo = mouth(slip);
-    var k = Math.max(38, Math.min(50, svg.clientWidth * 0.042)) / 64 * unitsPerPx(svg);   // boat about 38-50px tall on screen
+    var upx = FULL_W / (svg.clientWidth || 800);                                    // map units per screen pixel, whole-marina view
+    var k = Math.max(38, Math.min(50, svg.clientWidth * 0.042)) / 64 * upx;           // boat about 38-50px tall on screen
+    // Zooming in magnifies the map; shrink the boat and trail dots by the same amount so they keep their size on screen.
+    function zoomNow() { return Math.min(1, unitsPerPx(svg) / upx); }
     function at(d) { return { x: mo.m.x + mo.n.x * d, y: mo.m.y + mo.n.y * d }; }
     // The open water in front of the slip: from d0 (clear of the slip) to d1 (next obstacle).
     var d0 = -1, d1 = -1;
@@ -326,9 +331,7 @@
     trail.setAttribute('fill', 'none');
     trail.setAttribute('stroke', '#0e2a4a');
     trail.setAttribute('stroke-opacity', '.75');
-    trail.setAttribute('stroke-width', (3 * unitsPerPx(svg)).toFixed(2));
     trail.setAttribute('stroke-linecap', 'round');
-    trail.setAttribute('stroke-dasharray', '0 ' + (9 * unitsPerPx(svg)).toFixed(2));
     var boat = document.createElementNS(NS, 'g');
     boat.setAttribute('id', 'sbBoat');
     boat.setAttribute('pointer-events', 'none');
@@ -338,7 +341,25 @@
     svg.insertBefore(trail, pin || null);
     svg.appendChild(boat);
 
-    var dPath = 'M' + line[0].x.toFixed(1) + ' ' + line[0].y.toFixed(1), drawn = 0;
+    var dPath = 'M' + line[0].x.toFixed(1) + ' ' + line[0].y.toFixed(1), drawn = 0, pos = null, arrived = false;
+    function draw() {
+      if (!pos) return;
+      var z = zoomNow(), kk = k * z, x = pos.x, y = pos.y;
+      if (arrived && d0 >= 0 && z < 0.99) {
+        // Smaller boat when zoomed: ease it forward so the bow is still just short of the slip.
+        var offZ = 31 * kk * Math.abs(mo.n.x) + 6 * kk + 4;
+        var p2 = at(Math.max(d0, Math.min(stopD, offZ)));
+        x = p2.x; y = p2.y;
+        trail.setAttribute('d', dPath + ' L' + pos.x.toFixed(1) + ' ' + pos.y.toFixed(1) + ' L' + x.toFixed(1) + ' ' + y.toFixed(1));
+      } else if (arrived) {
+        trail.setAttribute('d', dPath + ' L' + pos.x.toFixed(1) + ' ' + pos.y.toFixed(1));
+      }
+      boat.setAttribute('transform', 'translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') scale(' + (pos.flip * kk).toFixed(3) + ' ' + kk.toFixed(3) + ')');
+      trail.setAttribute('stroke-width', (3 * upx * z).toFixed(2));
+      trail.setAttribute('stroke-dasharray', '0 ' + (9 * upx * z).toFixed(2));
+    }
+    zoomWatch = new MutationObserver(draw);
+    zoomWatch.observe(svg, { attributes: true, attributeFilter: ['viewBox'] });
     function place(dist) {
       var i = 1;
       while (i < len.length - 1 && len[i] < dist) i++;
@@ -347,10 +368,11 @@
       // Face the way we're going (or into the slip at the end).
       var dx = b.x - a.x;
       if (dist >= total) dx = -mo.n.x || dx;
-      var flip = dx < 0 ? -1 : 1;
-      boat.setAttribute('transform', 'translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') scale(' + (flip * k).toFixed(3) + ' ' + k.toFixed(3) + ')');
+      pos = { x: x, y: y, flip: dx < 0 ? -1 : 1 };
+      arrived = dist >= total;
       while (drawn < i - 1) { drawn++; dPath += ' L' + line[drawn].x.toFixed(1) + ' ' + line[drawn].y.toFixed(1); }
       trail.setAttribute('d', dPath + ' L' + x.toFixed(1) + ' ' + y.toFixed(1));
+      draw();
     }
 
     if (reduceMotion) { place(total); boat.classList.add('sb-docked'); return; }
