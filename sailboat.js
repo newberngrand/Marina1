@@ -24,6 +24,7 @@
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
     if (zoomWatch) { zoomWatch.disconnect(); zoomWatch = null; }
+    var tp = document.getElementById('sbTieup'); if (tp) tp.remove();
     if (!svg) return;
     ['#sbTrail', '#sbBoat'].forEach(function (s) { var n = svg.querySelector(s); if (n) n.remove(); });
   }
@@ -250,6 +251,72 @@
     return R;
   }
 
+  /* ---------- which side the finger pier is on ---------- */
+  // Read from the recorded survey plat (Atlantic Survey & Design, Feb 2009): on Docks A-E each
+  // finger pier is shared by two neighbouring slips, so along each side of a dock the fingers
+  // alternate between a slip's head side (toward the Riverwalk) and its far side.
+  // Returns 'head', 'far', 'both' or null (no finger: side-tie or head/end slip).
+  var PIER_SPECIAL = {
+    'A-0A': 'far', 'B-0A': 'far', 'B-0B': 'far', 'C-0A': 'far', 'C-0B': 'far',
+    'F-1': 'far', 'F-2': 'far', 'F-3': 'both', 'F-4': 'both', 'F-5': 'both', 'F-6': 'both', 'F-8': 'head'
+  };
+  function fingerAt(dock, num) {
+    var key = dock + '-' + num;
+    if (PIER_SPECIAL[key]) return PIER_SPECIAL[key];
+    if (/^0/.test(num) || dock === 'F' || dock === 'G' || dock === 'Z') return null;
+    var n = parseInt(num, 10), even = n % 2 === 0, r = n % 4;
+    switch (dock) {
+      case 'A':
+        if (even) { if (n >= 44) return null; if (n >= 34 && n <= 40) return 'both'; return r === 2 ? 'head' : 'far'; }
+        return r === 3 ? 'head' : 'far';
+      case 'B': case 'C':
+        return even ? (r === 2 ? 'head' : 'far') : (r === 1 ? 'head' : 'far');
+      case 'D':
+        return even ? (r === 0 ? 'head' : 'far') : (r === 1 ? 'head' : 'far');
+      case 'E':
+        if (n === 1 || n === 16) return null;
+        return even ? (r === 2 ? 'head' : 'far') : (r === 3 ? 'head' : 'far');
+    }
+    return null;
+  }
+  // Heading into the slip bow first, is that finger to starboard (right) or port (left)?
+  function pierSide(slip, mo) {
+    var where = fingerAt(slip.getAttribute('data-dock'), slip.getAttribute('data-num'));
+    if (!where) return null;
+    if (where === 'both') return 'both';
+    // Direction along the dock toward its head (the Riverwalk end): the nearest walkway's northern end.
+    var bb = slip.getBBox(), c = { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 }, best = null, bd = Infinity;
+    woodLines.forEach(function (w) { var d = segDist(c, w[0], w[1]); if (d < bd) { bd = d; best = w; } });
+    if (!best) return null;
+    var top = best[0].y < best[1].y ? best[0] : best[1], bot = top === best[0] ? best[1] : best[0];
+    var L = Math.hypot(top.x - bot.x, top.y - bot.y) || 1, ux = (top.x - bot.x) / L, uy = (top.y - bot.y) / L;
+    if (where === 'far') { ux = -ux; uy = -uy; }
+    var hx = -mo.n.x, hy = -mo.n.y;                          // heading into the slip
+    return (ux * -hy + uy * hx) > 0 ? 'starboard' : 'port';  // screen y points down, so (-hy, hx) is to the right
+  }
+  function tieupPanel(svg, slip, side) {
+    var id = slip.id.replace(/^slip-/, ''), name = side === 'port' ? 'Port' : 'Starboard';
+    var other = side === 'port' ? 'starboard' : 'port';
+    var html = side === 'both'
+      ? '<div class="tieup-head">Tying up at <strong>' + id + '</strong></div>' +
+        '<div class="tieup-row"><span class="tieup-how">Bow in or backing in</span><span class="tieup-side both">Both sides</span></div>' +
+        '<div class="tieup-note">This slip has a finger pier on each side.</div>'
+      : side
+      ? '<div class="tieup-head">Tying up at <strong>' + id + '</strong></div>' +
+        '<div class="tieup-row"><span class="tieup-how">Bow in</span><span class="tieup-side ' + side + '">' + name + '</span></div>' +
+        '<div class="tieup-row"><span class="tieup-how">Backing in</span><span class="tieup-side ' + other + '">' + (other === 'port' ? 'Port' : 'Starboard') + '</span></div>' +
+        '<div class="tieup-note">The side the finger pier will be on.</div>'
+      : '<div class="tieup-head">Tying up at <strong>' + id + '</strong></div>' +
+        '<div class="tieup-note">Side-tie: this slip has no finger pier. You tie up alongside the dock, on whichever side you come alongside.</div>';
+    var panel = document.createElement('div');
+    panel.id = 'sbTieup';
+    panel.className = 'tieup';
+    panel.setAttribute('role', 'status');
+    panel.innerHTML = html;
+    (svg.parentNode || document.body).appendChild(panel);
+    return panel;
+  }
+
   /* ---------- the boat ---------- */
   function addDefs(svg) {
     if (svg.querySelector('#sbHull')) return;
@@ -287,6 +354,7 @@
     addDefs(svg);
 
     var mo = mouth(slip);
+    var side = pierSide(slip, mo);
     var upx = FULL_W / (svg.clientWidth || 800);                                    // map units per screen pixel, whole-marina view
     var k = Math.max(38, Math.min(50, svg.clientWidth * 0.042)) / 64 * upx;           // boat about 38-50px tall on screen
     // Zooming in magnifies the map; shrink the boat and trail dots by the same amount so they keep their size on screen.
@@ -375,12 +443,15 @@
       draw();
     }
 
-    if (reduceMotion) { place(total); boat.classList.add('sb-docked'); return; }
+    var panel = tieupPanel(svg, slip, side);
+    function showPanel() { panel.classList.add('show'); }
+    if (reduceMotion) { place(total); boat.classList.add('sb-docked'); showPanel(); return; }
     var dur = Math.max(3500, Math.min(8000, total / 0.32)), t0 = performance.now();
     function frame(now) {
       var p = Math.min(1, (now - t0) / dur);
       var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;   // ease in and out
       place(e * total);
+      if (p > 0.72) showPanel();                       // appears as the boat makes its final approach
       if (p < 1) raf = requestAnimationFrame(frame);
       else { raf = 0; boat.classList.add('sb-docked'); }
     }

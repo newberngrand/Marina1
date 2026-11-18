@@ -1389,3 +1389,26 @@ footer.site-footer {
 #sbBoat.sb-docked .sb-spray { opacity: 0; transition: opacity .6s; }
 @keyframes sbBob { 0%, 100% { transform: translateY(0) rotate(-2.5deg); } 50% { transform: translateY(-3px) rotate(2.5deg); } }
 @media (prefers-reduced-motion: reduce) { #sbBoat .sb-bob { animation: none; } }
+
+/* Marina Map: "which side to tie up" panel, above the map legend (sailboat.js) */
+.slip-stage { position: relative; }
+.tieup {
+  position: absolute; right: 1.1%; bottom: 17.8%; width: 36.4%;
+  background: rgba(14, 42, 74, .94); color: #fff; border: 2px solid #e8b648; border-radius: 12px;
+  padding: 10px 14px 9px; box-shadow: 0 6px 18px rgba(0,0,0,.3); font-size: clamp(11px, 1.15vw, 15px); line-height: 1.35;
+  opacity: 0; transform: translateY(8px); transition: opacity .6s ease, transform .6s ease; pointer-events: none;
+}
+.tieup.show { opacity: 1; transform: none; }
+.tieup-head { color: #e8b648; font-weight: 700; letter-spacing: .02em; margin-bottom: 6px; }
+.tieup-head strong { color: #fff; }
+.tieup-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 3px 0; }
+.tieup-how { font-weight: 600; }
+.tieup-side { font-weight: 800; letter-spacing: .03em; padding: 2px 10px; border-radius: 999px; font-size: .92em; }
+.tieup-side.port { background: #d6312b; color: #fff; }
+.tieup-side.starboard { background: #1f8f4a; color: #fff; }
+.tieup-note { opacity: .85; font-size: .86em; margin-top: 4px; }
+@media (max-width: 700px) {
+  .tieup { position: static; width: auto; margin: 8px 0 0; font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .tieup { transition: none; } }
+.tieup-side.both { background: #e8b648; color: #0e2a4a; }
