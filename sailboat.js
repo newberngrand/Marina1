@@ -8,7 +8,8 @@
   var NS = 'http://www.w3.org/2000/svg';
   var START = { x: 1748, y: 728 };   // between the compass rose and the final "R" of TRENT RIVER
   var CELL = 6;                      // route grid size (map units)
-  var CLEAR = 9;                     // how far the boat keeps from docks and slips (map units)
+  var CLEAR = 9;                     // closest the boat may ever come to docks and slips (map units)
+  var KEEP = 130;                    // closer than this, the route prefers to move toward the middle of the water
   var grid = null, gridSvg = null, raf = 0, woodLines = [], shoreLine = [];
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -95,17 +96,33 @@
         if (inPoly(cellX(ii), cellY(jj), P)) g[jj * W + ii] = 1;
       }
     });
-    // Keep the boat a little away from everything.
-    var r = Math.ceil(CLEAR / CELL), out = new Uint8Array(W * H);
-    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
-      if (!g[y * W + x]) continue;
-      for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
-        if (dx * dx + dy * dy > r * r) continue;
-        var X = x + dx, Y = y + dy;
-        if (X >= 0 && Y >= 0 && X < W && Y < H) out[Y * W + X] = 1;
-      }
+    // Distance from every cell to the nearest obstacle (or the map edge), in map units.
+    var dist = new Float32Array(W * H), INF = 1e9, x, y, k;
+    for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
+      k = y * W + x;
+      dist[k] = g[k] ? 0 : (x === 0 || y === 0 || x === W - 1 || y === H - 1) ? 1 : INF;
     }
-    return { W: W, H: H, b: out, vb: vb, cellX: cellX, cellY: cellY };
+    function relax(k2, k1, c) { if (dist[k1] + c < dist[k2]) dist[k2] = dist[k1] + c; }
+    for (y = 0; y < H; y++) for (x = 0; x < W; x++) {          // forward pass
+      k = y * W + x;
+      if (x > 0) relax(k, k - 1, 1);
+      if (y > 0) { relax(k, k - W, 1); if (x > 0) relax(k, k - W - 1, 1.414); if (x < W - 1) relax(k, k - W + 1, 1.414); }
+    }
+    for (y = H - 1; y >= 0; y--) for (x = W - 1; x >= 0; x--) {  // backward pass
+      k = y * W + x;
+      if (x < W - 1) relax(k, k + 1, 1);
+      if (y < H - 1) { relax(k, k + W, 1); if (x < W - 1) relax(k, k + W + 1, 1.414); if (x > 0) relax(k, k + W - 1, 1.414); }
+    }
+    // Blocked where the boat would come too close; elsewhere a "keep to the middle" cost
+    // that grows the nearer the water is to a dock, slip or shore.
+    var out = new Uint8Array(W * H), pen = new Float32Array(W * H);
+    for (k = 0; k < W * H; k++) {
+      var du = dist[k] * CELL;
+      out[k] = du < CLEAR ? 1 : 0;
+      var s = Math.max(0, (KEEP - du) / KEEP);
+      pen[k] = 14 * s * s;
+    }
+    return { W: W, H: H, b: out, pen: pen, vb: vb, cellX: cellX, cellY: cellY };
   }
 
   function shoreY(x) {
@@ -199,7 +216,7 @@
         var nk = ny * W + nx;
         if (b[nk] && nk !== goal) continue;
         if (D[d][2] > 1 && (b[cy * W + nx] || b[ny * W + cx])) continue;   // no cutting corners
-        var ng = gS[cur] + D[d][2];
+        var ng = gS[cur] + D[d][2] * (1 + grid.pen[nk]);
         if (ng < gS[nk]) { gS[nk] = ng; came[nk] = cur; push(nk, ng + h(nk)); }
       }
     }
@@ -209,38 +226,26 @@
     return path.reverse();
   }
 
-  // Straighten the grid path: keep only the turns needed to stay in open water.
-  function clearLine(a, b) {
-    var L = Math.hypot(b.x - a.x, b.y - a.y), n = Math.ceil(L / (CELL / 2));
-    for (var i = 1; i < n; i++) if (!free({ x: a.x + (b.x - a.x) * i / n, y: a.y + (b.y - a.y) * i / n })) return false;
-    return true;
-  }
-  function simplify(P) {
-    var out = [P[0]], i = 0;
-    while (i < P.length - 1) {
-      var j = P.length - 1;
-      while (j > i + 1 && !clearLine(P[i], P[j])) j--;
-      out.push(P[j]); i = j;
+  // Even out the grid route into a gentle curve: resample it, then average each point with its
+  // neighbours a few times (points that would end up too close to a dock stay where they were).
+  function soften(P) {
+    var R = [P[0]], step = 5;
+    for (var i = 1; i < P.length; i++) {
+      var a = R[R.length - 1], b = P[i], L = Math.hypot(b.x - a.x, b.y - a.y);
+      for (var t = step; t < L; t += step) R.push({ x: a.x + (b.x - a.x) * t / L, y: a.y + (b.y - a.y) * t / L });
+      R.push(b);
     }
-    return out;
-  }
-  // Smooth curve through the turn points (Catmull-Rom), sampled every few units.
-  function smooth(P) {
-    if (P.length < 3) return P;
-    var out = [];
-    for (var i = 0; i < P.length - 1; i++) {
-      var p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
-      var n = Math.max(2, Math.ceil(Math.hypot(p2.x - p1.x, p2.y - p1.y) / 4));
-      for (var s = 0; s < n; s++) {
-        var t = s / n, t2 = t * t, t3 = t2 * t;
-        out.push({
-          x: 0.5 * (2 * p1.x + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
-          y: 0.5 * (2 * p1.y + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
-        });
+    for (var pass = 0; pass < 8; pass++) {
+      var Q = R.slice();
+      for (var j = 1; j < R.length - 1; j++) {
+        var lo = Math.max(0, j - 4), hi = Math.min(R.length - 1, j + 4), sx = 0, sy = 0, n = 0;
+        for (var m = lo; m <= hi; m++) { sx += R[m].x; sy += R[m].y; n++; }
+        var q = { x: sx / n, y: sy / n };
+        if (free(q)) Q[j] = q;
       }
+      R = Q;
     }
-    out.push(P[P.length - 1]);
-    return out;
+    return R;
   }
 
   /* ---------- the boat ---------- */
@@ -309,10 +314,9 @@
     }
     var cells = route(START, approach);
     if (!cells) return;
-    var turns = simplify(cells);
-    turns[0] = START;
-    turns.push(stopAt);
-    var line = smooth(turns);
+    cells[0] = START;
+    cells.push(stopAt);                 // last stretch: in toward the slip
+    var line = soften(cells);
     var len = [0];
     for (var i = 1; i < line.length; i++) len.push(len[i - 1] + Math.hypot(line[i].x - line[i - 1].x, line[i].y - line[i - 1].y));
     var total = len[len.length - 1];
