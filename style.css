@@ -1428,3 +1428,5 @@ footer.site-footer {
 .board-count[hidden] { display: none; }
 .board-alert { background: #fff6dd; border: 2px solid #e8b648; color: #0e2a4a; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; }
 .board-alert a { font-weight: 700; }
+.admin-tab-link { text-decoration: none; display: inline-block; }
+.admin-tab-link:hover { color: var(--navy); }

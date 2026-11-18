@@ -41,7 +41,15 @@
 
   /* ---------- Tabs ---------- */
   function setupTabs() {
-    var tabs = document.querySelectorAll('.admin-tab');
+    var tabs = document.querySelectorAll('.admin-tab[data-tab]');
+    // Board members: a "Board" tab (a link to the Board page) with the count of minutes waiting for them.
+    sb.rpc('board_status').then(function (r) {
+      var st = (r && r.data) || {}, n = st.pending || 0;
+      if (!st.is_board) return;
+      $('boardTab').innerHTML = 'Board<span class="board-count"' + (n ? '' : ' hidden') + '>' + n + '</span>';
+      $('boardTab').title = n ? n + ' set' + (n > 1 ? 's' : '') + ' of minutes waiting for your approval' : 'Review and approve meeting minutes';
+      $('boardTab').hidden = false;
+    });
     function show(name) {
       tabs.forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === name); });
       document.querySelectorAll('.admin-panel').forEach(function (p) {
