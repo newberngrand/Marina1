@@ -6,7 +6,7 @@
 <title>Board | New Bern Grand Marina</title>
 <meta name="description" content="Board of Directors: review and approve meeting minutes.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611181126">
+<link rel="stylesheet" href="style.css?v=202611181200">
 </head>
 <body data-member-portal>
 
@@ -62,7 +62,33 @@
         <div id="reviewList"><p class="note">Loading&hellip;</p></div>
       </div>
       <div class="portal-card">
+        <h3>Write minutes</h3>
+        <p class="note" style="margin:-4px 0 12px">Drafts are private to the board and save automatically. One board member edits a draft at a time.</p>
+        <div id="draftList"><p class="note">Loading&hellip;</p></div>
+        <form class="member-form board-upload" id="newDraftForm">
+          <h4 style="margin:14px 0 6px;color:var(--navy)">Start new minutes</h4>
+          <div class="signup-grid">
+            <label>Template<select id="ndTemplate"></select></label>
+            <label>Meeting date<input type="date" id="ndDate" required></label>
+            <label class="full">Title<input type="text" id="ndTitle" maxlength="200" placeholder="Board Meeting Minutes"></label>
+          </div>
+          <div class="member-login-error" id="ndError" hidden></div>
+          <div class="portal-actions" style="margin-top:4px"><button type="submit" class="btn btn-gold" id="ndStart">Start Writing</button></div>
+        </form>
+      </div>
+      <div class="portal-card">
+        <h3>Minutes templates</h3>
+        <div id="tplList"><p class="note">Loading&hellip;</p></div>
+        <div class="portal-actions" style="margin-top:10px">
+          <a class="btn btn-outline" href="minutes-edit.html?template=new">New Template</a>
+          <label class="btn btn-outline ed-import">Import a Word Template (.docx)&hellip;<input type="file" id="tplImport" accept=".docx" hidden></label>
+        </div>
+        <div class="member-login-error" id="tplError" hidden></div>
+        <p class="note" style="margin:8px 0 0">Write <strong>{{meeting_date}}</strong> in a template where the meeting date goes. Tables headed <strong>Board Member</strong> get the board members&rsquo; names filled in.</p>
+      </div>
+      <div class="portal-card">
         <h3>Upload meeting minutes</h3>
+        <p class="note" style="margin:-4px 0 12px">Or upload minutes written elsewhere as a file.</p>
         <form class="member-form board-upload" id="minutesForm">
           <div class="signup-grid">
             <label>Meeting date<input type="date" id="mnDate" required></label>
@@ -134,8 +160,9 @@
   </a>
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611181126"></script>
-<script src="member-data.js?v=202611181126"></script>
-<script src="board.js?v=202611181126"></script>
+<script src="member-login.js?v=202611181200"></script>
+<script src="member-data.js?v=202611181200"></script>
+<script src="minutes-tools.js?v=202611181200"></script>
+<script src="board.js?v=202611181200"></script>
 </body>
 </html>

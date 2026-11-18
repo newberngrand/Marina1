@@ -1430,3 +1430,21 @@ footer.site-footer {
 .board-alert a { font-weight: 700; }
 .admin-tab-link { text-decoration: none; display: inline-block; }
 .admin-tab-link:hover { color: var(--navy); }
+
+/* Minutes editor */
+.editor-section { padding-top: 28px; }
+.ed-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.ed-back { font-weight: 600; }
+.ed-saved { color: var(--muted); font-size: .9rem; }
+.ed-banner { margin-bottom: 12px; }
+.ed-fields { display: grid; grid-template-columns: 1fr 220px; gap: 12px; margin-bottom: 12px; }
+.ed-fields label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; color: var(--navy); font-size: .92rem; }
+.ed-fields input { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-weight: 400; }
+#edNameWrap { grid-column: 1 / -1; }
+.ed-actions { margin-top: 14px; }
+.ed-import { cursor: pointer; }
+@media (max-width: 640px) { .ed-fields { grid-template-columns: 1fr; } }
+.tpl-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.tpl-row:last-child { border-bottom: none; }
+#newDraftForm select { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.badge-returned { background: #fde7e5; color: #a3271f; }

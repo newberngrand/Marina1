@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611181126">
+<link rel="stylesheet" href="style.css?v=202611181200">
 </head>
 <body data-member-portal>
 
@@ -524,6 +524,9 @@
             <label class="check"><input type="checkbox" id="memActive"> Active (can log in)</label>
             <label class="check"><input type="checkbox" id="memCanVote"> Can vote</label>
             <label class="check full" id="memBoardWrap"><input type="checkbox" id="memBoard"> <span><strong>Board of Directors</strong> (also turns on Admin; board members approve meeting minutes before they go live)</span></label>
+            <label class="full" id="memBoardNameWrap" hidden>Name on board documents (e.g. in vote tables; blank = owner name up to the first comma)
+              <input type="text" id="memBoardName" maxlength="80" placeholder="e.g. Jane Graham">
+            </label>
             <label class="check full" id="memAdminWrap"><input type="checkbox" id="memAdmin"> Admin: can use this Admin page (owners and employees only; an owner still votes and uses their slip as normal)</label>
           </div>
           <fieldset class="full ballot-box" style="margin-top:16px">
@@ -583,9 +586,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611181126"></script>
-<script src="member-data.js?v=202611181126"></script>
-<script src="video-utils.js?v=202611181126"></script>
-<script src="admin.js?v=202611181126"></script>
+<script src="member-login.js?v=202611181200"></script>
+<script src="member-data.js?v=202611181200"></script>
+<script src="video-utils.js?v=202611181200"></script>
+<script src="admin.js?v=202611181200"></script>
 </body>
 </html>

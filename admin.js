@@ -1564,7 +1564,7 @@
   function loadMembers() {
     if (!memWired) { wireMembers(); memWired = true; }
     return Promise.all([
-      sb.from('members').select('slip, owner_name, email, active, is_admin, admin_rights, is_board, can_vote, user_id, member_class'),
+      sb.from('members').select('slip, owner_name, email, active, is_admin, admin_rights, is_board, board_name, can_vote, user_id, member_class'),
       sb.from('member_notes').select('slip, note')
     ]).then(function (r) {
       if (r[0].error) return;
@@ -1642,6 +1642,8 @@
     $('memAdmin').checked = !isNew && !!m.admin_rights;
     $('memBoardWrap').hidden = !isNew && m.is_admin;
     $('memBoard').checked = !isNew && !!m.is_board;
+    $('memBoardName').value = isNew ? '' : (m.board_name || '');
+    $('memBoardNameWrap').hidden = !$('memBoard').checked;
     $('memBoard').disabled = $('memClass').value !== 'certificated';
     $('memAdmin').disabled = !adminAllowed();
     $('memPw').value = '';
@@ -1672,7 +1674,10 @@
     });
     $('memNew').addEventListener('click', function () { openMemberForm(null); });
     // A board member is always an admin.
-    $('memBoard').addEventListener('change', function () { if (this.checked) $('memAdmin').checked = true; });
+    $('memBoard').addEventListener('change', function () {
+      if (this.checked) $('memAdmin').checked = true;
+      $('memBoardNameWrap').hidden = !this.checked;
+    });
     $('memAdmin').addEventListener('change', function () {
       if (!this.checked && $('memBoard').checked) {
         this.checked = true;
@@ -1738,6 +1743,7 @@
         if (!m.is_admin) {
           row.active = $('memActive').checked; row.can_vote = $('memCanVote').checked; row.member_class = $('memClass').value;
           row.is_board = $('memBoard').checked && row.member_class === 'certificated';
+          row.board_name = row.is_board ? ($('memBoardName').value.trim() || null) : null;
           row.admin_rights = (row.is_board || $('memAdmin').checked) && (row.member_class === 'certificated' || row.member_class === 'employee');
           if (!m.is_board && row.is_board &&
               !confirm('Put slip ' + m.slip + ' (' + owner + ') on the Board of Directors? They will also get admin rights and will approve meeting minutes.')) { btn.disabled = false; return; }

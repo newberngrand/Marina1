@@ -27,9 +27,12 @@
         $('boardStatus').hidden = true;
         $('boardBody').hidden = false;
         MemberAuth.track('view_board');
-        loadReview();
+        var justSubmitted = /[?&]submitted=1/.test(location.search);
+        loadReview(justSubmitted ? 'Your minutes were submitted. Every board member can now review and approve them below.' : '');
+        if (justSubmitted) history.replaceState(null, '', location.pathname);
         loadPublished();
         setupUpload();
+        setupWriting();
       });
     }).catch(function () {
       $('boardStatus').innerHTML = '<p style="margin:0">Something went wrong loading the Board page. Please try again.</p>';
@@ -62,6 +65,7 @@
             '<span><strong>' + x.approved_count + ' of ' + x.board_size + '</strong> board members have approved' + (who ? ': ' + who : '') + '</span></div>' +
           '<div class="portal-actions">' +
             '<button type="button" class="btn btn-outline" data-view="' + i + '">' + (x.my_viewed_at ? 'View again' : 'View minutes') + '</button>' + mine +
+            (x.draft_id ? '<button type="button" class="btn-sm btn-danger" data-return="' + i + '" title="Send back to the draft for changes">Needs changes</button>' : '') +
           '</div>' +
           (!x.my_viewed_at && !x.my_approved_at ? '<p class="note" style="margin:6px 0 0">Approve unlocks after you open the minutes.</p>' : '') +
         '</div>';
@@ -79,6 +83,19 @@
         loadReview();
       });
       D.openDocument(sb, x.storage_path, x.file_name, { id: x.id, title: x.title + ' (board review)', category: 'minutes' });
+    }
+    var nc = e.target.closest('[data-return]');
+    if (nc) {
+      var z = list[+nc.getAttribute('data-return')];
+      var note = prompt('Send "' + z.title + '" back for changes?\n\nIt comes off the review list and goes back to its draft. Any approvals so far are cleared.\n\nWhat needs changing? (optional)');
+      if (note === null) return;
+      sb.rpc('minutes_return', { p_document_id: z.id, p_note: note }).then(function (r) {
+        if (r.error) { alert(r.error.message); return; }
+        if (r.data) sb.storage.from('marina-docs').remove([r.data]);
+        loadReview('<strong>' + D.esc(z.title) + '</strong> was sent back to its draft for changes.');
+        loadDrafts();
+        refreshMenuCount();
+      });
     }
     if (a && !a.disabled) {
       var y = list[+a.getAttribute('data-approve')];
@@ -101,6 +118,91 @@
       var n = (r.data && r.data.pending) || 0;
       document.querySelectorAll('.board-count').forEach(function (b) { b.textContent = n; b.hidden = !n; });
     });
+  }
+
+  /* ---------- write minutes: drafts and templates ---------- */
+  var templates = [], drafts = [], boardNames = [];
+  function setupWriting() {
+    sb.rpc('board_members').then(function (r) { boardNames = (r.data || []).map(function (b) { return b.name; }); });
+    loadTemplates();
+    loadDrafts();
+    $('ndDate').addEventListener('change', function () {
+      var t = $('ndTitle');
+      if (!t.value.trim() || /^Board Meeting Minutes/.test(t.value)) t.value = 'Board Meeting Minutes – ' + D.fmtDay($('ndDate').value);
+    });
+    $('newDraftForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var date = $('ndDate').value, title = $('ndTitle').value.trim() || ('Board Meeting Minutes – ' + D.fmtDay(date));
+      var t = templates.filter(function (x) { return x.id === $('ndTemplate').value; })[0];
+      if (!date) { $('ndError').textContent = 'Please choose the meeting date.'; $('ndError').hidden = false; return; }
+      $('ndError').hidden = true;
+      var html = MinutesTools.fillTemplate(t ? t.html : '', { meetingDate: date, boardNames: boardNames });
+      sb.rpc('board_status').then(function (st) {
+        return sb.from('minutes_drafts').insert({ title: title, meeting_date: date, html: html, template_name: t ? t.name : null,
+          created_by: (st.data && st.data.board_slip) || null }).select('id').single();
+      }).then(function (r) {
+        if (r.error) { $('ndError').textContent = r.error.message; $('ndError').hidden = false; return; }
+        location.href = 'minutes-edit.html?draft=' + r.data.id;
+      });
+    });
+    $('tplImport').addEventListener('change', function () {
+      var f = this.files[0]; this.value = '';
+      if (!f) return;
+      $('tplError').hidden = true;
+      MinutesTools.wordToHtml(f).then(function (html) {
+        return sb.from('minutes_templates').insert({ name: f.name.replace(/\.docx$/i, ''), html: html }).select('id').single();
+      }).then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        location.href = 'minutes-edit.html?template=' + r.data.id;
+      }).catch(function (ex) { $('tplError').textContent = 'Could not import that file: ' + ex.message; $('tplError').hidden = false; });
+    });
+    document.addEventListener('click', function (e) {
+      var dd = e.target.closest('[data-del-draft]'), dt = e.target.closest('[data-del-tpl]');
+      if (dd) {
+        var d = drafts[+dd.getAttribute('data-del-draft')];
+        if (!confirm('Delete the draft "' + d.title + '"? This cannot be undone.')) return;
+        sb.from('minutes_drafts').delete().eq('id', d.id).then(function (r) { if (r.error) alert(r.error.message); loadDrafts(); });
+      }
+      if (dt) {
+        var t = templates[+dt.getAttribute('data-del-tpl')];
+        if (!confirm('Delete the template "' + t.name + '"? Minutes already started from it are not affected.')) return;
+        sb.from('minutes_templates').delete().eq('id', t.id).then(function (r) { if (r.error) alert(r.error.message); loadTemplates(); });
+      }
+    });
+  }
+
+  function loadTemplates() {
+    return sb.from('minutes_templates').select('id, name, html, updated_at').order('name').then(function (r) {
+      templates = r.data || [];
+      $('ndTemplate').innerHTML = templates.map(function (t) { return '<option value="' + t.id + '">' + D.esc(t.name) + '</option>'; }).join('') +
+        '<option value="">Blank page</option>';
+      $('tplList').innerHTML = templates.length ? '<ul class="doc-list">' + templates.map(function (t, i) {
+        return '<li class="tpl-row"><span><strong>' + D.esc(t.name) + '</strong> <span class="note">&middot; updated ' + D.esc(fmtDate(t.updated_at)) + '</span></span>' +
+          '<span class="row-actions"><a class="btn-sm" href="minutes-edit.html?template=' + t.id + '">Edit</a>' +
+          '<button type="button" class="btn-sm btn-danger" data-del-tpl="' + i + '">Delete</button></span></li>';
+      }).join('') + '</ul>' : '<p class="note" style="margin:0">No templates yet.</p>';
+    });
+  }
+
+  function loadDrafts() {
+    return sb.from('minutes_drafts').select('id, title, meeting_date, status, locked_by, locked_at, updated_at, updated_by, return_note')
+      .order('meeting_date', { ascending: false }).then(function (r) {
+        drafts = r.data || [];
+        var live = drafts.filter(function (d) { return d.status !== 'submitted'; }), sent = drafts.filter(function (d) { return d.status === 'submitted'; });
+        function row(d) {
+          var i = drafts.indexOf(d);
+          var editing = d.locked_by && d.locked_at && (Date.now() - new Date(d.locked_at).getTime() < 120000);
+          var status = d.status === 'submitted' ? '<span class="badge badge-board">Submitted for approval</span>'
+            : d.status === 'returned' ? '<span class="badge badge-returned">Needs changes</span>' + (d.return_note ? ' <span class="note">&ldquo;' + D.esc(d.return_note) + '&rdquo;</span>' : '')
+            : '<span class="badge badge-private">Draft</span>';
+          return '<li class="tpl-row"><span><strong>' + D.esc(d.title) + '</strong> <span class="note">&middot; meeting ' + D.esc(D.fmtDay(d.meeting_date)) + '</span><br>' + status +
+            ' <span class="note">' + (editing ? '&#9998; Being edited by slip ' + D.esc(d.locked_by) : 'Last saved ' + D.esc(fmtDate(d.updated_at)) + (d.updated_by ? ' by slip ' + D.esc(d.updated_by) : '')) + '</span></span>' +
+            '<span class="row-actions"><a class="btn-sm" href="minutes-edit.html?draft=' + d.id + '">' + (d.status === 'submitted' ? 'Read' : 'Open') + '</a>' +
+            (d.status !== 'submitted' ? '<button type="button" class="btn-sm btn-danger" data-del-draft="' + i + '">Delete</button>' : '') + '</span></li>';
+        }
+        $('draftList').innerHTML = (live.length ? '<ul class="doc-list">' + live.map(row).join('') + '</ul>' : '<p class="note" style="margin:0">No drafts in progress.</p>') +
+          (sent.length ? '<details class="doc-year" style="margin-top:10px"><summary>Submitted (' + sent.length + ')</summary><ul class="doc-list">' + sent.slice(0, 10).map(row).join('') + '</ul></details>' : '');
+      });
   }
 
   /* ---------- recently published ---------- */
