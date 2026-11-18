@@ -916,7 +916,7 @@
       '<td>' + (d.doc_date ? D.fmtDay(d.doc_date) : '') + '</td>' +
       '<td class="note">' + D.esc(d.file_name) + '<br>' + D.fileSize(d.size_bytes) + '</td>' +
       '<td>' + (d.approval_status === 'pending'
-          ? '<span class="badge badge-board">Awaiting board approval</span><div class="note">' + (docApprovals[d.id] || 0) + ' of ' + boardSize + ' approved</div>'
+          ? '<a class="badge badge-board" href="board.html" title="Review and approve on the Board page">Awaiting board approval &rarr;</a><div class="note">' + (docApprovals[d.id] || 0) + ' of ' + boardSize + ' approved &middot; <a href="board.html">Board page</a></div>'
           : (d.active ? 'Visible' : '<span class="inactive">Hidden</span>')) +
         '<div>' + (d.is_public ? '<span class="badge badge-public">Public</span>' : '<span class="badge badge-private">Members only</span>') + '</div></td>' +
       '<td class="row-actions">' +
