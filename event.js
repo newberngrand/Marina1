@@ -15,10 +15,13 @@
       if (!id) { $('evStatus').textContent = 'Event not found.'; return; }
       return Promise.all([
         sb.from('events').select('*').eq('id', id).maybeSingle(),
-        sb.from('members').select('slip, is_admin, admin_rights, member_class').eq('user_id', r.data.session.user.id).maybeSingle()
+        sb.from('members').select('slip, is_admin, admin_rights, member_class').eq('user_id', r.data.session.user.id).maybeSingle(),
+        sb.rpc('is_admin')
       ]).then(function (res) {
         ev = res[0].data;
         me = res[1].data;
+        // Admin rights follow the owner (any of their slips), not only this login's slip.
+        if (me && res[2].data && !me.is_admin) me.admin_rights = true;
         if (!ev) { $('evStatus').textContent = 'This event is no longer available.'; return; }
         renderEvent();
         MemberAuth.track('view_event', { type: 'event', id: ev.id, label: ev.title, details: { type: ev.event_type } });

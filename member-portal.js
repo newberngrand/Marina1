@@ -76,7 +76,9 @@
         $('portalSlipsNote').hidden = false;
       }
     });
+    // Admin rights follow the owner: any of their slips (same email) shows the Admin button.
     if (m.is_admin || m.admin_rights) $('portalAdminLink').hidden = false;
+    else sb.rpc('is_admin').then(function (r) { if (r.data) $('portalAdminLink').hidden = false; });
 
     $('portalLogout').addEventListener('click', function () {
       MemberAuth.logOut();

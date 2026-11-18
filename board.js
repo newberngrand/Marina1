@@ -17,7 +17,8 @@
         $('bdLogin').addEventListener('click', function () { MemberAuth.openLogin('login'); });
         return;
       }
-      return sb.from('members').select('slip, owner_name, is_board').eq('user_id', r.data.session.user.id).maybeSingle().then(function (m) {
+      // Board rights follow the owner: any of a board member's slips (same email) can use this page.
+      return sb.rpc('board_status').then(function (m) {
         me = m.data;
         if (!me || !me.is_board) {
           $('boardStatus').innerHTML = '<p style="margin:0">This page is for the Board of Directors.</p>';

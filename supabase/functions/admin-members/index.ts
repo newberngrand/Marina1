@@ -27,8 +27,10 @@ Deno.serve(async (req) => {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   const { data: caller, error: callerErr } = await admin.auth.getUser(token);
   if (callerErr || !caller?.user) return reply(401, { error: "Please log in again." });
-  const { data: me } = await admin.from("members").select("slip, is_admin, admin_rights, active").eq("user_id", caller.user.id).maybeSingle();
-  if (!(me?.is_admin || me?.admin_rights) || !me.active) return reply(403, { error: "Only board administrators can do this." });
+  const { data: me } = await admin.from("members").select("slip, active").eq("user_id", caller.user.id).maybeSingle();
+  // Admin rights follow the owner: any slip sharing an admin's email counts.
+  const { data: isAdmin } = await admin.rpc("admin_by_uid", { p_uid: caller.user.id });
+  if (!me?.active || !isAdmin) return reply(403, { error: "Only board administrators can do this." });
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return reply(400, { error: "Invalid request" }); }

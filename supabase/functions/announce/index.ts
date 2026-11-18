@@ -64,8 +64,10 @@ Deno.serve(async (req) => {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   const { data: caller } = await db.auth.getUser(token);
   if (!caller?.user) return reply(401, { error: "Please log in again." });
-  const { data: me } = await db.from("members").select("slip, is_admin, admin_rights, active, email").eq("user_id", caller.user.id).maybeSingle();
-  if (!(me?.is_admin || me?.admin_rights) || !me.active) return reply(403, { error: "Only board administrators can send announcements." });
+  const { data: me } = await db.from("members").select("slip, active, email").eq("user_id", caller.user.id).maybeSingle();
+  // Admin rights follow the owner: any slip sharing an admin's email counts.
+  const { data: isAdmin } = await db.rpc("admin_by_uid", { p_uid: caller.user.id });
+  if (!me?.active || !isAdmin) return reply(403, { error: "Only board administrators can send announcements." });
   if (!Deno.env.get("RESEND_API_KEY")) return reply(500, { error: "Email isn't set up (RESEND_API_KEY missing)." });
   const from = Deno.env.get("MAIL_FROM") ?? Deno.env.get("RESET_FROM") ?? "New Bern Grand Marina <onboarding@resend.dev>";
 
