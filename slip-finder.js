@@ -13,7 +13,9 @@
   var NS = 'http://www.w3.org/2000/svg';
   var svg, stage, fullBox, current, center, anim, zoomed = false;
 
-  fetch('images/marina-slip-map.svg')
+  // Load the map with the same version tag as this script, so an updated map isn't hidden by the browser cache.
+  var ver = (/[?&]v=([^&]+)/.exec((document.currentScript || {}).src || '') || [])[1];
+  fetch('images/marina-slip-map.svg' + (ver ? '?v=' + ver : ''))
     .then(function (r) { return r.text(); })
     .then(function (txt) {
       stage = document.createElement('div');
