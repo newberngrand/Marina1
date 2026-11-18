@@ -401,6 +401,25 @@
       trigger.textContent = ' Member Portal';
       if (svg) trigger.insertBefore(svg, trigger.firstChild);
     }
+
+    // Board members get a "Board" menu item (with a count of minutes waiting for their approval).
+    getClient().then(function (sb) { return sb.rpc('board_status'); }).then(function (r) {
+      var st = (r && r.data) || {};
+      if (!st.is_board) return;
+      var n = st.pending || 0, current = /board\.html$/.test(location.pathname) ? ' active' : '';
+      function link(cls) {
+        var a = document.createElement('a');
+        a.href = 'board.html';
+        a.className = 'board-nav-link' + cls;
+        a.title = n ? n + ' set' + (n > 1 ? 's' : '') + ' of minutes waiting for your approval' : 'Board of Directors';
+        a.innerHTML = 'Board<span class="board-count"' + (n ? '' : ' hidden') + '>' + n + '</span>';
+        return a;
+      }
+      var nav = document.querySelector('.main-nav');
+      if (nav && !nav.querySelector('.board-nav-link')) nav.insertBefore(link(current), document.getElementById('memberLoginTrigger') || null);
+      var links = bar.querySelector('.member-bar-links');
+      if (links) links.insertBefore(link(''), links.firstChild);
+    }).catch(function () {});
   }
 
   function hasStoredSession() {

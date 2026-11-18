@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611181030">
+<link rel="stylesheet" href="style.css?v=202611181051">
 </head>
 <body data-member-portal>
 
@@ -270,6 +270,7 @@
 
         <form class="portal-card admin-form" id="docForm" hidden>
           <h3 id="docFormTitle">Upload Document</h3>
+          <p class="board-alert" id="docMinutesNote" hidden>New or replaced meeting minutes stay hidden from members until every board member approves them on the <a href="board.html">Board page</a>.</p>
           <input type="hidden" id="docId">
           <div class="admin-grid">
             <label>Section
@@ -521,6 +522,7 @@
             <p class="note" id="memClassHelp" style="margin:0;align-self:end">Controls which events and notices this login can see.</p>
             <label class="check"><input type="checkbox" id="memActive"> Active (can log in)</label>
             <label class="check"><input type="checkbox" id="memCanVote"> Can vote</label>
+            <label class="check full" id="memBoardWrap"><input type="checkbox" id="memBoard"> <span><strong>Board of Directors</strong> (also turns on Admin; board members approve meeting minutes before they go live)</span></label>
             <label class="check full" id="memAdminWrap"><input type="checkbox" id="memAdmin"> Admin: can use this Admin page (owners and employees only; an owner still votes and uses their slip as normal)</label>
           </div>
           <fieldset class="full ballot-box" style="margin-top:16px">
@@ -554,6 +556,7 @@
             <option value="noemail">No email on file</option>
             <option value="nonvoting">Non-voting</option>
             <option value="admins">Admins</option>
+            <option value="board">Board of Directors</option>
             <option value="inactive">Inactive</option>
             <option value="c:ltc">Long-term cruisers (LTC)</option>
             <option value="c:stc">Transients (STC)</option>
@@ -579,9 +582,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611181030"></script>
-<script src="member-data.js?v=202611181030"></script>
-<script src="video-utils.js?v=202611181030"></script>
-<script src="admin.js?v=202611181030"></script>
+<script src="member-login.js?v=202611181051"></script>
+<script src="member-data.js?v=202611181051"></script>
+<script src="video-utils.js?v=202611181051"></script>
+<script src="admin.js?v=202611181051"></script>
 </body>
 </html>

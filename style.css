@@ -1412,3 +1412,19 @@ footer.site-footer {
 }
 @media (prefers-reduced-motion: reduce) { .tieup { transition: none; } }
 .tieup-side.both { background: #e8b648; color: #0e2a4a; }
+.badge-board { background: #e8b648; color: #0e2a4a; }
+
+/* Board page: minutes review */
+.review-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 0 0 12px; background: #fff; }
+.review-card.done { background: #f4f8f4; }
+.review-head { font-size: 1.05rem; color: var(--navy); margin-bottom: 4px; }
+.review-progress { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 4px; font-size: .92rem; }
+.review-progress .vr-bar { max-width: 360px; }
+.review-done { color: #1f6b33; font-weight: 700; align-self: center; }
+.review-card .btn[disabled] { opacity: .45; cursor: not-allowed; }
+.board-nav-link { position: relative; }
+.board-count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 5px; border-radius: 9px; background: #d6312b; color: #fff;
+  font-size: .72rem; font-weight: 800; line-height: 18px; text-align: center; vertical-align: 1px; }
+.board-count[hidden] { display: none; }
+.board-alert { background: #fff6dd; border: 2px solid #e8b648; color: #0e2a4a; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; }
+.board-alert a { font-weight: 700; }

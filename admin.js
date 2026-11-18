@@ -825,6 +825,7 @@
     var cat = D.DOC_CATEGORIES.find(function (c) { return c.id === $('docCategory').value; });
     $('docDateLabel').textContent = cat.dateLabel + (cat.id === 'minutes' ? ' (required)' : ' (optional)');
     $('docDate').required = cat.id === 'minutes';
+    $('docMinutesNote').hidden = cat.id !== 'minutes';
   }
 
   function openDocForm(d) {
@@ -908,12 +909,15 @@
     });
   }
 
+  var docApprovals = {}, boardSize = 0;
   function docRow(d) {
     return '<tr' + (d.active ? '' : ' class="row-inactive"') + '>' +
       '<td><strong>' + D.esc(d.title) + '</strong>' + (d.description ? '<div class="note">' + D.esc(d.description) + '</div>' : '') + '</td>' +
       '<td>' + (d.doc_date ? D.fmtDay(d.doc_date) : '') + '</td>' +
       '<td class="note">' + D.esc(d.file_name) + '<br>' + D.fileSize(d.size_bytes) + '</td>' +
-      '<td>' + (d.active ? 'Visible' : '<span class="inactive">Hidden</span>') +
+      '<td>' + (d.approval_status === 'pending'
+          ? '<span class="badge badge-board">Awaiting board approval</span><div class="note">' + (docApprovals[d.id] || 0) + ' of ' + boardSize + ' approved</div>'
+          : (d.active ? 'Visible' : '<span class="inactive">Hidden</span>')) +
         '<div>' + (d.is_public ? '<span class="badge badge-public">Public</span>' : '<span class="badge badge-private">Members only</span>') + '</div></td>' +
       '<td class="row-actions">' +
         '<button type="button" class="btn-sm" data-act="open" data-id="' + d.id + '">Open</button>' +
@@ -924,8 +928,16 @@
   }
 
   function loadDocs() {
-    return sb.from('documents').select('*').order('doc_date', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }).then(function (r) {
+    return Promise.all([
+      sb.from('documents').select('*').order('doc_date', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }),
+      sb.from('document_approvals').select('document_id, approved_at').not('approved_at', 'is', null),
+      sb.from('members').select('slip', { count: 'exact', head: true }).eq('is_board', true).eq('active', true)
+    ]).then(function (res) {
+      var r = res[0];
       docs = r.data || [];
+      docApprovals = {};
+      (res[1].data || []).forEach(function (a) { docApprovals[a.document_id] = (docApprovals[a.document_id] || 0) + 1; });
+      boardSize = res[2].count || 0;
       var head = '<thead><tr><th>Title</th><th>Date</th><th>File</th><th>Status</th><th></th></tr></thead>';
       var html = D.DOC_CATEGORIES.map(function (c) {
         var list = docs.filter(function (d) { return d.category === c.id; });
@@ -1544,7 +1556,7 @@
   function loadMembers() {
     if (!memWired) { wireMembers(); memWired = true; }
     return Promise.all([
-      sb.from('members').select('slip, owner_name, email, active, is_admin, admin_rights, can_vote, user_id, member_class'),
+      sb.from('members').select('slip, owner_name, email, active, is_admin, admin_rights, is_board, can_vote, user_id, member_class'),
       sb.from('member_notes').select('slip, note')
     ]).then(function (r) {
       if (r[0].error) return;
@@ -1565,6 +1577,7 @@
       if (show === 'nonvoting' && (m.can_vote || m.is_admin)) return false;
       if (show === 'inactive' && m.active) return false;
       if (show === 'admins' && !m.is_admin && !m.admin_rights) return false;
+      if (show === 'board' && !m.is_board) return false;
       if (show.indexOf('c:') === 0 && m.member_class !== show.slice(2)) return false;
       return !f || (m.slip + ' ' + m.owner_name + ' ' + (m.email || '') + ' ' + (memNotes[m.slip] || '')).toLowerCase().indexOf(f) !== -1;
     }).map(function (m) {
@@ -1573,7 +1586,8 @@
         '</td><td>' + (m.email ? D.esc(m.email) : '<em>none</em>') + '</td>' +
         '<td>' + (m.is_admin ? 'Admin' : (m.active ? 'Active' : '<span class="inactive">Inactive</span>')) +
         (!m.is_admin && !m.can_vote ? '<div class="note">Non-voting</div>' : '') +
-        (m.admin_rights ? '<div><span class="badge badge-admin">Admin</span></div>' : '') +
+        (m.is_board ? '<div><span class="badge badge-board">Board</span></div>' : '') +
+        (m.admin_rights && !m.is_board ? '<div><span class="badge badge-admin">Admin</span></div>' : '') +
         (!m.is_admin && m.member_class && m.member_class !== 'certificated' ? '<div><span class="badge badge-class-' + m.member_class + '">' + CLASS_LABEL[m.member_class] + '</span></div>' : '') + '</td>' +
         '<td class="row-actions"><button type="button" class="btn-sm" data-slip="' + D.esc(m.slip) + '">Edit</button></td></tr>';
     }).join('') || '<tr><td colspan="5" class="note">No slips match.</td></tr>';
@@ -1618,6 +1632,9 @@
     $('memCanVote').disabled = !isNew && m.is_admin;
     $('memAdminWrap').hidden = !isNew && m.is_admin;   // BOD-style board accounts are always admins
     $('memAdmin').checked = !isNew && !!m.admin_rights;
+    $('memBoardWrap').hidden = !isNew && m.is_admin;
+    $('memBoard').checked = !isNew && !!m.is_board;
+    $('memBoard').disabled = $('memClass').value !== 'certificated';
     $('memAdmin').disabled = !adminAllowed();
     $('memPw').value = '';
     $('memPwLegend').textContent = isNew ? 'Starting password (required)' : 'Set a new password';
@@ -1641,8 +1658,19 @@
       // Owners and employees can be admins (never the shared LTC / STC logins).
       $('memAdmin').disabled = !adminAllowed();
       if ($('memAdmin').disabled) $('memAdmin').checked = false;
+      // Only slip owners can be on the board.
+      $('memBoard').disabled = $('memClass').value !== 'certificated';
+      if ($('memBoard').disabled) $('memBoard').checked = false;
     });
     $('memNew').addEventListener('click', function () { openMemberForm(null); });
+    // A board member is always an admin.
+    $('memBoard').addEventListener('change', function () { if (this.checked) $('memAdmin').checked = true; });
+    $('memAdmin').addEventListener('change', function () {
+      if (!this.checked && $('memBoard').checked) {
+        this.checked = true;
+        alert('Board members always have admin rights. Untick Board of Directors first to remove admin rights.');
+      }
+    });
     $('memCancel').addEventListener('click', function () { $('memForm').hidden = true; memEditing = null; });
     $('memSearch').addEventListener('input', drawMembers);
     $('memShow').addEventListener('change', drawMembers);
@@ -1692,7 +1720,7 @@
               note ? sb.from('member_notes').upsert({ slip: slip, note: note }) : null,
               $('memActive').checked ? null : sb.from('members').update({ active: false }).eq('slip', slip),
               $('memClass').value === 'certificated' ? null : sb.from('members').update({ member_class: $('memClass').value }).eq('slip', slip),
-              $('memAdmin').checked ? sb.from('members').update({ admin_rights: true }).eq('slip', slip) : null
+              ($('memAdmin').checked || $('memBoard').checked) ? sb.from('members').update({ admin_rights: true, is_board: $('memBoard').checked }).eq('slip', slip) : null
             ]);
           })
           .then(function () { return 'Slip ' + slip + ' added. Starting password: ' + pw; });
@@ -1701,10 +1729,13 @@
         var row = { owner_name: owner, email: email || null };
         if (!m.is_admin) {
           row.active = $('memActive').checked; row.can_vote = $('memCanVote').checked; row.member_class = $('memClass').value;
-          row.admin_rights = $('memAdmin').checked && (row.member_class === 'certificated' || row.member_class === 'employee');
+          row.is_board = $('memBoard').checked && row.member_class === 'certificated';
+          row.admin_rights = (row.is_board || $('memAdmin').checked) && (row.member_class === 'certificated' || row.member_class === 'employee');
+          if (!m.is_board && row.is_board &&
+              !confirm('Put slip ' + m.slip + ' (' + owner + ') on the Board of Directors? They will also get admin rights and will approve meeting minutes.')) { btn.disabled = false; return; }
           if (m.admin_rights && !row.admin_rights &&
               !confirm('Remove admin rights from slip ' + m.slip + '? They will no longer be able to use the Admin page.')) { btn.disabled = false; return; }
-          if (!m.admin_rights && row.admin_rights &&
+          if (!m.admin_rights && row.admin_rights && !row.is_board &&
               !confirm('Give slip ' + m.slip + ' (' + owner + ') admin rights? They will be able to use everything on the Admin page.')) { btn.disabled = false; return; }
         }
         work = sb.from('members').update(row).eq('slip', m.slip).then(function (r) {

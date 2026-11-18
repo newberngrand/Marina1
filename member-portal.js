@@ -40,6 +40,14 @@
     $('portalLoading').hidden = true;
     $('portalMember').hidden = false;
     $('portalWelcome').textContent = 'Welcome, ' + (m.owner_name || 'Member');
+    // Board members: a reminder when minutes are waiting for their approval.
+    sb.rpc('board_status').then(function (r) {
+      var st = (r && r.data) || {}, n = st.pending || 0;
+      if (!st.is_board || !n || document.getElementById('boardAlert')) return;
+      $('portalMember').insertAdjacentHTML('afterbegin', '<div class="board-alert" id="boardAlert">Board of Directors: <strong>' + n +
+        ' set' + (n > 1 ? 's' : '') + ' of meeting minutes</strong> ' + (n > 1 ? 'are' : 'is') + ' waiting for your approval. ' +
+        '<a href="board.html">Review now &rarr;</a></div>');
+    });
     var shared = !m.is_admin && m.member_class && m.member_class !== 'certificated';
     if (shared) {
       // Group logins (LTC / STC / staff) are shared, so no slip list or password change here.
