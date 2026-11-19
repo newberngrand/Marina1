@@ -2,7 +2,7 @@
    last day, and the leaderboard when the game is over. All rules are enforced by the database
    (game_state / game_join / game_pick / game_discard); this page only shows and asks. */
 (function () {
-  var D = window.MemberData, P = window.PokerCards;
+  var D = window.MemberData, P = window.PokerCards, Snd = window.PokerSounds;
   function $(id) { return document.getElementById(id); }
   var id = new URLSearchParams(location.search).get('id');
   var sb, ev, st, email = '', svg, zoom = 1, trade = {}, busy = false;
@@ -50,6 +50,12 @@
 
   function setup() {
     $('gmZoomIn').addEventListener('click', function () { setZoom(zoom * 1.5); });
+    function soundLabel() {
+      $('gmSound').innerHTML = Snd.isOn() ? '&#128266; Sound on' : '&#128263; Sound off';
+      $('gmSound').setAttribute('aria-pressed', Snd.isOn());
+    }
+    $('gmSound').addEventListener('click', function () { Snd.set(!Snd.isOn()); soundLabel(); if (Snd.isOn()) Snd.plunk(); });
+    soundLabel();
     $('gmZoomOut').addEventListener('click', function () { setZoom(zoom / 1.5); });
     $('gmTradeBtn').addEventListener('click', function () { doTrade(Object.keys(trade)); });
     $('gmKeepBtn').addEventListener('click', function () {
@@ -299,6 +305,8 @@
     if (busy) return;
     busy = true;
     showErr($('gmBoardError'), '');
+    Snd.unlock();
+    Snd.draw();
     sb.rpc('game_pick', { p_event: id, p_slip: slip, p_email: email || null }).then(function (r) {
       if (r.error) { busy = false; showErr($('gmBoardError'), cleanMsg(r.error)); refresh(); return; }
       MemberAuth.track('game_pick', { type: 'event', id: ev.id, label: ev.title, details: { slip: slip } });
@@ -341,7 +349,30 @@
     }
     function wait(ms) { return new Promise(function (d) { setTimeout(d, ms); }); }
 
+    // A swish each time the card turns edge-on (90, 450, 810, 1170 degrees), timed through the
+    // rise animation's keyframes and its easing curve, so the sound follows what you see.
+    function swishes() {
+      var KO = [0, 0.25, 0.5, 0.78, 1], KR = [0, 360, 720, 1080, 1260], DUR = 2300;
+      var x1 = 0.35, y1 = 0.15, x2 = 0.35, y2 = 1;
+      function bez(t, a, b) { return 3 * (1 - t) * (1 - t) * t * a + 3 * (1 - t) * t * t * b + t * t * t; }
+      function timeFor(prog) {   // the time fraction at which the eased progress reaches prog
+        var lo = 0, hi = 1;
+        for (var i = 0; i < 30; i++) { var m = (lo + hi) / 2; if (bez(m, y1, y2) < prog) lo = m; else hi = m; }
+        return bez((lo + hi) / 2, x1, x2);
+      }
+      [90, 450, 810, 1170].forEach(function (deg, n) {
+        for (var k = 1; k < KR.length; k++) {
+          if (deg <= KR[k]) {
+            var prog = KO[k - 1] + (KO[k] - KO[k - 1]) * (deg - KR[k - 1]) / (KR[k] - KR[k - 1]);
+            Snd.swish(Math.max(0, timeFor(prog) * DUR - 110), [0.6, 1, 0.85, 0.55][n]);
+            break;
+          }
+        }
+      });
+    }
+
     shade.classList.add('on');
+    if (!reduce) swishes();
     var rise = reduce
       ? run([{ transform: tf(cx, cy, 1, 0, 180, 0), opacity: 0 }, { transform: tf(cx, cy, 1, 0, 180, 0), opacity: 1 }], { duration: 300, fill: 'forwards' })
       : run([
@@ -353,6 +384,7 @@
           { transform: tf(cx, cy, 1, 0, 1260, 0) }
         ], { duration: 2300, easing: 'cubic-bezier(.35,.15,.35,1)', fill: 'forwards' });
     return rise.then(function () {
+      Snd.reveal();
       caption.classList.add('on');
       return wait(reduce ? 900 : 1300);
     }).then(function () {
@@ -367,6 +399,8 @@
       var slot = document.querySelector('#gmHand .hand-slot.empty') || $('gmHand');
       var to = slot.getBoundingClientRect();
       var ry = reduce ? 180 : 1260;
+      Snd.swish(0, 0.55);
+      if (to.width) Snd.plunk(reduce ? 230 : 610);
       return run([
         { transform: tf(cx, cy, reduce ? 1 : 1, 0, ry, 0) },
         { transform: tf(to.left + to.width / 2, to.top + to.height / 2, to.width / W, 0, ry, 0) }
