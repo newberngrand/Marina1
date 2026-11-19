@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Poker Run | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611191318">
+<link rel="stylesheet" href="style.css?v=202611191321">
 </head>
 <body data-member-portal>
 
@@ -102,7 +102,8 @@
           <button type="button" class="btn-sm" id="gmZoomIn" aria-label="Zoom in">+</button>
         </div>
       </div>
-      <p class="note" id="gmBoardNote">Every slip hides a face-down card. Slips already picked today are greyed out.</p>
+      <p class="note" id="gmBoardNote">Every slip hides a face-down card. Slips already picked today are white.</p>
+      <div class="member-login-error" id="gmBoardError" hidden></div>
       <div class="game-map" id="gmMap"><p class="note">Loading the marina&hellip;</p></div>
       <div class="game-legend">
         <span><i class="lg-open"></i> Open (colored by slip size)</span>
@@ -131,19 +132,6 @@
   </div>
 </section>
 
-<div class="member-login-overlay" id="gmFlip" role="dialog" aria-modal="true" aria-labelledby="gmFlipTitle">
-  <div class="member-login-modal game-flip-modal">
-    <h3 id="gmFlipTitle">Slip</h3>
-    <div class="flip-card" id="gmFlipBack"></div>
-    <p class="note" id="gmFlipNote">Flip this card? Once it's flipped, it's yours.</p>
-    <div class="member-login-error" id="gmFlipError" hidden></div>
-    <div class="portal-actions">
-      <button type="button" class="btn btn-outline" id="gmFlipCancel">Choose another</button>
-      <button type="button" class="btn btn-gold" id="gmFlipGo">Flip it!</button>
-    </div>
-  </div>
-</div>
-
 <footer class="site-footer">
   <div class="container footer-bottom">
     <div>&copy; <span id="year"></span> New Bern Grand Marina. All rights reserved.</div>
@@ -152,9 +140,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611191318"></script>
-<script src="member-data.js?v=202611191318"></script>
-<script src="game-cards.js?v=202611191318"></script>
-<script src="game.js?v=202611191318"></script>
+<script src="member-login.js?v=202611191321"></script>
+<script src="member-data.js?v=202611191321"></script>
+<script src="game-cards.js?v=202611191321"></script>
+<script src="game.js?v=202611191321"></script>
 </body>
 </html>

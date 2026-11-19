@@ -1484,13 +1484,14 @@ footer.site-footer {
 .game-map g.slip { transition: opacity .2s; }
 .game-map.can-pick g.slip:not(.taken):not(.mine) { cursor: pointer; }
 .game-map.can-pick g.slip:not(.taken):not(.mine):hover polygon { fill: #e8b648; fill-opacity: .85; }
-.game-map g.slip.taken { opacity: .35; }
-.game-map g.slip.taken polygon, .game-map g.slip.taken rect { fill: #6b7680; }
+.game-map g.slip.taken polygon { fill: #fff; fill-opacity: .95; stroke: #fff; }
+.game-map g.slip.taken rect { fill: #fff; stroke: #9aa6b2; }
+.game-map g.slip.taken text { fill: #7d8894; }
 .game-map g.slip.mine polygon { fill: #e8b648; fill-opacity: .9; stroke: #fff; stroke-width: 2; }
 .game-map g.slip.mine rect { fill: #a9803e; }
 .game-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
 .game-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }
-.lg-open { background: #6f9a7a; } .lg-taken { background: #6b7680; opacity: .5; } .lg-mine { background: #e8b648; }
+.lg-open { background: #6f9a7a; } .lg-taken { background: #fff; border: 1px solid #9aa6b2; } .lg-mine { background: #e8b648; }
 .game-admin { border: 2px dashed var(--gold); }
 .game-admin h3 { margin-top: 0; }
 .game-admin-btns { flex-wrap: wrap; gap: 8px; justify-content: flex-start; }

@@ -580,6 +580,7 @@
     var isGame = $('evType').value === 'game';
     $('evGame').hidden = !isGame;
     $('evStartWrap').hidden = isGame;
+    $('evAttach').hidden = isGame;
     $('evEndWrap').hidden = isGame;
     var isSocial = $('evType').value === 'social';
     $('evSignup').hidden = !isSocial;

@@ -5,7 +5,7 @@
   var D = window.MemberData, P = window.PokerCards;
   function $(id) { return document.getElementById(id); }
   var id = new URLSearchParams(location.search).get('id');
-  var sb, ev, st, email = '', svg, zoom = 1, trade = {}, pendingSlip = null, busy = false;
+  var sb, ev, st, email = '', svg, zoom = 1, trade = {}, busy = false;
   var EMAIL_KEY = 'pokerRunEmail';
 
   function savedEmail() { try { return localStorage.getItem(EMAIL_KEY) || ''; } catch (e) { return ''; } }
@@ -51,8 +51,6 @@
   function setup() {
     $('gmZoomIn').addEventListener('click', function () { setZoom(zoom * 1.5); });
     $('gmZoomOut').addEventListener('click', function () { setZoom(zoom / 1.5); });
-    $('gmFlipCancel').addEventListener('click', closeFlip);
-    $('gmFlipGo').addEventListener('click', doPick);
     $('gmTradeBtn').addEventListener('click', function () { doTrade(Object.keys(trade)); });
     $('gmKeepBtn').addEventListener('click', function () {
       if (confirm('Keep these five cards? Your hand will be final.')) doTrade([]);
@@ -68,7 +66,7 @@
       b.addEventListener('click', function () { adminAction(b.getAttribute('data-ga')); });
     });
     // Keep the board fresh (slips others pick, the switch to the leaderboard).
-    setInterval(function () { if (!document.hidden && !busy && !$('gmFlip').classList.contains('open')) refresh(); }, 30000);
+    setInterval(function () { if (!document.hidden && !busy) refresh(); }, 30000);
   }
 
   /* ---------- Rendering ---------- */
@@ -112,8 +110,8 @@
     $('gmBoard').hidden = !!(st.over || !st.day || !(me || st.join_open));
     $('gmBoardTitle').textContent = !me ? 'The board' : me.phase === 'drawing' ? 'Pick ' + me.draws_owed + ' more slip' + (me.draws_owed > 1 ? 's' : '')
       : canPick ? 'Pick ' + (me.picks_left > 1 ? me.picks_left + ' slips' : 'a slip') : 'Today\'s board';
-    $('gmBoardNote').textContent = canPick ? 'Every slip hides a face-down card. Tap an open slip to flip it. Slips already picked today are greyed out.'
-      : 'Slips already picked today are greyed out. A fresh deck is dealt every morning.';
+    $('gmBoardNote').textContent = canPick ? 'Every slip hides a face-down card. Tap an open slip to flip its card (your pick is final). Slips already picked today are white.'
+      : 'Slips already picked today are white. A fresh deck is dealt every morning.';
     $('gmMap').classList.toggle('can-pick', canPick);
     paintMap();
     renderLeaderboard();
@@ -267,7 +265,7 @@
       svg.addEventListener('click', function (e) {
         var g = e.target.closest('g.slip');
         if (!g || !box.classList.contains('can-pick') || g.classList.contains('taken')) return;
-        openFlip(g.getAttribute('data-dock') + g.getAttribute('data-num'));
+        doPick(g.getAttribute('data-dock') + g.getAttribute('data-num'));
       });
       setZoom(zoom);
       paintMap();
@@ -296,27 +294,16 @@
   }
 
   /* ---------- Picking ---------- */
-  function openFlip(slip) {
-    pendingSlip = slip;
-    $('gmFlipTitle').textContent = 'Slip ' + slip;
-    $('gmFlipBack').innerHTML = P.back();
-    showErr($('gmFlipError'), '');
-    $('gmFlipGo').disabled = false;
-    $('gmFlip').classList.add('open');
-    $('gmFlipGo').focus();
-  }
-  function closeFlip() { $('gmFlip').classList.remove('open'); pendingSlip = null; }
-
-  function doPick() {
-    if (!pendingSlip || busy) return;
-    var slip = pendingSlip;
-    busy = true; $('gmFlipGo').disabled = true;
+  // Tapping an open slip flips it straight away; the card then flies into the hand.
+  function doPick(slip) {
+    if (busy) return;
+    busy = true;
+    showErr($('gmBoardError'), '');
     sb.rpc('game_pick', { p_event: id, p_slip: slip, p_email: email || null }).then(function (r) {
-      if (r.error) { busy = false; $('gmFlipGo').disabled = false; showErr($('gmFlipError'), cleanMsg(r.error)); refresh(); return; }
-      closeFlip();
+      if (r.error) { busy = false; showErr($('gmBoardError'), cleanMsg(r.error)); refresh(); return; }
       MemberAuth.track('game_pick', { type: 'event', id: ev.id, label: ev.title, details: { slip: slip } });
-      flyCard(slip, r.data).then(function () { busy = false; });
-    });
+      flyCard(slip, r.data).then(function () { busy = false; }, function () { busy = false; refresh(); });
+    }, function () { busy = false; });
   }
 
   /* The picked card rises out of its slip, tumbling as it grows to full size, shows itself,
