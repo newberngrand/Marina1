@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poker Run | New Bern Grand Marina</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="style.css?v=202611191309">
+</head>
+<body data-member-portal>
+
+<div class="topbar">
+  <div class="container">
+    <div>134 Craven St, New Bern, NC 28560 &nbsp;<span class="sep">|</span>&nbsp; Open Daily 8:30 AM &ndash; 5:00 PM</div>
+    <div><a href="tel:+12526380318">(252) 638-0318</a> <span class="sep">|</span> <a href="mailto:newberngrand@f3marina.com">newberngrand@f3marina.com</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a href="index.html" class="brand">
+      <img src="images/logo.png" alt="New Bern Grand Marina logo">
+      <span class="brand-text">
+        <span class="name">New Bern Grand Marina</span>
+        <span class="tag">Downtown New Bern, NC</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.main-nav').classList.toggle('open')">&#9776;</button>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="rates.html">Rates &amp; Amenities</a>
+      <a href="marina-map.html">Marina Map</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="documents.html">Documents</a>
+      <a href="contact.html">Contact</a>
+      <a href="member-portal.html" id="memberLoginTrigger" class="member-login-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Member Portal
+      </a>
+    </nav>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="container">
+    <div class="eyebrow" id="gmEyebrow">Game</div>
+    <h1 id="gmH1">Poker Run</h1>
+    <p><a href="member-portal.html" style="color:inherit;">&larr; Back to the Member Portal</a></p>
+  </div>
+</div>
+
+<section>
+  <div class="container portal-wrap game-wrap">
+    <div class="portal-card" id="gmLoading"><p id="gmStatus">Loading&hellip;</p></div>
+
+    <div class="portal-card game-admin" id="gmAdmin" hidden>
+      <h3>Practice controls <span class="note">(admins only)</span></h3>
+      <p class="note" id="gmAdminDay"></p>
+      <div class="portal-actions game-admin-btns">
+        <button type="button" class="btn-sm" data-ga="bots">+ Add 5 practice players</button>
+        <button type="button" class="btn-sm" data-ga="bots_play">Practice players pick now</button>
+        <button type="button" class="btn-sm btn-primary-sm" data-ga="next_day">Next day &rsaquo;</button>
+        <button type="button" class="btn-sm btn-primary-sm" data-ga="end">End game &amp; show leaderboard</button>
+        <button type="button" class="btn-sm btn-danger" data-ga="reset">Reset practice</button>
+      </div>
+      <div class="member-login-error" id="gmAdminError" hidden></div>
+      <div class="game-roster" id="gmRoster"></div>
+    </div>
+
+    <div class="portal-card game-top" id="gmTop" hidden>
+      <div class="game-head">
+        <div>
+          <div class="game-day" id="gmDay"></div>
+          <p class="game-msg" id="gmMsg"></p>
+        </div>
+        <dl class="game-facts" id="gmFacts"></dl>
+      </div>
+      <div class="game-hand" id="gmHand"></div>
+      <p class="game-hand-name" id="gmHandName"></p>
+      <div class="game-trade" id="gmTrade" hidden>
+        <p class="note" id="gmTradeNote"></p>
+        <div class="portal-actions">
+          <button type="button" class="btn btn-gold" id="gmTradeBtn" disabled>Trade cards</button>
+          <button type="button" class="btn btn-outline" id="gmKeepBtn">Keep my hand</button>
+        </div>
+      </div>
+      <div class="member-login-error" id="gmError" hidden></div>
+    </div>
+
+    <div class="portal-card" id="gmJoin" hidden>
+      <h3>Join the game</h3>
+      <div id="gmJoinBody"></div>
+      <div class="member-login-error" id="gmJoinError" hidden></div>
+    </div>
+
+    <div class="portal-card game-board-card" id="gmBoard" hidden>
+      <div class="game-board-head">
+        <h3 id="gmBoardTitle">Pick a slip</h3>
+        <div class="game-zoom">
+          <button type="button" class="btn-sm" id="gmZoomOut" aria-label="Zoom out">&minus;</button>
+          <button type="button" class="btn-sm" id="gmZoomIn" aria-label="Zoom in">+</button>
+        </div>
+      </div>
+      <p class="note" id="gmBoardNote">Every slip hides a face-down card. Slips already picked today are greyed out.</p>
+      <div class="game-map" id="gmMap"><p class="note">Loading the marina&hellip;</p></div>
+      <div class="game-legend">
+        <span><i class="lg-open"></i> Open (colored by slip size)</span>
+        <span><i class="lg-taken"></i> Picked today</span>
+        <span><i class="lg-mine"></i> Your pick today</span>
+      </div>
+    </div>
+
+    <div class="portal-card" id="gmLeader" hidden>
+      <h3>Leaderboard</h3>
+      <p class="note" id="gmLeaderNote"></p>
+      <ol class="leaderboard" id="gmLeaderList"></ol>
+    </div>
+
+    <div class="portal-card game-rules">
+      <h3>How to play</h3>
+      <ul>
+        <li>The game runs five days. Each day, pick one slip on the marina map to flip over a playing card.</li>
+        <li>Once someone picks a slip, nobody else can pick it that day. Every morning the cards are shuffled and dealt again.</li>
+        <li>Missed a day? Pick two cards the next day. Miss two days in a row and you're out.</li>
+        <li>On the last day, after your fifth card, you can trade up to 3 cards (4 if you keep an Ace) by picking more slips.</li>
+        <li>Miss the last day with four cards and you'll get one random card.</li>
+        <li>When the game ends, every hand goes on the leaderboard, best to worst. Ties go to high card and kickers, then to whoever finished first.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="member-login-overlay" id="gmFlip" role="dialog" aria-modal="true" aria-labelledby="gmFlipTitle">
+  <div class="member-login-modal game-flip-modal">
+    <h3 id="gmFlipTitle">Slip</h3>
+    <div class="flip-card" id="gmFlipCard">
+      <div class="flip-inner">
+        <div class="flip-face flip-back" id="gmFlipBack"></div>
+        <div class="flip-face flip-front" id="gmFlipFront"></div>
+      </div>
+    </div>
+    <p class="note" id="gmFlipNote">Flip this card? You can't take it back.</p>
+    <div class="member-login-error" id="gmFlipError" hidden></div>
+    <div class="portal-actions" id="gmFlipAsk">
+      <button type="button" class="btn btn-outline" id="gmFlipCancel">Choose another</button>
+      <button type="button" class="btn btn-gold" id="gmFlipGo">Flip it!</button>
+    </div>
+    <div class="portal-actions" id="gmFlipDone" hidden>
+      <button type="button" class="btn btn-gold" id="gmFlipOk">Add to my hand</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container footer-bottom">
+    <div>&copy; <span id="year"></span> New Bern Grand Marina. All rights reserved.</div>
+    <div><a href="tel:+12526380318" style="color:inherit;">(252) 638-0318</a></div>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="member-login.js?v=202611191309"></script>
+<script src="member-data.js?v=202611191309"></script>
+<script src="game-cards.js?v=202611191309"></script>
+<script src="game.js?v=202611191309"></script>
+</body>
+</html>

@@ -42,13 +42,15 @@
     if (ev.event_type === 'game') {
       facts += '<dt>Game</dt><dd>' + D.esc(D.gameLabel(ev.game_kind)) + '</dd>';
       if (ev.game_prize) facts += '<dt>Prize</dt><dd>' + D.esc(ev.game_prize) + '</dd>';
+      if (ev.game_days && ev.game_days.length) facts += '<dt>Game days</dt><dd>' + ev.game_days.map(function (d) { return D.esc(D.fmtDay(d)); }).join(', ') + '</dd>';
       facts += '<dt>Who can play</dt><dd>' + (ev.game_players || []).map(function (c) { return D.esc(D.classLabel(c)); }).join(', ') + '</dd>';
     }
     if (ev.event_type === 'vote') facts += '<dt>Voting</dt><dd>' + D.esc(D.voteWindowText(ev)) + '</dd>';
     facts += '<dt>Type</dt><dd>' + D.eventTypeLabel(ev.event_type) + (ev.active ? '' : ' (inactive: only admins can see this)') + '</dd>';
     $('evFacts').innerHTML = facts;
     if (ev.summary) { $('evSummaryText').textContent = ev.summary; $('evSummaryText').hidden = false; }
-    $('evDetailsText').innerHTML = ev.details ? D.richText(ev.details) : '';
+    $('evDetailsText').innerHTML = (ev.event_type === 'game' ? '<p><a class="btn btn-gold" href="game.html?id=' + ev.id + '">Go to the game &rsaquo;</a></p>' : '') +
+      (ev.details ? D.richText(ev.details) : '');
     $('evStatus').hidden = true;
     $('evBody').hidden = false;
   }

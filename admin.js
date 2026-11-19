@@ -83,6 +83,7 @@
         if (!c.checked) { var p = document.querySelector('#evGamePlayers input[value="' + c.value + '"]'); if (p) p.checked = false; }
       });
     });
+    $('evGameWeek').addEventListener('click', function () { setGameDays(nextWeekdays()); });
     $('evNew').addEventListener('click', function () { openEventForm(null); });
     $('evCancel').addEventListener('click', function () { $('evForm').hidden = true; });
     $('evForm').addEventListener('submit', saveEvent);
@@ -159,6 +160,7 @@
         if (ev.event_type === 'game') {
           var now = new Date(), gs = ev.starts_at && new Date(ev.starts_at), ge = ev.ends_at && new Date(ev.ends_at);
           var gst = gs && now < gs ? 'Not started yet' : ge && now > ge ? 'Finished' : 'In play';
+          if (ev.game_practice) gst = 'Practice mode, day ' + ev.game_practice_day + (ev.game_practice_over ? ' (finished)' : '');
           voteInfo += '<div class="note"><strong>' + D.esc(D.gameLabel(ev.game_kind)) + '</strong> &middot; ' + gst +
             ' &middot; Players: ' + (ev.game_players || []).map(function (a) { return CLASS_SHORT[a] || a; }).join(', ') +
             (ev.game_prize ? '<br>Prize: ' + D.esc(ev.game_prize) : '') + '</div>';
@@ -172,6 +174,7 @@
           '<td>' + (ev.active ? 'Active' : '<span class="inactive">Inactive</span>') + '</td>' +
           '<td class="row-actions">' +
             (isVote ? '<button type="button" class="btn-sm btn-primary-sm" data-act="results" data-id="' + ev.id + '">Results</button>' : '') +
+            (ev.event_type === 'game' ? '<a class="btn-sm btn-primary-sm" href="game.html?id=' + ev.id + '" target="_blank" rel="noopener">' + (ev.game_practice ? 'Practice' : 'Open game') + '</a>' : '') +
             (ev.signup_enabled ? '<button type="button" class="btn-sm btn-primary-sm" data-act="signups" data-id="' + ev.id + '">Sign-ups (' + (signupCounts[ev.id] || 0) + ')</button>' : '') +
             '<button type="button" class="btn-sm" data-act="edit" data-id="' + ev.id + '">Edit</button>' +
             '<button type="button" class="btn-sm" data-act="toggle" data-id="' + ev.id + '">' + (ev.active ? 'Deactivate' : 'Activate') + '</button>' +
@@ -201,6 +204,9 @@
     $('evVoteClose').value = ev ? D.toLocalInput(ev.vote_closes_at) : '';
     $('evNotifyEmail').value = ev ? (ev.vote_notify_email || '') : '';
     $('evGameKind').value = ev && ev.game_kind ? ev.game_kind : D.GAMES[0].id;
+    setGameDays(ev && ev.game_days && ev.game_days.length === 5 ? ev.game_days : nextWeekdays());
+    $('evGameEndTime').value = ev && ev.event_type === 'game' && ev.ends_at ? D.toLocalInput(ev.ends_at).slice(11) : '20:00';
+    $('evGamePractice').checked = !!(ev && ev.game_practice);
     $('evGamePrize').value = ev ? (ev.game_prize || '') : '';
     var players = ev && ev.game_players && ev.game_players.length ? ev.game_players : ['certificated'];
     document.querySelectorAll('#evGamePlayers input').forEach(function (c) { c.checked = players.indexOf(c.value) !== -1; });
@@ -240,8 +246,8 @@
     if (!row.title) return showErr($('evError'), 'Please enter a title.');
     row.audience = Array.prototype.filter.call(document.querySelectorAll('#evAudience input'), function (c) { return c.checked; }).map(function (c) { return c.value; });
     if (!row.audience.length) return showErr($('evError'), 'Tick at least one group under "Who can see this".');
-    if (row.starts_at && row.ends_at && row.ends_at < row.starts_at) return showErr($('evError'), 'The end time is before the start time.');
-    var id = $('evId').value;
+    if (row.event_type !== 'game' && row.starts_at && row.ends_at && row.ends_at < row.starts_at) return showErr($('evError'), 'The end time is before the start time.');
+    var id = $('evId').value, clearPractice = false;
     if (row.event_type === 'vote') {
       row.results_visibility = $('evResults').value;
       row.vote_opens_at = D.fromLocalInput($('evVoteOpen').value);
@@ -268,13 +274,27 @@
       row.game_prize = $('evGamePrize').value.trim();
       row.game_players = Array.prototype.filter.call(document.querySelectorAll('#evGamePlayers input'), function (c) { return c.checked; }).map(function (c) { return c.value; });
       if (!row.game_players.length) return showErr($('evError'), 'Tick at least one group under "Who can play".');
-      if (!row.starts_at || !row.ends_at) return showErr($('evError'), 'Please set when the game starts and when it ends.');
-      if (row.ends_at <= row.starts_at) return showErr($('evError'), 'The game must end after it starts.');
+      row.game_days = Array.prototype.map.call(document.querySelectorAll('.ev-gday'), function (i) { return i.value; });
+      if (row.game_days.some(function (d) { return !d; })) return showErr($('evError'), 'Please fill in all five game days.');
+      var sorted = row.game_days.slice().sort();
+      if (sorted.some(function (d, i) { return i && d === sorted[i - 1]; })) return showErr($('evError'), 'Each game day must be a different date.');
+      row.game_days = sorted;
+      var endTime = $('evGameEndTime').value || '20:00';
+      if (endTime === '00:00') return showErr($('evError'), 'Please pick an end time later than midnight on day 5.');
+      row.starts_at = D.fromLocalInput(sorted[0] + 'T00:00');
+      row.ends_at = D.fromLocalInput(sorted[4] + 'T' + endTime);
+      var wasPractice = !!(events.find(function (x) { return x.id === id; }) || {}).game_practice;
+      row.game_practice = $('evGamePractice').checked;
+      if (wasPractice && !row.game_practice &&
+          !confirm('Turning off practice mode starts the real game. All practice plays will be cleared first. Continue?')) return;
+      clearPractice = wasPractice && !row.game_practice;
       row.game_players.forEach(function (p) { if (row.audience.indexOf(p) === -1) row.audience.push(p); });
     } else if (row.event_type) {
       row.game_kind = null;
       row.game_players = [];
       row.game_prize = '';
+      row.game_days = [];
+      row.game_practice = false;
     }
     if (row.event_type === 'social' && $('evSignupOn').checked) {
       row.signup_enabled = true;
@@ -287,7 +307,11 @@
     }
     if ($('evType').disabled) delete row.event_type;
     var isVoteNow = (row.event_type || (events.find(function (x) { return x.id === id; }) || {}).event_type) === 'vote';
-    var q = id ? sb.from('events').update(row).eq('id', id).select('id').single() : sb.from('events').insert(row).select('id').single();
+    function write() { return id ? sb.from('events').update(row).eq('id', id).select('id').single() : sb.from('events').insert(row).select('id').single(); }
+    // Clear practice plays (while still in practice mode) before switching a game to the real thing.
+    var q = clearPractice
+      ? sb.rpc('game_admin', { p_event: id, p_action: 'reset' }).then(function (r) { return r.error ? r : write(); })
+      : write();
     q.then(function (r) {
       if (r.error) return showErr($('evError'), r.error.message);
       var eid = r.data.id;
@@ -300,6 +324,19 @@
         loadEvents();
       });
     });
+  }
+
+  /* ---------- Game days ---------- */
+  function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function nextWeekdays() {
+    var d = new Date(); d.setHours(12, 0, 0, 0);
+    do { d.setDate(d.getDate() + 1); } while (d.getDay() !== 1);
+    var out = [];
+    for (var i = 0; i < 5; i++) { out.push(ymd(d)); d.setDate(d.getDate() + 1); }
+    return out;
+  }
+  function setGameDays(days) {
+    document.querySelectorAll('.ev-gday').forEach(function (inp, i) { inp.value = days[i] || ''; });
   }
 
   /* ---------- Documents for review (event attachments) ---------- */
@@ -542,10 +579,8 @@
     $('evGroupRuleNote').hidden = !aud.some(function (a) { return a !== 'certificated'; });
     var isGame = $('evType').value === 'game';
     $('evGame').hidden = !isGame;
-    $('evStartLabel').textContent = isGame ? 'Game starts (required)' : 'Starts';
-    $('evEndLabel').textContent = isGame ? 'Game ends (required)' : 'Ends';
-    $('evStart').required = isGame;
-    $('evEnd').required = isGame;
+    $('evStartWrap').hidden = isGame;
+    $('evEndWrap').hidden = isGame;
     var isSocial = $('evType').value === 'social';
     $('evSignup').hidden = !isSocial;
     $('evSignupOpts').hidden = !(isSocial && $('evSignupOn').checked);

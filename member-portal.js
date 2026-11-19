@@ -139,20 +139,28 @@
     return '';
   }
 
+  function gameTag(ev) {
+    if (ev.event_type !== 'game') return '';
+    var now = Date.now(), started = ev.starts_at && new Date(ev.starts_at).getTime() <= now, over = ev.ends_at && new Date(ev.ends_at).getTime() <= now;
+    return '<div class="vote-state">' + D.esc(D.gameLabel(ev.game_kind)) + (ev.game_prize ? ' &middot; Prize: ' + D.esc(ev.game_prize) : '') +
+      ' <a class="vote-tag signup go" href="game.html?id=' + ev.id + '">' + (over ? 'See the leaderboard' : started ? 'Play' : 'Join') + ' &rsaquo;</a></div>';
+  }
+
   function eventItem(ev, past, voted, isAdmin) {
     return '<li class="event-item' + (past ? ' past' : '') + '">' +
-      '<a class="badge badge-' + ev.event_type + '" href="event.html?id=' + ev.id + (ev.event_type === 'vote' ? '#ballot' : '') + '">' + D.eventTypeLabel(ev.event_type) + '</a>' +
+      '<a class="badge badge-' + ev.event_type + '" href="' + (ev.event_type === 'game' ? 'game.html' : 'event.html') + '?id=' + ev.id + (ev.event_type === 'vote' ? '#ballot' : '') + '">' + D.eventTypeLabel(ev.event_type) + '</a>' +
       '<div><a class="event-title" href="event.html?id=' + ev.id + '">' + D.esc(ev.title) + '</a>' +
       (ev.starts_at ? '<div class="event-when">' + D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) + (ev.location ? ' &middot; ' + D.esc(ev.location) : '') + '</div>' : '') +
       voteTag(ev, voted, isAdmin) +
       signupTag(ev, voted, isAdmin) +
+      gameTag(ev) +
       (ev.summary ? '<p class="event-summary">' + D.esc(ev.summary) + '</p>' : '') +
       '</div></li>';
   }
 
   function loadEvents(sb, m) {
     Promise.all([
-      sb.from('events').select('id, title, summary, event_type, starts_at, ends_at, location, vote_opens_at, vote_closes_at, signup_enabled, signup_closes_at').eq('active', true),
+      sb.from('events').select('id, title, summary, event_type, starts_at, ends_at, location, vote_opens_at, vote_closes_at, signup_enabled, signup_closes_at, game_kind, game_prize').eq('active', true),
       m.is_admin ? Promise.resolve({ data: [] }) : sb.from('votes').select('event_id, slip'),
       m.is_admin ? Promise.resolve({ data: [] }) : sb.rpc('my_slips'),
       m.is_admin ? Promise.resolve({ data: [] }) : sb.from('vote_exclusions').select('event_id, slip'),
