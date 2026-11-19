@@ -372,6 +372,7 @@ nav.main-nav a.active {
 .badge-vote { background: #f6ecd9; color: #7a5a1f; }
 .badge-notice { background: #eef0f2; color: #3c4954; }
 .badge-social { background: #e6f3ee; color: #1f6b4a; }
+.badge-game { background: #efe6f7; color: #5b2d82; }
 .badge-maintenance { background: #fbe9e7; color: #9a3b2c; }
 
 /* Member event list */

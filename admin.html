@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611181212">
+<link rel="stylesheet" href="style.css?v=202611191210">
 </head>
 <body data-member-portal>
 
@@ -85,12 +85,33 @@
             <label>Location
               <input type="text" id="evLocation" maxlength="150" placeholder="Marina clubhouse">
             </label>
-            <label>Starts
+            <label><span id="evStartLabel">Starts</span>
               <input type="datetime-local" id="evStart">
             </label>
-            <label>Ends
+            <label><span id="evEndLabel">Ends</span>
               <input type="datetime-local" id="evEnd">
             </label>
+            <fieldset class="full ballot-box game-box" id="evGame" hidden>
+              <legend>Game</legend>
+              <div class="admin-grid">
+                <label>Which game
+                  <select id="evGameKind"></select>
+                </label>
+                <label>Prize (optional)
+                  <input type="text" id="evGamePrize" maxlength="500" placeholder="e.g. $50 gift card to the ship store">
+                </label>
+                <div class="full an-docks">
+                  <span class="an-label">Who can play</span>
+                  <div class="an-dock-boxes" id="evGamePlayers">
+                    <label><input type="checkbox" value="certificated" checked> Slip owners</label>
+                    <label><input type="checkbox" value="ltc"> Long-term cruisers (LTC)</label>
+                    <label><input type="checkbox" value="stc"> Transients (STC)</label>
+                    <label><input type="checkbox" value="employee"> Employees</label>
+                  </div>
+                </div>
+              </div>
+              <p class="note" style="margin:10px 0 0">The game is active between the Game starts and Game ends times above (both required). Anyone who can play can also see it; you can tick more groups under "Who can see this" to let them follow along without playing.</p>
+            </fieldset>
             <fieldset class="full ballot-box" id="evBallot" hidden>
               <legend>Ballot</legend>
               <p class="note" id="evBallotLocked" hidden>Votes have been cast, so the ballot choices are locked. You can still change the description, details and closing time.</p>
@@ -586,9 +607,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611181212"></script>
-<script src="member-data.js?v=202611181212"></script>
-<script src="video-utils.js?v=202611181212"></script>
-<script src="admin.js?v=202611181212"></script>
+<script src="member-login.js?v=202611191210"></script>
+<script src="member-data.js?v=202611191210"></script>
+<script src="video-utils.js?v=202611191210"></script>
+<script src="admin.js?v=202611191210"></script>
 </body>
 </html>

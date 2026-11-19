@@ -7,8 +7,21 @@
     { id: 'vote', label: 'Vote' },
     { id: 'notice', label: 'Notice' },
     { id: 'social', label: 'Social' },
+    { id: 'game', label: 'Game' },
     { id: 'maintenance', label: 'Maintenance' },
     { id: 'other', label: 'Other' }
+  ];
+
+  // Games that can be run as a Game event (each one gets its own play screen).
+  var GAMES = [
+    { id: 'poker_run', label: '5 Card Poker Run' }
+  ];
+
+  var CLASS_LABELS = [
+    { id: 'certificated', label: 'Slip owners' },
+    { id: 'ltc', label: 'Long-term cruisers (LTC)' },
+    { id: 'stc', label: 'Transients (STC)' },
+    { id: 'employee', label: 'Employees' }
   ];
 
   var DOC_CATEGORIES = [
@@ -128,7 +141,9 @@
 
   window.MemberData = {
     ballotChoices: ballotChoices, voteState: voteState, voteWindowText: voteWindowText,
-    EVENT_TYPES: EVENT_TYPES, DOC_CATEGORIES: DOC_CATEGORIES,
+    EVENT_TYPES: EVENT_TYPES, DOC_CATEGORIES: DOC_CATEGORIES, GAMES: GAMES,
+    gameLabel: function (id) { return label(GAMES, id); },
+    classLabel: function (id) { return label(CLASS_LABELS, id); },
     eventTypeLabel: function (id) { return label(EVENT_TYPES, id); },
     categoryLabel: function (id) { return label(DOC_CATEGORIES, id); },
     esc: esc, richText: richText, fmtWhen: fmtWhen, fmtDay: fmtDay, monthKey: monthKey,

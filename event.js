@@ -39,6 +39,11 @@
     var facts = '';
     if (ev.starts_at) facts += '<dt>When</dt><dd>' + D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) + '</dd>';
     if (ev.location) facts += '<dt>Where</dt><dd>' + D.esc(ev.location) + '</dd>';
+    if (ev.event_type === 'game') {
+      facts += '<dt>Game</dt><dd>' + D.esc(D.gameLabel(ev.game_kind)) + '</dd>';
+      if (ev.game_prize) facts += '<dt>Prize</dt><dd>' + D.esc(ev.game_prize) + '</dd>';
+      facts += '<dt>Who can play</dt><dd>' + (ev.game_players || []).map(function (c) { return D.esc(D.classLabel(c)); }).join(', ') + '</dd>';
+    }
     if (ev.event_type === 'vote') facts += '<dt>Voting</dt><dd>' + D.esc(D.voteWindowText(ev)) + '</dd>';
     facts += '<dt>Type</dt><dd>' + D.eventTypeLabel(ev.event_type) + (ev.active ? '' : ' (inactive: only admins can see this)') + '</dd>';
     $('evFacts').innerHTML = facts;
