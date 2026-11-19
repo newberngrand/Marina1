@@ -52,7 +52,6 @@
     $('gmZoomIn').addEventListener('click', function () { setZoom(zoom * 1.5); });
     $('gmZoomOut').addEventListener('click', function () { setZoom(zoom / 1.5); });
     $('gmFlipCancel').addEventListener('click', closeFlip);
-    $('gmFlipOk').addEventListener('click', function () { closeFlip(); refresh(); });
     $('gmFlipGo').addEventListener('click', doPick);
     $('gmTradeBtn').addEventListener('click', function () { doTrade(Object.keys(trade)); });
     $('gmKeepBtn').addEventListener('click', function () {
@@ -301,11 +300,7 @@
     pendingSlip = slip;
     $('gmFlipTitle').textContent = 'Slip ' + slip;
     $('gmFlipBack').innerHTML = P.back();
-    $('gmFlipFront').innerHTML = '';
-    $('gmFlipCard').classList.remove('flipped');
-    $('gmFlipNote').textContent = 'Flip this card? Once it\'s flipped, it\'s yours.';
     showErr($('gmFlipError'), '');
-    $('gmFlipAsk').hidden = false; $('gmFlipDone').hidden = true;
     $('gmFlipGo').disabled = false;
     $('gmFlip').classList.add('open');
     $('gmFlipGo').focus();
@@ -314,17 +309,87 @@
 
   function doPick() {
     if (!pendingSlip || busy) return;
+    var slip = pendingSlip;
     busy = true; $('gmFlipGo').disabled = true;
-    sb.rpc('game_pick', { p_event: id, p_slip: pendingSlip, p_email: email || null }).then(function (r) {
-      busy = false;
-      if (r.error) { $('gmFlipGo').disabled = false; showErr($('gmFlipError'), cleanMsg(r.error)); refresh(); return; }
-      var card = r.data;
-      $('gmFlipFront').innerHTML = P.face(card);
-      requestAnimationFrame(function () { $('gmFlipCard').classList.add('flipped'); });
-      $('gmFlipNote').textContent = 'The ' + P.cardName(card) + '!';
-      $('gmFlipAsk').hidden = true; $('gmFlipDone').hidden = false;
-      MemberAuth.track('game_pick', { type: 'event', id: ev.id, label: ev.title, details: { slip: pendingSlip } });
-      setTimeout(function () { $('gmFlipOk').focus(); }, 50);
+    sb.rpc('game_pick', { p_event: id, p_slip: slip, p_email: email || null }).then(function (r) {
+      if (r.error) { busy = false; $('gmFlipGo').disabled = false; showErr($('gmFlipError'), cleanMsg(r.error)); refresh(); return; }
+      closeFlip();
+      MemberAuth.track('game_pick', { type: 'event', id: ev.id, label: ev.title, details: { slip: slip } });
+      flyCard(slip, r.data).then(function () { busy = false; });
+    });
+  }
+
+  /* The picked card rises out of its slip, tumbling as it grows to full size, shows itself,
+     then flies down into the next open slot of the hand. Resolves once the hand is redrawn. */
+  function flyCard(slip, card) {
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var W = Math.min(260, Math.round(window.innerWidth * 0.62)), H = Math.round(W * 1.4);
+    var g = svg && svg.querySelector('g.slip[id="slip-' + slip.charAt(0) + '-' + slip.slice(1) + '"]');
+    var from = g ? g.getBoundingClientRect() : { left: innerWidth / 2 - 10, top: innerHeight / 2 - 14, width: 20, height: 28 };
+    var shade = document.createElement('div');
+    shade.className = 'fly-shade';
+    var el = document.createElement('div');
+    el.className = 'fly-card';
+    el.style.width = W + 'px'; el.style.height = H + 'px';
+    el.innerHTML = '<div class="fly-face fly-back">' + P.back() + '</div><div class="fly-face fly-front">' + P.face(card) +
+      '<div class="fly-glare"></div></div>';
+    var caption = document.createElement('div');
+    caption.className = 'fly-caption';
+    caption.textContent = 'The ' + P.cardName(card) + '!';
+    document.body.appendChild(shade); document.body.appendChild(el); document.body.appendChild(caption);
+    if (g) g.classList.add('mine');
+
+    // Position = top-left corner (x, y) of a W x H box, scaled about its center.
+    function tf(cx, cy, s, rx, ry, rz) {
+      return 'perspective(1400px) translate(' + (cx - W / 2) + 'px,' + (cy - H / 2) + 'px) scale(' + s + ') rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) rotateZ(' + rz + 'deg)';
+    }
+    var sx = from.left + from.width / 2, sy = from.top + from.height / 2, s0 = Math.max(0.06, Math.max(from.width, from.height) / H);
+    var cx = innerWidth / 2, cy = innerHeight / 2 - 10;
+    function run(keys, opts) {
+      return new Promise(function (done) {
+        if (!el.animate) { el.style.transform = keys[keys.length - 1].transform; return done(); }
+        var a = el.animate(keys, opts);
+        a.onfinish = function () { el.style.transform = keys[keys.length - 1].transform; done(); };
+      });
+    }
+    function wait(ms) { return new Promise(function (d) { setTimeout(d, ms); }); }
+
+    shade.classList.add('on');
+    var rise = reduce
+      ? run([{ transform: tf(cx, cy, 1, 0, 180, 0), opacity: 0 }, { transform: tf(cx, cy, 1, 0, 180, 0), opacity: 1 }], { duration: 300, fill: 'forwards' })
+      : run([
+          // Lift off the slip, then three and a half turns while growing (ends face up).
+          { transform: tf(sx, sy, s0, 0, 0, 0) },
+          { transform: tf(sx + (cx - sx) * 0.3, sy + (cy - sy) * 0.3 - 40, s0 + (1 - s0) * 0.22, 22, 360, -8), offset: 0.25 },
+          { transform: tf(sx + (cx - sx) * 0.62, sy + (cy - sy) * 0.62 - 50, s0 + (1 - s0) * 0.5, -18, 720, 7), offset: 0.5 },
+          { transform: tf(cx, cy - 20, 1.08, 14, 1080, -4), offset: 0.78 },
+          { transform: tf(cx, cy, 1, 0, 1260, 0) }
+        ], { duration: 2300, easing: 'cubic-bezier(.35,.15,.35,1)', fill: 'forwards' });
+    return rise.then(function () {
+      caption.classList.add('on');
+      return wait(reduce ? 900 : 1300);
+    }).then(function () {
+      caption.classList.remove('on');
+      // Bring the hand into view, then fly the card into its slot.
+      var top = $('gmHand').getBoundingClientRect().top;
+      if (top < 70 || top > innerHeight - 120) {
+        window.scrollTo({ top: Math.max(0, scrollY + top - 140), behavior: reduce ? 'auto' : 'smooth' });
+        return wait(reduce ? 50 : 650);
+      }
+    }).then(function () {
+      var slot = document.querySelector('#gmHand .hand-slot.empty') || $('gmHand');
+      var to = slot.getBoundingClientRect();
+      var ry = reduce ? 180 : 1260;
+      return run([
+        { transform: tf(cx, cy, reduce ? 1 : 1, 0, ry, 0) },
+        { transform: tf(to.left + to.width / 2, to.top + to.height / 2, to.width / W, 0, ry, 0) }
+      ], { duration: reduce ? 250 : 650, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'forwards' });
+    }).then(function () {
+      shade.classList.remove('on');
+      return refresh();
+    }).then(function () {
+      el.remove(); caption.remove();
+      setTimeout(function () { shade.remove(); }, 400);
     });
   }
 
