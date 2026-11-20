@@ -169,11 +169,15 @@
         var r = res[0];
         var mySlips = res[2].data || [];
         var voted = { total: mySlips.length ? mySlips.filter(function (s) { return s.can_vote; }).length : 1, excluded: {} };
-        (res[3].data || []).forEach(function (x) { voted.excluded[x.event_id] = (voted.excluded[x.event_id] || 0) + 1; });
+        // Count only this owner's slips: owners with admin rights can read every slip's votes and exclusions.
+        var mine = {};
+        if (mySlips.length) mySlips.forEach(function (s) { if (s.can_vote) mine[s.slip] = true; });
+        else mine[m.slip] = true;
+        (res[3].data || []).forEach(function (x) { if (mine[x.slip]) voted.excluded[x.event_id] = (voted.excluded[x.event_id] || 0) + 1; });
         voted.shared = !m.is_admin && !!m.member_class && m.member_class !== 'certificated';
         voted.signedUp = {};
         (res[4].data || []).forEach(function (x) { voted.signedUp[x.event_id] = true; });
-        (res[1].data || []).forEach(function (v) { voted[v.event_id] = (voted[v.event_id] || 0) + 1; });
+        (res[1].data || []).forEach(function (v) { if (mine[v.slip]) voted[v.event_id] = (voted[v.event_id] || 0) + 1; });
         var isAdmin = m.is_admin;
         var list = r.data || [];
         if (!list.length) {
