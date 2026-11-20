@@ -103,21 +103,65 @@ function canvasTex(w, h, draw) {
   var c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
   var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
-function plankTexture() {
-  var t = canvasTex(256, 256, function (x, w, h) {
-    var rnd = mulberry32(7);
-    for (var i = 0; i < 16; i++) {
-      var l = 62 + rnd() * 14;
-      x.fillStyle = 'hsl(34,' + (10 + rnd() * 8) + '%,' + l + '%)';
-      x.fillRect(0, i * 16, w, 15);
-      x.fillStyle = 'rgba(80,50,25,.10)';
-      for (var k = 0; k < 6; k++) x.fillRect(rnd() * w, i * 16 + rnd() * 15, 20 + rnd() * 60, 1);
-      x.fillStyle = 'rgba(60,40,20,.55)'; x.fillRect(0, i * 16 + 15, w, 1);
-      x.fillStyle = 'rgba(60,40,20,.35)'; x.fillRect(rnd() * w, i * 16, 2, 15);
+function plankTexture() { // weathered gray deck boards: silvered grain, knots, checks, screws, butt joints, gaps
+  var N = 1024, BOARDS = 12, bh = N / BOARDS, c = document.createElement('canvas'); c.width = c.height = N;
+  var x = c.getContext('2d'), rnd = mulberry32(7);
+  x.fillStyle = '#26231f'; x.fillRect(0, 0, N, N);                        // the gaps between boards
+  for (var i = 0; i < BOARDS; i++) {
+    var y0 = i * bh, gap = 5, joints = [rnd() * N];
+    if (rnd() < 0.7) joints.push((joints[0] + N * (0.35 + rnd() * 0.3)) % N);
+    var pieces = joints.slice().sort(function (a, b) { return a - b; });
+    var starts = [pieces[pieces.length - 1] - N].concat(pieces);
+    for (var p = 0; p < starts.length; p++) {
+      var xa = starts[p] + 3, xb = (p + 1 < starts.length ? starts[p + 1] : pieces[0] + N) - 3;
+      var L = 40 + rnd() * 16, hue = 28 + rnd() * 14, sat = 3 + rnd() * 7;
+      x.save(); x.beginPath(); x.rect(0, y0, N, bh - gap); x.clip();
+      [0, N, -N].forEach(function (off) {
+        x.fillStyle = 'hsl(' + hue + ',' + sat + '%,' + L + '%)'; x.fillRect(xa + off, y0, xb - xa, bh - gap);
+        var g = x.createLinearGradient(0, y0, 0, y0 + bh - gap);             // cupped, sun-bleached board
+        g.addColorStop(0, 'rgba(255,255,255,.10)'); g.addColorStop(0.5, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.22)');
+        x.fillStyle = g; x.fillRect(xa + off, y0, xb - xa, bh - gap);
+      });
+      x.restore();
     }
-  });
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.18, 0.18);
-  return t;
+    // grain: long wavy streaks, darker and lighter
+    for (var k = 0; k < 46; k++) {
+      var gy = y0 + 2 + rnd() * (bh - gap - 4), amp = 0.6 + rnd() * 2.2, fr = 0.004 + rnd() * 0.01, ph = rnd() * 6;
+      x.strokeStyle = rnd() < 0.55 ? 'rgba(40,34,28,' + (0.12 + rnd() * 0.22) + ')' : 'rgba(235,232,224,' + (0.08 + rnd() * 0.16) + ')';
+      x.lineWidth = 0.6 + rnd() * 1.4;
+      var sx = rnd() * N, len = 150 + rnd() * 700;
+      [0, -N].forEach(function (off) {
+        x.beginPath();
+        for (var s = 0; s <= len; s += 8) { var px = sx + s, py = gy + Math.sin(px * fr + ph) * amp; if (s) x.lineTo(px + off, py); else x.moveTo(px + off, py); }
+        x.stroke();
+      });
+    }
+    // knots with growth rings bending the grain
+    for (var kn = 0; kn < (rnd() < 0.6 ? 1 : 2); kn++) {
+      var kx = rnd() * N, ky = y0 + 8 + rnd() * (bh - gap - 16), kr = 3 + rnd() * 6;
+      for (var r = kr * 2.6; r > 0; r -= 1.6) { x.strokeStyle = 'rgba(45,36,28,' + (0.1 + (1 - r / (kr * 2.6)) * 0.35) + ')'; x.lineWidth = 1; x.beginPath(); x.ellipse(kx, ky, r * 1.8, r * 0.75, 0, 0, 7); x.stroke(); }
+      x.fillStyle = 'rgba(38,30,24,.75)'; x.beginPath(); x.ellipse(kx, ky, kr, kr * 0.6, 0, 0, 7); x.fill();
+    }
+    // checks (cracks along the grain)
+    for (var ck = 0; ck < 3; ck++) { if (rnd() < 0.4) continue; var cx0 = rnd() * N, cy0 = y0 + 6 + rnd() * (bh - gap - 12); x.strokeStyle = 'rgba(25,22,18,.7)'; x.lineWidth = 1 + rnd(); x.beginPath(); x.moveTo(cx0, cy0); x.lineTo(cx0 + 40 + rnd() * 160, cy0 + (rnd() - 0.5) * 3); x.stroke(); }
+    // stainless screws over each joist (every ~16 inches), with rust bleed
+    for (var jx = 30; jx < N; jx += N / 4.3) for (var sd = 0; sd < 2; sd++) {
+      var sy = y0 + (sd ? bh - gap - 12 : 12);
+      x.fillStyle = 'rgba(70,50,35,.25)'; x.beginPath(); x.ellipse(jx + 2, sy + 3, 3, 6, 0, 0, 7); x.fill();
+      x.fillStyle = '#3a3835'; x.beginPath(); x.arc(jx, sy, 3.2, 0, 7); x.fill();
+      x.fillStyle = '#8d8b86'; x.beginPath(); x.arc(jx - 0.6, sy - 0.6, 1.6, 0, 7); x.fill();
+    }
+    joints.forEach(function (jx2) { x.fillStyle = '#24211d'; x.fillRect(jx2 - 2, y0, 4, bh - gap); });
+  }
+  // overall weathering: lichen-ish and water stains
+  for (var st = 0; st < 260; st++) {
+    x.fillStyle = rnd() < 0.5 ? 'rgba(30,28,24,' + rnd() * 0.07 + ')' : 'rgba(210,214,205,' + rnd() * 0.06 + ')';
+    x.beginPath(); x.ellipse(rnd() * N, rnd() * N, 10 + rnd() * 60, 4 + rnd() * 18, 0, 0, 7); x.fill();
+  }
+  var map = new THREE.CanvasTexture(c); map.colorSpace = THREE.SRGBColorSpace;
+  var bump = new THREE.CanvasTexture(c);
+  [map, bump].forEach(function (t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 6, 1 / 6); t.anisotropy = 8; });
+  return { map: map, bump: bump };
 }
 function waterNormals() { // tileable ripple normal map, generated so nothing extra has to download
   var N = 256, c = document.createElement('canvas'); c.width = c.height = N;
@@ -168,35 +212,107 @@ function speckleTexture(base, tones, n, sizeMax, tileFeet, extra) {
   return t;
 }
 var FACADES = {
-  brick:    { wall: '#8b4a35', alt: ['#7a3f2c', '#9a5640', '#83442f', '#6f3a2a'], bayW: 11, floorH: 11, win: 0.42, frame: '#f2eee6' },
-  brick2:   { wall: '#a0583b', alt: ['#8f4d33', '#b0654a', '#94513a'], bayW: 10, floorH: 11, win: 0.4, frame: '#efe9dc' },
-  condo:    { wall: '#93503a', alt: ['#844630', '#a05b43', '#8a4934'], bayW: 13, floorH: 10.5, win: 0.55, frame: '#ece6da', balcony: true },
-  hotel:    { wall: '#8a4632', alt: ['#7c3e2c', '#97513b'], bayW: 8, floorH: 10, win: 0.86, frame: '#c98a4a', band: true },
-  white:    { wall: '#e9e4d8', alt: ['#dedad0', '#f1ede4', '#d8d2c4'], bayW: 10, floorH: 11, win: 0.42, frame: '#ffffff' },
-  colonial: { wall: '#924c36', alt: ['#80412f', '#a15a42'], bayW: 9, floorH: 12, win: 0.36, frame: '#fbf8f2', shutters: true }
+  brick:    { kind: 'brick', wall: '#8b4a35', alt: ['#7a3f2c', '#9a5640', '#83442f', '#6f3a2a', '#a35c44'], bayW: 11, floorH: 11, win: 0.4, frame: '#f2eee6', grid: true },
+  brick2:   { kind: 'brick', wall: '#a0583b', alt: ['#8f4d33', '#b0654a', '#94513a', '#a9603f'], bayW: 10, floorH: 11, win: 0.38, frame: '#efe9dc', grid: true },
+  brick3:   { kind: 'brick', wall: '#6e3b2c', alt: ['#5f3226', '#7c4433', '#663628', '#86503c'], bayW: 10, floorH: 11.5, win: 0.4, frame: '#e9e4d8', grid: true },
+  condo:    { kind: 'brick', wall: '#93503a', alt: ['#844630', '#a05b43', '#8a4934'], bayW: 13, floorH: 10.5, win: 0.55, frame: '#ece6da', balcony: true },
+  hotel:    { kind: 'brick', wall: '#8a4632', alt: ['#7c3e2c', '#97513b'], bayW: 8, floorH: 10, win: 0.86, frame: '#c98a4a', band: true },
+  white:    { kind: 'stucco', wall: '#e9e4d8', alt: ['#dedad0', '#f1ede4', '#d8d2c4'], bayW: 10, floorH: 11, win: 0.42, frame: '#ffffff', grid: true },
+  colonial: { kind: 'brick', wall: '#924c36', alt: ['#80412f', '#a15a42'], bayW: 9, floorH: 12, win: 0.36, frame: '#fbf8f2', shutters: true, grid: true },
+  siding:   { kind: 'siding', wall: '#f2f0ea', alt: ['#e4e1d9'], bayW: 11, floorH: 10.5, win: 0.36, frame: '#ffffff', shutters: true, grid: true },
+  store:    { kind: 'store', wall: '#7a3f2c', alt: ['#6b3727', '#874632'], bayW: 12, floorH: 13 }
 };
-function facadeTexture(f) {
-  var t = canvasTex(128, 128, function (x, W, H) {
-    var rnd = mulberry32(f.bayW * 131 + f.floorH * 7);
-    x.fillStyle = f.wall; x.fillRect(0, 0, W, H);
-    for (var r = 0; r < H; r += 4) for (var c = (r / 4 % 2) * 4; c < W; c += 9) { // brick / stucco texture
-      x.fillStyle = f.alt[Math.floor(rnd() * f.alt.length)]; x.fillRect(c, r, 8, 3);
+function facadeTexture(f) { // one tile = 2 bays x 2 floors, so neighbouring windows differ
+  var T = 256, C = 128;
+  var t = canvasTex(T, T, function (x) {
+    var rnd = mulberry32(f.bayW * 131 + f.floorH * 7 + f.wall.length + f.alt.length * 17);
+    x.fillStyle = f.wall; x.fillRect(0, 0, T, T);
+    if (f.kind === 'brick' || f.kind === 'store') {                     // running-bond brick with mortar joints
+      x.fillStyle = 'rgba(205,196,182,.55)'; x.fillRect(0, 0, T, T);
+      for (var r = 0; r < T; r += 4) for (var c0 = (r / 4 % 2) * 5 - 5; c0 < T; c0 += 10) {
+        x.fillStyle = f.alt[Math.floor(rnd() * f.alt.length)]; x.fillRect(c0, r, 9, 3);
+        if (rnd() < 0.05) { x.fillStyle = 'rgba(30,20,15,.25)'; x.fillRect(c0, r, 9, 3); }
+      }
+    } else if (f.kind === 'siding') {                                     // painted clapboards with shadow lines
+      for (var sy = 0; sy < T; sy += 7) { x.fillStyle = f.alt[0]; x.fillRect(0, sy, T, 1); x.fillStyle = 'rgba(0,0,0,.16)'; x.fillRect(0, sy + 6, T, 1); }
+      for (var cb = 0; cb < T; cb += C) { x.fillStyle = '#ffffff'; x.fillRect(cb, 0, 3, T); }
+    } else {
+      for (var n = 0; n < 2500; n++) { x.fillStyle = f.alt[Math.floor(rnd() * f.alt.length)]; x.fillRect(rnd() * T, rnd() * T, 2, 2); }
     }
-    if (f.wall !== '#e9e4d8') { x.fillStyle = 'rgba(225,215,200,.25)'; for (var m = 3; m < H; m += 4) x.fillRect(0, m, W, 1); }
-    var ww = W * f.win, wx0 = (W - ww) / 2, wy = H * 0.2, wh = H * 0.56;
-    if (f.band) { x.fillStyle = '#b8743c'; x.fillRect(0, H * 0.78, W, H * 0.12); }
-    if (f.shutters) { x.fillStyle = '#26303a'; x.fillRect(wx0 - 9, wy, 7, wh); x.fillRect(wx0 + ww + 2, wy, 7, wh); }
-    x.fillStyle = f.frame; x.fillRect(wx0 - 3, wy - 3, ww + 6, wh + 6);
-    var g = x.createLinearGradient(0, wy, 0, wy + wh);
-    g.addColorStop(0, '#a9bccb'); g.addColorStop(0.45, '#5f7488'); g.addColorStop(1, '#2c3a48');
-    x.fillStyle = g; x.fillRect(wx0, wy, ww, wh);
-    x.fillStyle = f.frame;
-    x.fillRect(wx0, wy + wh * 0.48, ww, 2);
-    if (ww > 40) for (var k = 1; k < 3; k++) x.fillRect(wx0 + ww * k / 3, wy, 2, wh); else x.fillRect(wx0 + ww / 2 - 1, wy, 2, wh);
-    if (f.balcony) { x.fillStyle = '#e8e4dc'; x.fillRect(0, H * 0.86, W, H * 0.06); x.fillStyle = 'rgba(40,45,50,.8)'; for (var b = 2; b < W; b += 6) x.fillRect(b, H * 0.72, 1, H * 0.14); x.fillRect(0, H * 0.72, W, 2); }
-    x.fillStyle = 'rgba(0,0,0,.12)'; x.fillRect(0, H - 2, W, 2);
+    for (var row = 0; row < 2; row++) for (var col = 0; col < 2; col++) {
+      var ox = col * C, oy = row * C;
+      if (f.kind === 'store') { storefront(x, ox, oy, C, rnd, col); continue; }
+      var ww = C * f.win, wx0 = ox + (C - ww) / 2, wy = oy + C * 0.2, wh = C * 0.56;
+      if (f.band) { x.fillStyle = '#b8743c'; x.fillRect(ox, oy + C * 0.78, C, C * 0.12); }
+      if (f.shutters) {
+        x.fillStyle = f.kind === 'siding' ? ['#24303c', '#2f4a37', '#5a2a24'][Math.floor(rnd() * 3)] : '#26303a';
+        x.fillRect(wx0 - 11, wy, 8, wh); x.fillRect(wx0 + ww + 3, wy, 8, wh);
+        x.fillStyle = 'rgba(0,0,0,.25)'; for (var lv = wy + 3; lv < wy + wh; lv += 4) { x.fillRect(wx0 - 10, lv, 6, 1); x.fillRect(wx0 + ww + 4, lv, 6, 1); }
+      }
+      if (f.kind === 'brick' && !f.band) { x.fillStyle = '#d8d0c0'; x.fillRect(wx0 - 5, wy - 9, ww + 10, 6); }      // stone lintel
+      x.fillStyle = f.frame; x.fillRect(wx0 - 3, wy - 3, ww + 6, wh + 6);
+      var g = x.createLinearGradient(0, wy, 0, wy + wh), v = rnd();
+      g.addColorStop(0, '#b4c6d3'); g.addColorStop(0.42, '#62788c'); g.addColorStop(1, '#26323e');
+      x.fillStyle = g; x.fillRect(wx0, wy, ww, wh);
+      if (v < 0.22) { // blinds
+        x.fillStyle = 'rgba(232,226,210,.85)'; x.fillRect(wx0, wy, ww, wh * (0.3 + rnd() * 0.5));
+        x.fillStyle = 'rgba(0,0,0,.12)'; for (var bl = wy + 2; bl < wy + wh * 0.8; bl += 3) x.fillRect(wx0, bl, ww, 1);
+      } else if (v < 0.42) { // curtains
+        x.fillStyle = ['#c9b48a', '#9c4a3c', '#e8e0cf', '#6b7c5a'][Math.floor(rnd() * 4)]; x.globalAlpha = 0.8;
+        x.fillRect(wx0, wy, ww * 0.25, wh); x.fillRect(wx0 + ww * 0.75, wy, ww * 0.25, wh); x.globalAlpha = 1;
+      } else if (v < 0.5) { x.fillStyle = 'rgba(255,214,140,.55)'; x.fillRect(wx0, wy, ww, wh); }   // a lamp on inside
+      else if (v < 0.62) { x.fillStyle = 'rgba(10,14,20,.45)'; x.fillRect(wx0, wy, ww, wh); }
+      x.fillStyle = 'rgba(255,255,255,.18)'; x.beginPath(); x.moveTo(wx0, wy + wh * 0.6); x.lineTo(wx0 + ww * 0.5, wy); x.lineTo(wx0 + ww * 0.7, wy); x.lineTo(wx0, wy + wh * 0.9); x.fill(); // sky glint
+      x.fillStyle = f.frame; x.fillRect(wx0, wy + wh * 0.48, ww, 2.5);
+      if (f.grid) { for (var gx = 1; gx < 3; gx++) x.fillRect(wx0 + ww * gx / 3 - 0.5, wy, 1.5, wh); x.fillRect(wx0, wy + wh * 0.24, ww, 1.2); x.fillRect(wx0, wy + wh * 0.74, ww, 1.2); }
+      else if (ww > 40) { for (var k = 1; k < 3; k++) x.fillRect(wx0 + ww * k / 3, wy, 2, wh); }
+      else x.fillRect(wx0 + ww / 2 - 1, wy, 2, wh);
+      x.fillStyle = f.kind === 'siding' ? '#ffffff' : '#d9d2c3'; x.fillRect(wx0 - 6, wy + wh + 2, ww + 12, 5);       // sill
+      x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(wx0 - 6, wy + wh + 7, ww + 12, 2);
+      if (f.balcony) {
+        x.fillStyle = '#e8e4dc'; x.fillRect(ox, oy + C * 0.86, C, C * 0.06);
+        x.fillStyle = 'rgba(40,45,50,.8)'; for (var b = 2; b < C; b += 6) x.fillRect(ox + b, oy + C * 0.72, 1, C * 0.14); x.fillRect(ox, oy + C * 0.72, C, 2);
+      }
+      x.fillStyle = 'rgba(30,25,20,.08)'; x.fillRect(wx0 + 4, wy + wh + 9, ww - 8, C * 0.12);                       // grime under the sill
+    }
+    x.fillStyle = 'rgba(0,0,0,.1)'; x.fillRect(0, C - 2, T, 2); x.fillRect(0, T - 2, T, 2);
   });
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+function storefront(x, ox, oy, C, rnd, col) {
+  var signs = ['#1f3b2d', '#5b1f24', '#1d2e4a', '#2b2b2b', '#6b4a1e', '#3c2f4d'];
+  x.fillStyle = signs[Math.floor(rnd() * signs.length)]; x.fillRect(ox + 4, oy + C * 0.06, C - 8, C * 0.18);   // sign band
+  x.fillStyle = 'rgba(240,225,190,.85)'; for (var l = 0; l < 6; l++) x.fillRect(ox + 18 + l * 15 + rnd() * 3, oy + C * 0.12, 9, C * 0.06);
+  var aw = ['#2f5d3a', '#7a2a2a', '#1d3c63', '#c9b48a'][Math.floor(rnd() * 4)];                                   // striped awning
+  for (var st = 0; st < C - 8; st += 10) { x.fillStyle = (st / 10) % 2 ? aw : '#efe9dc'; x.fillRect(ox + 4 + st, oy + C * 0.26, 10, C * 0.1); }
+  x.fillStyle = '#2a2a28'; x.fillRect(ox + 6, oy + C * 0.37, C - 12, C * 0.6);
+  var g = x.createLinearGradient(0, oy + C * 0.38, 0, oy + C * 0.95);
+  g.addColorStop(0, '#9fb3c1'); g.addColorStop(0.5, '#4f6476'); g.addColorStop(1, '#243240');
+  x.fillStyle = g; x.fillRect(ox + 9, oy + C * 0.39, C - 18, C * 0.48);
+  x.fillStyle = 'rgba(255,220,160,.25)'; x.fillRect(ox + 9, oy + C * 0.6, C - 18, C * 0.27);
+  x.fillStyle = '#2a2a28'; x.fillRect(ox + C / 2 - 1, oy + C * 0.39, 3, C * 0.48);
+  if (col === 1) { x.fillStyle = '#3a2a1e'; x.fillRect(ox + C * 0.62, oy + C * 0.45, C * 0.2, C * 0.52); x.fillStyle = '#c8a050'; x.fillRect(ox + C * 0.78, oy + C * 0.7, 3, 3); }
+  x.fillStyle = '#6b6560'; x.fillRect(ox + 6, oy + C * 0.88, C - 12, C * 0.09);                                  // kickplate
+}
+function roofTexture(kind) {
+  var t = canvasTex(256, 256, function (x, w, h) {
+    var rnd = mulberry32(kind === 'shingle' ? 3 : 8);
+    if (kind === 'shingle') {                                            // staggered shingles (light base, tinted per roof)
+      x.fillStyle = '#d8d8d8'; x.fillRect(0, 0, w, h);
+      for (var r = 0; r < h; r += 16) for (var c = (r / 16 % 2) * 12 - 12; c < w; c += 24) {
+        var l = 70 + rnd() * 25; x.fillStyle = 'hsl(0,0%,' + l + '%)'; x.fillRect(c + 1, r, 22, 15);
+        x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(c, r + 14, 24, 2); x.fillRect(c, r, 1, 15);
+      }
+    } else {                                                             // gravel / membrane flat roof with seams
+      x.fillStyle = '#d0d0d0'; x.fillRect(0, 0, w, h);
+      for (var i = 0; i < 6000; i++) { var l2 = 55 + rnd() * 45; x.fillStyle = 'hsl(0,0%,' + l2 + '%)'; x.fillRect(rnd() * w, rnd() * h, 1 + rnd() * 2, 1 + rnd() * 2); }
+      x.fillStyle = 'rgba(0,0,0,.18)'; for (var s = 0; s < w; s += 64) x.fillRect(s, 0, 2, h);
+      for (var k = 0; k < 8; k++) { x.fillStyle = 'rgba(40,40,40,' + rnd() * 0.12 + ')'; x.beginPath(); x.ellipse(rnd() * w, rnd() * h, 20 + rnd() * 50, 10 + rnd() * 30, 0, 0, 7); x.fill(); }
+    }
+  });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  var rep = kind === 'shingle' ? 1 / 12 : 1 / 30; t.repeat.set(rep, rep);
   return t;
 }
 function cloudDome() {
@@ -227,11 +343,11 @@ function cloudDome() {
 function walls(poly, base, top, bayW, floorH) { // building walls with UVs measured in window bays / floors
   var A = 0, pos = [], uv = [], n = poly.length;
   for (var i = 0; i < n; i++) { var p = poly[i], q2 = poly[(i + 1) % n]; A += p[0] * q2[1] - q2[0] * p[1]; }
-  var vTop = (top - base) / floorH;
+  var vTop = (top - base) / floorH / 2;
   for (var e = 0; e < n; e++) {
     var a = poly[e], b = poly[(e + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]) * S, u1 = Math.max(1, Math.round(L / bayW));
     var A0 = [wx(a[0]), base, wz(a[1])], B0 = [wx(b[0]), base, wz(b[1])], B1 = [wx(b[0]), top, wz(b[1])], A1 = [wx(a[0]), top, wz(a[1])];
-    var tA0 = [0, 0], tB0 = [u1, 0], tB1 = [u1, vTop], tA1 = [0, vTop];
+    var tA0 = [0, 0], tB0 = [u1 / 2, 0], tB1 = [u1 / 2, vTop], tA1 = [0, vTop];
     var tris = A < 0 ? [[A0, tA0], [B0, tB0], [B1, tB1], [A0, tA0], [B1, tB1], [A1, tA1]] : [[A0, tA0], [B1, tB1], [B0, tB0], [A0, tA0], [A1, tA1], [B1, tB1]];
     tris.forEach(function (v) { pos.push(v[0][0], v[0][1], v[0][2]); uv.push(v[1][0], v[1][1]); });
   }
@@ -243,16 +359,20 @@ function walls(poly, base, top, bayW, floorH) { // building walls with UVs measu
 }
 function hipRoof(poly, base, rise, k) { // sloped roof: the outline shrunk toward its middle as it rises
   var c = centroid(poly), topPoly = poly.map(function (p) { return [c[0] + (p[0] - c[0]) * k, c[1] + (p[1] - c[1]) * k]; });
-  var A = 0, pos = [], n = poly.length;
+  var A = 0, pos = [], uv = [], n = poly.length;
   for (var i = 0; i < n; i++) { var p = poly[i], q2 = poly[(i + 1) % n]; A += p[0] * q2[1] - q2[0] * p[1]; }
   for (var e = 0; e < n; e++) {
     var a = poly[e], b = poly[(e + 1) % n], ta = topPoly[e], tb = topPoly[(e + 1) % n];
     var A0 = [wx(a[0]), base, wz(a[1])], B0 = [wx(b[0]), base, wz(b[1])], B1 = [wx(tb[0]), base + rise, wz(tb[1])], A1 = [wx(ta[0]), base + rise, wz(ta[1])];
+    var Le = Math.hypot(B0[0] - A0[0], B0[2] - A0[2]), dxe = (B0[0] - A0[0]) / (Le || 1), dze = (B0[2] - A0[2]) / (Le || 1);
+    var slopeLen = Math.hypot(rise, Math.abs((A1[0] - A0[0]) * dze - (A1[2] - A0[2]) * dxe));
+    var uvOf = function (v) { return [(v[0] - A0[0]) * dxe + (v[2] - A0[2]) * dze, (v[1] - base) / (rise || 1) * slopeLen]; };
     var tris = A < 0 ? [A0, B0, B1, A0, B1, A1] : [A0, B1, B0, A0, A1, B1];
-    tris.forEach(function (v) { pos.push(v[0], v[1], v[2]); });
+    tris.forEach(function (v) { pos.push(v[0], v[1], v[2]); var t2 = uvOf(v); uv.push(t2[0], t2[1]); });
   }
   var g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g.computeVertexNormals();
   return [g, flat(topPoly, base + rise)];
 }
@@ -318,7 +438,7 @@ function build(svgText) {
   var doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
   var q = function (sel) { return Array.prototype.slice.call(doc.querySelectorAll(sel)); };
   var plank = plankTexture();
-  var woodMat = new THREE.MeshStandardMaterial({ map: plank, roughness: 0.85, color: 0xffffff });
+  var woodMat = new THREE.MeshStandardMaterial({ map: plank.map, bumpMap: plank.bump, bumpScale: 2.5, roughness: 0.92, color: 0xffffff });
   var vcMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
   var boatMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.05 });
   var woodParts = [], partsVC = [], boatParts = [], grassParts = [], pavedParts = [], roadParts = [], wallParts = {};
@@ -328,20 +448,29 @@ function build(svgText) {
   }) });
   var roadMat = new THREE.MeshStandardMaterial({ roughness: 0.9, map: speckleTexture('#4f5256', ['#45484c', '#5c5f63', '#3e4145', '#66696d'], 3000, 2, 16) });
   var bulkMat = new THREE.MeshStandardMaterial({ roughness: 0.9, color: 0x8d877c });
-  var wallMats = {}; Object.keys(FACADES).forEach(function (k) { wallMats[k] = new THREE.MeshStandardMaterial({ map: facadeTexture(FACADES[k]), roughness: 0.85 }); wallParts[k] = []; });
+  var wallMats = {}; Object.keys(FACADES).forEach(function (k) { wallMats[k] = new THREE.MeshStandardMaterial({ map: facadeTexture(FACADES[k]), roughness: 0.85, vertexColors: true }); wallParts[k] = []; });
+  var flatRoofMat = new THREE.MeshStandardMaterial({ map: roofTexture('flat'), vertexColors: true, roughness: 0.95 });
+  var shingleMat = new THREE.MeshStandardMaterial({ map: roofTexture('shingle'), vertexColors: true, roughness: 0.9 });
+  var flatRoofParts = [], shingleParts = [], tintRnd = mulberry32(21);
+  function tint() { var l = 0.82 + tintRnd() * 0.18, w = tintRnd() * 0.06; return new THREE.Color(l, l - w * 0.5, l - w).getHexString(); }
   var m4 = new THREE.Matrix4(), qn = new THREE.Quaternion(), v3 = new THREE.Vector3();
   var treeSpots = [], allB = [];
 
   // A building: textured walls, a flat or hip roof, and a parapet / rooftop units on flat roofs
   function building(poly, floors, style, roof, opts) {
     opts = opts || {};
-    var f = FACADES[style], top = LAND_H + floors * f.floorH;
-    wallParts[style].push(walls(poly, LAND_H, top, f.bayW, f.floorH));
+    var f = FACADES[style], base = LAND_H, tc = '#' + (opts.tint || tint());
+    if (opts.store && floors > 1) {                       // shop fronts on the ground floor downtown
+      wallParts.store.push(paint(walls(poly, base, base + FACADES.store.floorH, FACADES.store.bayW, FACADES.store.floorH), '#' + tint()));
+      base += FACADES.store.floorH; floors -= 1;
+    }
+    var top = base + floors * f.floorH;
+    wallParts[style].push(paint(walls(poly, base, top, f.bayW, f.floorH), tc));
     if (opts.hip) {
       var hr = hipRoof(poly, top, opts.hip, opts.k || 0.6);
-      partsVC.push(paint(hr[0], roof), paint(hr[1], roof));
+      shingleParts.push(paint(hr[0], roof), paint(hr[1], roof));
     } else {
-      partsVC.push(paint(flat(poly, top), roof));
+      flatRoofParts.push(paint(flat(poly, top), roof));
       partsVC.push(paint(walls(poly, top, top + 2.2, 50, 2.2), '#d9d3c7'));
       var bb = bbox(poly), rr = mulberry32(Math.round(bb[0] * 7 + bb[1]));
       for (var u = 0; u < (opts.units || 2); u++) {
@@ -429,7 +558,8 @@ function build(svgText) {
   });
 
   // Downtown New Bern behind the waterfront: brick blocks, white storefronts, church steeples and lots of trees
-  var town = mulberry32(5), styles = ['brick', 'brick', 'brick2', 'brick', 'white', 'brick2', 'white'], roofs = ['#5d5f63', '#9e9a92', '#3c3e42', '#8b8f94'];
+  var town = mulberry32(5), styles = ['brick', 'brick', 'brick2', 'brick3', 'white', 'brick2', 'brick3', 'white'], roofs = ['#5d5f63', '#9e9a92', '#3c3e42', '#8b8f94'];
+  var houseCols = ['#ffffff', '#f3e6b8', '#cfe0ea', '#d8e2c8', '#ffffff', '#efe2d2'], shingleCols = ['#4a4d52', '#5a4a40', '#3d4247', '#6b6f73', '#7a3b2e'];
   var railX = function (y) { return 70 + (y - 90) * 0.2 + 27; };
   for (var by = -1500; by < 60; by += 140) {
     roadParts.push(flat([[-1200, by - 22], [3000, by - 22], [3000, by], [-1200, by]], LAND_H + 0.04));
@@ -445,8 +575,14 @@ function build(svgText) {
         var w = 28 + town() * 50, lx1 = Math.min(x1, lx0 + w), depth = (y1 - y0) * (0.45 + town() * 0.55);
         var front = town() < 0.5, ly0 = front ? y1 - depth : y0, ly1 = front ? y1 : y0 + depth;
         var floors = Math.max(1, Math.round(1.5 + town() * 2 + downtown * 3 * town()));
-        building([[lx0, ly0], [lx1, ly0], [lx1, ly1], [lx0, ly1]], floors, styles[Math.floor(town() * styles.length)],
-          roofs[Math.floor(town() * roofs.length)], { units: 1, block: ly1 > -120 });
+        var lot = [[lx0, ly0], [lx1, ly0], [lx1, ly1], [lx0, ly1]];
+        if (downtown < 0.35 && town() < 0.6) {          // historic clapboard houses with shingled hip roofs
+          building(lot, town() < 0.7 ? 2 : 3, 'siding', shingleCols[Math.floor(town() * shingleCols.length)],
+            { hip: 8 + town() * 6, k: 0.35 + town() * 0.3, tint: new THREE.Color(houseCols[Math.floor(town() * houseCols.length)]).getHexString(), block: ly1 > -120 });
+        } else {
+          building(lot, floors, styles[Math.floor(town() * styles.length)], roofs[Math.floor(town() * roofs.length)],
+            { units: 1, block: ly1 > -120, store: downtown > 0.3 && front && town() < 0.75 });
+        }
         if (town() < 0.6) treeSpots.push({ x: (lx0 + lx1) / 2 + (town() - 0.5) * 20, y: front ? y0 + 8 : y1 - 8, r: 8 + town() * 7 });
         lx0 = lx1 + 4 + town() * 10;
       }
@@ -456,12 +592,12 @@ function build(svgText) {
   roadParts.push(flat([[640, -1520], [725, -1520], [725, 90], [640, 90]], LAND_H + 0.05), flat([[1325, -1520], [1395, -1520], [1395, 90], [1325, 90]], LAND_H + 0.05));
   [[905, -380, 70], [1235, -720, 85], [505, -860, 64], [1585, -330, 60]].forEach(function (c, i) { // church steeples
     var bs = 26, t0 = LAND_H, poly = [[c[0] - bs / 2, c[1] - bs / 2], [c[0] + bs / 2, c[1] - bs / 2], [c[0] + bs / 2, c[1] + bs / 2], [c[0] - bs / 2, c[1] + bs / 2]];
-    wallParts[i % 2 ? 'white' : 'brick'].push(walls(poly, t0, t0 + c[2], 10, 11));
+    wallParts[i % 2 ? 'white' : 'brick'].push(paint(walls(poly, t0, t0 + c[2], 10, 11), '#ffffff'));
     var belfry = new THREE.BoxGeometry(bs * S * 0.8, 14, bs * S * 0.8); belfry.translate(wx(c[0]), t0 + c[2] + 7, wz(c[1])); partsVC.push(paint(belfry, '#f4f1ea'));
     var spire = new THREE.ConeGeometry(bs * S * 0.5, 46, 8); spire.translate(wx(c[0]), t0 + c[2] + 14 + 23, wz(c[1])); partsVC.push(paint(spire, i % 2 ? '#f4f1ea' : '#4a4d52'));
     var nave = [[c[0] - 30, c[1] + bs / 2], [c[0] + 30, c[1] + bs / 2], [c[0] + 30, c[1] + 120], [c[0] - 30, c[1] + 120]];
-    wallParts[i % 2 ? 'white' : 'brick'].push(walls(nave, t0, t0 + 34, 12, 34 / 2));
-    var hr = hipRoof(nave, t0 + 34, 16, 0.25); partsVC.push(paint(hr[0], '#4a4d52'), paint(hr[1], '#4a4d52'));
+    wallParts[i % 2 ? 'white' : 'brick'].push(paint(walls(nave, t0, t0 + 34, 12, 34 / 2), '#ffffff'));
+    var hr = hipRoof(nave, t0 + 34, 16, 0.25); shingleParts.push(paint(hr[0], '#6b6f74'), paint(hr[1], '#6b6f74'));
   });
 
   // Alfred A. Cunningham Bridge, heading across the Trent from the east end of downtown
@@ -499,7 +635,7 @@ function build(svgText) {
       var ox = (trr() - 0.5) * r * 0.8, oz = (trr() - 0.5) * r * 0.8, s = r * (k ? 0.75 : 1);
       m4.compose(v3.set(x + ox, LAND_H + r * (2 + k * 0.5), z + oz), qn.setFromEuler(new THREE.Euler(trr(), trr() * 6, 0)), new THREE.Vector3(s, s * 0.85, s));
       crowns.setMatrixAt(i * 2 + k, m4);
-      crowns.setColorAt(i * 2 + k, tc.setHSL(0.25 + trr() * 0.06, 0.42 + trr() * 0.15, 0.13 + trr() * 0.08));
+      crowns.setColorAt(i * 2 + k, tc.setHSL(0.26 + trr() * 0.06, 0.45 + trr() * 0.15, 0.08 + trr() * 0.06));
     }
   });
   trunks.castShadow = crowns.castShadow = true;
@@ -627,6 +763,7 @@ function build(svgText) {
     if (rnd() < 0.35) { ux = -ux; uy = -uy; }        // ...unless backed in
     var len = Lu * S * (0.72 + rnd() * 0.16), beam = Math.min(Lv * S * 0.72, len * 0.36);
     var sail = rnd() < ('ABCZ'.indexOf(s.dock) >= 0 ? 0.55 : 0.18);
+    occupied.push(s.poly);
     boatParts.push.apply(boatParts, boat(len, beam, sail, hulls[Math.floor(rnd() * hulls.length)], rnd).map(function (g) {
       g.rotateY(Math.atan2(-uy, ux)); g.translate(wx(s.c[0]), 0, wz(s.c[1])); return g;
     }));
@@ -644,7 +781,7 @@ function build(svgText) {
   scene.add(farTrees);
 
   scene.add(merged(woodParts, woodMat), merged(partsVC, vcMat), merged(boatParts, boatMat));
-  [[grassParts, grassMat], [pavedParts, pavedMat], [roadParts, roadMat]].forEach(function (p) { if (p[0].length) { var mm = merged(p[0], p[1]); mm.castShadow = false; scene.add(mm); } });
+  [[grassParts, grassMat], [pavedParts, pavedMat], [roadParts, roadMat], [flatRoofParts, flatRoofMat], [shingleParts, shingleMat]].forEach(function (p) { if (p[0].length) { var mm = merged(p[0], p[1]); mm.castShadow = false; scene.add(mm); } });
   Object.keys(wallParts).forEach(function (k) { if (wallParts[k].length) scene.add(merged(wallParts[k], wallMats[k])); });
 
   // Highlight for "Go to slip"
@@ -808,7 +945,7 @@ function bindInput() {
   $('dwGo').addEventListener('submit', function (e) { e.preventDefault(); goToSlip($('dwSlip').value); $('dwSlip').blur(); });
   $('dwFly').addEventListener('click', function () {
     player.fly = !player.fly; this.classList.toggle('on', player.fly);
-    this.innerHTML = player.fly ? '&#9660; Land' : '&#9650; Fly up';
+    this.innerHTML = player.fly ? '&#9660;<span class="dw-lbl"> Land</span>' : '&#9650;<span class="dw-lbl"> Fly up</span>';
     if (player.fly) player.pitch = -0.75;
     else { var spot = findStand(player.x, player.y); if (spot) { player.x = spot[0]; player.y = spot[1]; } player.pitch = -0.05; }
   });
@@ -817,11 +954,24 @@ function bindInput() {
     else if (wrap.requestFullscreen) wrap.requestFullscreen().catch(function () {});
     else flash('Full screen isn’t available in this browser.');
   });
+  var touched = function () { userTouched = true; if (AU.on) audioStart(); };
+  ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) { wrap.addEventListener(ev, touched, { passive: true }); });
+  addEventListener('keydown', function (e) { if (wrapActive()) touched(); });
+  var sb = $('dwSound');
+  var paintSound = function () { sb.innerHTML = AU.on ? '&#128266;<span class="dw-lbl"> Sound</span>' : '&#128263;<span class="dw-lbl"> Muted</span>'; sb.classList.toggle('on', AU.on); };
+  paintSound();
+  sb.addEventListener('click', function (e) {
+    e.stopPropagation(); AU.on = !AU.on; userTouched = true;
+    try { localStorage.setItem('dwSound', AU.on ? 'on' : 'off'); } catch (er) {}
+    if (AU.on) audioStart();
+    if (AU.master) AU.master.gain.setTargetAtTime(AU.on ? 0.9 : 0, AU.ctx.currentTime, 0.05);
+    paintSound();
+  });
   $('dwHelp').innerHTML = touchUI
     ? 'Left thumb: walk &middot; right thumb: look around &middot; tap the mini map to jump'
     : 'W A S D or arrow keys to walk &middot; drag to look &middot; Shift to jog &middot; click the mini map to jump';
 }
-var lastActive = 0;
+var lastActive = 0, userTouched = false;
 function wrapActive() { var r = wrap.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && performance.now() - lastActive < 600000; }
 
 function findStand(x, y) { // nearest walkable point to an SVG point
@@ -847,7 +997,7 @@ function goToSlip(text) {
   });
   spot = spot || findStand(s.edge[0], s.edge[1]);
   if (!spot) return false;
-  player.fly = false; $('dwFly').classList.remove('on'); $('dwFly').innerHTML = '&#9650; Fly up';
+  player.fly = false; $('dwFly').classList.remove('on'); $('dwFly').innerHTML = '&#9650;<span class="dw-lbl"> Fly up</span>';
   player.x = spot[0]; player.y = spot[1];
   var lx = s.c[0] - spot[0], ly = s.c[1] - spot[1];
   player.yaw = Math.atan2(-lx, -ly); player.pitch = -0.25;
@@ -863,6 +1013,403 @@ function flash(text, ms) {
 
 // ---------- frame loop ----------
 var clock = new THREE.Clock(), lastWhere = '', frame = 0;
+// ============ Life: freight train, gulls, mullet and 3D sound ============
+var RAIL_A = 97.5, RAIL_M = (382.5 - 97.5) / 1410, RAIL_K = Math.hypot(1, RAIL_M);  // track centreline x = A + M (y - 90)
+var TRESTLE_H = 17, C_SOUND = 1125;                                                  // speed of sound, ft/s
+function railX(y) { return RAIL_A + RAIL_M * (y - 90); }
+function railH(y) { return y < -350 ? LAND_H + 1.4 : y < 90 ? LAND_H + 1.4 + (TRESTLE_H - LAND_H - 1.4) * (y + 350) / 440 : TRESTLE_H; }
+var train = null, gulls = [], fishes = [], drops = null, rings = [], occupied = [], lifeT = 0;
+
+function buildLife() {
+  var vc = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75 });
+  // --- track: ballast embankment on land, then ties and rails all the way across the river ---
+  var parts = [], ties = [];
+  for (var y = -2600; y < 90; y += 20) {
+    var h = railH(y + 10), half = 9;
+    var seg = [[railX(y) - half, y], [railX(y) + half, y], [railX(y + 20) + half, y + 20], [railX(y + 20) - half, y + 20]];
+    parts.push(paintBy(extrude(seg, LAND_H - 0.5, h - 0.6), '#857d72', '#6f685f'));
+  }
+  blocked.push([[railX(-2600) - 22, -2600], [railX(-2600) + 22, -2600], [railX(175) + 22, 175], [railX(175) - 22, 175]]);
+  for (var y2 = -2600; y2 < 3600; y2 += 40) {
+    [-1, 1].forEach(function (sd) {
+      var hA = railH(y2), hB = railH(y2 + 40), xa = railX(y2) + sd * 2.95 / S, xb = railX(y2 + 40) + sd * 2.95 / S;
+      var len = Math.hypot((xb - xa) * S, 40 * S, hB - hA), g = new THREE.BoxGeometry(0.3, 0.55, len);
+      g.rotateX(-Math.atan2(hB - hA, Math.hypot((xb - xa) * S, 40 * S)));
+      g.rotateY(Math.atan2((xb - xa) * S, 40 * S));
+      g.translate(wx((xa + xb) / 2), (hA + hB) / 2 + 0.28, wz(y2 + 20)); parts.push(paint(g, '#5e5650'));
+    });
+  }
+  scene.add(merged(parts, vc));
+  for (var y3 = -2600; y3 < 3600; y3 += 2.6) ties.push(y3);
+  var tieM = new THREE.InstancedMesh(new THREE.BoxGeometry(8.5, 0.5, 0.75), new THREE.MeshStandardMaterial({ color: 0x4a3c30, roughness: 1 }), ties.length);
+  var m4 = new THREE.Matrix4(), q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.atan2(RAIL_M, 1), 0)), one = new THREE.Vector3(1, 1, 1), v = new THREE.Vector3();
+  ties.forEach(function (ty, i) { m4.compose(v.set(wx(railX(ty)), railH(ty) - 0.25, wz(ty)), q, one); tieM.setMatrixAt(i, m4); });
+  tieM.receiveShadow = true; scene.add(tieM);
+
+  // --- the train: a black six-axle road diesel and up to 15 loaded open-top gravel hoppers ---
+  var trainMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.25 });
+  var gravelMat = new THREE.MeshStandardMaterial({ roughness: 1, map: speckleTexture('#6f6a63', ['#5a5650', '#8c867c', '#4c4945', '#9a948a', '#625d56', '#7d6f62'], 9000, 2, 2.5) });
+  var loco = new THREE.Mesh(locoGeometry(), trainMat); loco.castShadow = true;
+  var cols = ['#5b4636', '#6e5a48', '#4d4f52', '#7a4a2f', '#3e3f42'], hopperGeos = cols.map(function (c) { return hopperGeometry(c); });
+  var heap = new THREE.ConeGeometry(1, 1, 4, 1); heap.rotateY(Math.PI / 4); heap.scale(17.6 * 1.414, 2.2, 4.75 * 1.414); heap.translate(0, 1.1, 0); // ridged pile of stone
+  var fill = new THREE.BoxGeometry(35.6, 0.6, 9.5); fill.translate(0, 0, 0);
+  var loadGeo = mergeGeometries([heap.toNonIndexed(), fill.toNonIndexed()], false);
+  var cars = [];
+  for (var i = 0; i < 15; i++) {
+    var g = new THREE.Group(), body = new THREE.Mesh(hopperGeos[i % cols.length], trainMat), load = new THREE.Mesh(loadGeo, gravelMat);
+    load.position.y = 11.3; body.castShadow = true; g.add(body, load); g.rotation.order = 'YZX'; g.visible = false; scene.add(g); cars.push(g);
+  }
+  loco.rotation.order = 'YZX'; loco.visible = false; scene.add(loco);
+  train = { loco: loco, cars: cars, n: 12, y: -99999, active: false, next: 9, speed: 44, horns: [], axlesPrev: null };
+
+  // --- gulls circling over the harbour ---
+  var gullBody = new THREE.MeshStandardMaterial({ color: 0xf4f4f2, roughness: 0.8 }), gullWing = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
+  for (var k = 0; k < 8; k++) {
+    var gg = new THREE.Group(), b = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), gullBody); b.scale.set(0.95, 0.32, 0.3); gg.add(b);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), gullBody); head.position.set(0.85, 0.12, 0); gg.add(head);
+    var beak = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.32, 5), new THREE.MeshStandardMaterial({ color: 0xe8b830 })); beak.rotation.z = -Math.PI / 2; beak.position.set(1.15, 0.1, 0); gg.add(beak);
+    var tail = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.35), gullBody); tail.position.set(-0.95, 0.02, 0); gg.add(tail);
+    [1, -1].forEach(function (sd) {
+      var piv = new THREE.Group(), wg = paint(new THREE.BoxGeometry(0.55, 0.05, 1.3), '#b9bec4'); wg.translate(0, 0, sd * 0.65);
+      var tip = paint(new THREE.BoxGeometry(0.42, 0.04, 0.95), '#c4c8cc'); tip.translate(-0.08, 0, sd * 1.75);
+      var tipB = paint(new THREE.BoxGeometry(0.36, 0.045, 0.32), '#1e1f22'); tipB.translate(-0.12, 0, sd * 2.1);
+      piv.add(new THREE.Mesh(mergeGeometries([strip(wg), strip(tip), strip(tipB)], false), gullWing)); piv.userData.sd = sd; gg.add(piv); gg.userData['w' + sd] = piv;
+    });
+    var r0 = 60 + Math.random() * 160;
+    gg.userData = Object.assign(gg.userData, { cx: player.x + (Math.random() - 0.5) * 400, cy: player.y + (Math.random() - 0.5) * 400, r: r0, a: Math.random() * 6.28,
+      w: (18 + Math.random() * 14) / (r0 * S) * (Math.random() < 0.5 ? 1 : -1), alt: 30 + Math.random() * 80, ph: Math.random() * 6, prev: new THREE.Vector3() });
+    scene.add(gg); gulls.push(gg);
+  }
+
+  // --- mullet, splash rings and droplets ---
+  var fishGeo = new THREE.SphereGeometry(1, 12, 8); fishGeo.scale(0.62, 0.15, 0.17);
+  var tailGeo = new THREE.ConeGeometry(0.14, 0.3, 4); tailGeo.rotateZ(Math.PI / 2); tailGeo.scale(1, 1, 0.25); tailGeo.translate(-0.7, 0, 0);
+  var fishG = mergeGeometries([strip(paintBy(fishGeo, '#4b5560', '#c9d0d6')), strip(paint(tailGeo, '#6b747c'))], false);
+  var fishMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.55, roughness: 0.3 });
+  for (var f = 0; f < 3; f++) { var fm = new THREE.Mesh(fishG, fishMat); fm.visible = false; fm.rotation.order = 'YZX'; scene.add(fm); fishes.push({ mesh: fm, busy: false }); }
+  drops = new THREE.InstancedMesh(new THREE.SphereGeometry(0.07, 5, 4), new THREE.MeshBasicMaterial({ color: 0xe6eef2 }), 90);
+  drops.userData.list = []; for (var d = 0; d < 90; d++) { drops.userData.list.push({ t: 9, p: new THREE.Vector3(), v: new THREE.Vector3() }); drops.setMatrixAt(d, m4.makeScale(0, 0, 0)); }
+  scene.add(drops);
+  for (var r = 0; r < 8; r++) {
+    var rm = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 32), new THREE.MeshBasicMaterial({ color: 0xdfe9ee, transparent: true, opacity: 0, depthWrite: false }));
+    rm.rotation.x = -Math.PI / 2; rm.visible = false; scene.add(rm); rings.push({ mesh: rm, t: 9 });
+  }
+}
+
+function box(out, w, h, d, x, y, z, col) { var g = new THREE.BoxGeometry(w, h, d); g.translate(x, y, z); out.push(strip(paint(g, col))); }
+function wheelSet(out, x, gauge, r) {
+  [1, -1].forEach(function (sd) { var c = new THREE.CylinderGeometry(r, r, 0.45, 14); c.rotateX(Math.PI / 2); c.translate(x, r, sd * gauge / 2); out.push(strip(paint(c, '#2b2826'))); });
+}
+function locoGeometry() { // generic six-axle road diesel, ~60 ft, short hood forward (+x)
+  var o = [], BLK = '#1c1d1f', DK = '#121314';
+  [-19, 19].forEach(function (tx) {
+    box(o, 13.5, 2.4, 8.4, tx, 2.6, 0, '#2a2a2b');
+    [-4.6, 0, 4.6].forEach(function (ax) { wheelSet(o, tx + ax, 4.7, 1.75); });
+    box(o, 1.2, 1.2, 9, tx - 6, 2.2, 0, '#333');
+  });
+  box(o, 18, 3.4, 8.2, 0, 2.9, 0, DK);                                  // fuel tank
+  box(o, 61, 1.3, 10, 0, 4.9, 0, BLK);                                  // frame / walkway
+  box(o, 61.2, 0.4, 10.15, 0, 4.5, 0, '#d4ae34');                       // safety-yellow stripe
+  box(o, 39, 8.6, 7.2, -10.5, 9.85, 0, BLK);                            // long hood
+  box(o, 12, 3.2, 7.3, -22, 10.6, 0, '#2b2c2e');                        // radiator grilles
+  [-25, -20.5, -16].forEach(function (fx) { var c = new THREE.CylinderGeometry(1.7, 1.7, 0.5, 16); c.translate(fx, 14.4, 0); o.push(strip(paint(c, '#3a3b3d'))); });
+  box(o, 1.6, 1.5, 1.2, -4, 14.8, 0, '#2a2a2a');                        // exhaust stack
+  box(o, 10, 10.6, 10, 14, 10.9, 0, BLK);                               // cab
+  box(o, 10.6, 0.5, 10.4, 14, 16.4, 0, '#232425');
+  box(o, 0.2, 2.6, 7.6, 19.05, 13.4, 0, '#1e2a33');                     // windshield
+  [1, -1].forEach(function (sd) { box(o, 6, 2.6, 0.12, 14, 13.4, sd * 5.02, '#1e2a33'); });
+  box(o, 9, 7, 7.2, 23.5, 9.1, 0, BLK);                                 // short hood / nose
+  box(o, 0.3, 1, 3, 28.1, 11.6, 0, '#e8e4d8');                          // number board
+  [1, -1].forEach(function (sd) { box(o, 0.3, 0.6, 0.6, 28.15, 10.5, sd * 1.3, '#fff6d5'); });
+  box(o, 2.4, 2.2, 9.6, 30, 2.4, 0, '#2e2f31');                         // pilot / plow
+  box(o, 2.4, 2.2, 9.6, -30, 2.4, 0, '#2e2f31');
+  [1, -1].forEach(function (sd) {                                       // handrails
+    box(o, 59, 0.15, 0.15, 0, 8.4, sd * 4.85, '#d4ae34');
+    for (var px = -28; px <= 28; px += 7) box(o, 0.15, 3, 0.15, px, 7, sd * 4.85, '#d4ae34');
+  });
+  return mergeGeometries(o, false);
+}
+function hopperGeometry(col) { // ~40 ft open-top hopper for crushed stone
+  var o = [], dk = '#2c2b2a';
+  [-15, 15].forEach(function (tx) { box(o, 8.5, 2, 7.6, tx, 2.3, 0, '#2a2a2b'); wheelSet(o, tx - 2.8, 4.7, 1.4); wheelSet(o, tx + 2.8, 4.7, 1.4); });
+  box(o, 41, 1, 2, 0, 3.9, 0, dk);                                      // centre sill
+  [1, -1].forEach(function (sd) {
+    box(o, 36, 6.2, 0.3, 0, 8.4, sd * 4.95, col);                       // side sheets
+    box(o, 36.4, 0.5, 0.6, 0, 11.6, sd * 5, col);                       // top chord
+    for (var px = -17; px <= 17; px += 3.4) box(o, 0.3, 6.6, 0.25, px, 8.3, sd * 5.15, col); // side posts
+    box(o, 0.15, 7, 0.15, 19.5, 7, sd * 4.2, '#9a8f80'); box(o, 0.15, 7, 0.15, -19.5, 7, sd * 4.2, '#9a8f80');
+  });
+  [1, -1].forEach(function (e) { var g = new THREE.BoxGeometry(0.3, 7.5, 9.9); g.rotateZ(e * 0.5); g.translate(e * 18.6, 8.6, 0); o.push(strip(paint(g, col))); }); // sloped end sheets
+  [-10.5, 0, 10.5].forEach(function (hx) { var c = new THREE.ConeGeometry(5.2, 3.6, 4); c.rotateY(Math.PI / 4); c.rotateX(Math.PI); c.scale(1, 1, 0.95); c.translate(hx, 5.5, 0); o.push(strip(paint(c, col))); });
+  box(o, 1.2, 0.5, 9.6, 20.3, 4.2, 0, dk); box(o, 1.2, 0.5, 9.6, -20.3, 4.2, 0, dk);
+  box(o, 1.6, 0.8, 0.8, 21.2, 3.4, 0, '#3b3a38'); box(o, 1.6, 0.8, 0.8, -21.2, 3.4, 0, '#3b3a38'); // couplers
+  return mergeGeometries(o, false);
+}
+
+// ---------- audio ----------
+var AU = { ctx: null, on: true, master: null, noise: null, clicks: [], splash: null, eng: null };
+try { AU.on = localStorage.getItem('dwSound') !== 'off'; } catch (e) {}
+function audioStart() {
+  if (AU.ctx) { if (AU.on && AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
+  var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  var ctx = AU.ctx = new AC();
+  var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(ctx.destination);
+  AU.master = ctx.createGain(); AU.master.gain.value = AU.on ? 0.9 : 0; AU.master.connect(comp);
+  var len = ctx.sampleRate * 2, nb = ctx.createBuffer(1, len, ctx.sampleRate), nd = nb.getChannelData(0);
+  for (var i = 0; i < len; i++) nd[i] = Math.random() * 2 - 1;
+  AU.noise = nb;
+  // wheel-on-rail-joint clicks: a sharp metallic tick over a low thump
+  for (var v = 0; v < 4; v++) {
+    var cl = ctx.sampleRate * 0.12, cb = ctx.createBuffer(1, cl, ctx.sampleRate), cd = cb.getChannelData(0), last = 0, pitch = 70 + v * 9;
+    for (var j = 0; j < cl; j++) { var t = j / ctx.sampleRate, n = Math.random() * 2 - 1, hp = n - last; last = n;
+      cd[j] = Math.sin(6.283 * pitch * t) * Math.exp(-t * 38) * 0.9 + hp * Math.exp(-t * 90) * 0.55 + Math.sin(6.283 * (1900 + v * 260) * t) * Math.exp(-t * 70) * 0.12; }
+    AU.clicks.push(cb);
+  }
+  // water lapping against the docks + a little breeze
+  var lap = ctx.createBufferSource(); lap.buffer = nb; lap.loop = true;
+  var lf = ctx.createBiquadFilter(); lf.type = 'lowpass'; lf.frequency.value = 420;
+  var lg = ctx.createGain(); lg.gain.value = 0.05;
+  var lfo = ctx.createOscillator(); lfo.frequency.value = 0.35; var lfoG = ctx.createGain(); lfoG.gain.value = 0.03; lfo.connect(lfoG); lfoG.connect(lg.gain); lfo.start();
+  lap.connect(lf); lf.connect(lg); lg.connect(AU.master); lap.start();
+  buildEngineSound();
+}
+function panner(ref, roll) {
+  var p = AU.ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse';
+  p.refDistance = ref || 25; p.rolloffFactor = roll || 1.1; p.maxDistance = 20000; p.connect(AU.master);
+  return p;
+}
+function setPos(p, x, y, z) {
+  if (p.positionX) { var t = AU.ctx.currentTime; p.positionX.setTargetAtTime(x, t, 0.03); p.positionY.setTargetAtTime(y, t, 0.03); p.positionZ.setTargetAtTime(z, t, 0.03); }
+  else p.setPosition(x, y, z);
+}
+function buildEngineSound() { // diesel prime mover, turbo, rolling rumble and horn, all through 3D panners
+  var ctx = AU.ctx, e = AU.eng = {};
+  e.pan = panner(45, 1.0); e.wheelPan = panner(35, 1.05); e.clickPan = panner(30, 1.1);
+  e.air = ctx.createBiquadFilter(); e.air.type = 'lowpass'; e.air.frequency.value = 1200; e.air.connect(e.pan);  // distance muffles the highs
+  e.gain = ctx.createGain(); e.gain.gain.value = 0; e.gain.connect(e.air);
+  e.chug = ctx.createGain(); e.chug.gain.value = 0.55; e.chug.connect(e.gain);
+  var lfo = ctx.createOscillator(); lfo.frequency.value = 7.5; var lfoG = ctx.createGain(); lfoG.gain.value = 0.3; lfo.connect(lfoG); lfoG.connect(e.chug.gain); lfo.start();
+  e.oscs = [];
+  [[46, 'sawtooth', 0.5], [92.5, 'square', 0.12], [138, 'sawtooth', 0.1], [23, 'sine', 0.55]].forEach(function (s) {
+    var o = ctx.createOscillator(); o.type = s[1]; o.frequency.value = s[0]; var g = ctx.createGain(); g.gain.value = s[2];
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520; o.connect(lp); lp.connect(g); g.connect(e.chug); o.start(); e.oscs.push({ o: o, f: s[0] });
+  });
+  var rum = ctx.createBufferSource(); rum.buffer = AU.noise; rum.loop = true;
+  var rb = ctx.createBiquadFilter(); rb.type = 'bandpass'; rb.frequency.value = 110; rb.Q.value = 0.8; var rg = ctx.createGain(); rg.gain.value = 0.9;
+  rum.connect(rb); rb.connect(rg); rg.connect(e.chug); rum.start();
+  var tur = ctx.createOscillator(); tur.frequency.value = 2150; var tg = ctx.createGain(); tg.gain.value = 0.012; tur.connect(tg); tg.connect(e.gain); tur.start(); e.oscs.push({ o: tur, f: 2150 });
+  // steel wheels rolling: low roar plus a hollow boom while on the trestle
+  e.wheelGain = ctx.createGain(); e.wheelGain.gain.value = 0; e.wheelGain.connect(e.wheelPan);
+  var wn = ctx.createBufferSource(); wn.buffer = AU.noise; wn.loop = true; wn.playbackRate.value = 0.7;
+  var wl = ctx.createBiquadFilter(); wl.type = 'lowpass'; wl.frequency.value = 340;
+  e.boom = ctx.createBiquadFilter(); e.boom.type = 'peaking'; e.boom.frequency.value = 160; e.boom.Q.value = 1.2; e.boom.gain.value = 0;
+  wn.connect(wl); wl.connect(e.boom); e.boom.connect(e.wheelGain); wn.start();
+  var sq = ctx.createBufferSource(); sq.buffer = AU.noise; sq.loop = true; var sb = ctx.createBiquadFilter(); sb.type = 'bandpass'; sb.frequency.value = 3800; sb.Q.value = 9;
+  var sg = ctx.createGain(); sg.gain.value = 0.05; sq.connect(sb); sb.connect(sg); sg.connect(e.wheelGain); sq.start();
+  e.clickGain = ctx.createGain(); e.clickGain.gain.value = 1.4; e.clickGain.connect(e.clickPan);
+  // horn: five-chime air horn, bent slightly by the Doppler factor
+  e.hornGain = ctx.createGain(); e.hornGain.gain.value = 0;
+  var hlp = ctx.createBiquadFilter(); hlp.type = 'lowpass'; hlp.frequency.value = 3200; e.hornGain.connect(hlp); hlp.connect(e.air);
+  e.horn = [311.1, 370, 415.3, 493.9, 622.3].map(function (f) {
+    var o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; var g = ctx.createGain(); g.gain.value = 0.11; o.connect(g); g.connect(e.hornGain); o.start(); return { o: o, f: f };
+  });
+}
+function hornPattern() { // grade-crossing signal: long, long, short, long
+  if (!AU.ctx || !AU.eng) return;
+  var g = AU.eng.hornGain.gain, t = AU.ctx.currentTime + 0.05, seq = [1.5, 1.5, 0.6, 2.6];
+  g.cancelScheduledValues(t); g.setValueAtTime(0, t);
+  seq.forEach(function (d) { g.setTargetAtTime(1, t, 0.03); g.setTargetAtTime(0, t + d, 0.06); t += d + 0.45; });
+}
+function playClick(x, y, z, vol) {
+  var e = AU.eng, s = AU.ctx.createBufferSource(); s.buffer = AU.clicks[Math.floor(Math.random() * AU.clicks.length)];
+  s.playbackRate.value = 0.9 + Math.random() * 0.2;
+  var g = AU.ctx.createGain(); g.gain.value = vol; s.connect(g); g.connect(e.clickGain);
+  setPos(e.clickPan, x, y, z); s.start();
+}
+function oneShot(x, y, z, build, ref) { // a short positioned sound; build(ctx, dest, t0) wires up its own nodes
+  if (!AU.ctx || AU.ctx.state !== 'running') return;
+  var p = panner(ref || 20, 1.15);
+  if (p.positionX) { p.positionX.value = x; p.positionY.value = y; p.positionZ.value = z; } else p.setPosition(x, y, z);
+  var end = build(AU.ctx, p, AU.ctx.currentTime + 0.02);
+  setTimeout(function () { try { p.disconnect(); } catch (e) {} }, (end + 0.5) * 1000);
+}
+function gullCall(x, y, z) { // herring-gull style: a long "kee-ow" or a laughing "ha-ha-ha" run
+  oneShot(x, y, z, function (ctx, dest, t0) {
+    var laugh = Math.random() < 0.45, notes = laugh ? 4 + Math.floor(Math.random() * 6) : 1 + Math.floor(Math.random() * 2), t = t0, base = 0.85 + Math.random() * 0.35;
+    for (var i = 0; i < notes; i++) {
+      var dur = laugh ? 0.11 + Math.random() * 0.04 : 0.38 + Math.random() * 0.2;
+      var o = ctx.createOscillator(); o.type = 'sawtooth';
+      var f0 = (laugh ? 1550 - i * 40 : 1250) * base, fp = (laugh ? 1850 - i * 45 : 2050) * base, f1 = (laugh ? 1250 : 1000) * base;
+      o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(fp, t + dur * 0.18); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      var vib = ctx.createOscillator(); vib.frequency.value = 26 + Math.random() * 10; var vg = ctx.createGain(); vg.gain.value = 40; vib.connect(vg); vg.connect(o.frequency);
+      var b1 = ctx.createBiquadFilter(); b1.type = 'bandpass'; b1.frequency.value = 1900 * base; b1.Q.value = 2.2;
+      var b2 = ctx.createBiquadFilter(); b2.type = 'bandpass'; b2.frequency.value = 3300 * base; b2.Q.value = 3;
+      var g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 0.02); g.gain.setValueAtTime(0.42, t + dur * 0.6); g.gain.linearRampToValueAtTime(0, t + dur);
+      o.connect(b1); o.connect(b2); b1.connect(g); b2.connect(g); g.connect(dest);
+      o.start(t); vib.start(t); o.stop(t + dur + 0.02); vib.stop(t + dur + 0.02);
+      t += dur + (laugh ? 0.06 + Math.random() * 0.05 : 0.18 + Math.random() * 0.2);
+    }
+    return t - t0;
+  }, 30);
+}
+function splashSound(x, y, z, big) {
+  oneShot(x, y, z, function (ctx, dest, t0) {
+    var s = ctx.createBufferSource(); s.buffer = AU.noise; s.playbackRate.value = 1.3;
+    var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = big ? 1100 : 1800; bp.Q.value = 0.7;
+    var g = ctx.createGain(), L = big ? 0.32 : 0.16; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(big ? 0.9 : 0.45, t0 + 0.008); g.gain.exponentialRampToValueAtTime(0.001, t0 + L);
+    s.connect(bp); bp.connect(g); g.connect(dest); s.start(t0, Math.random()); s.stop(t0 + L + 0.05);
+    var o = ctx.createOscillator(); o.frequency.setValueAtTime(big ? 520 : 760, t0); o.frequency.exponentialRampToValueAtTime(110, t0 + 0.07);
+    var og = ctx.createGain(); og.gain.setValueAtTime(big ? 0.5 : 0.25, t0); og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+    o.connect(og); og.connect(dest); o.start(t0); o.stop(t0 + 0.1);
+    return L;
+  }, 12);
+}
+function listener() {
+  if (!AU.ctx) return;
+  var L = AU.ctx.listener, p = camera.position, f = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion), t = AU.ctx.currentTime;
+  if (L.positionX) {
+    L.positionX.setTargetAtTime(p.x, t, 0.02); L.positionY.setTargetAtTime(p.y, t, 0.02); L.positionZ.setTargetAtTime(p.z, t, 0.02);
+    L.forwardX.setTargetAtTime(f.x, t, 0.02); L.forwardY.setTargetAtTime(f.y, t, 0.02); L.forwardZ.setTargetAtTime(f.z, t, 0.02);
+    L.upX.value = 0; L.upY.value = 1; L.upZ.value = 0;
+  } else { L.setPosition(p.x, p.y, p.z); L.setOrientation(f.x, f.y, f.z, 0, 1, 0); }
+}
+
+// ---------- per-frame life ----------
+var gullTimer = 2, fishTimer = 4;
+function life(dt) {
+  lifeT += dt;
+  listener();
+  var cam = camera.position, au = AU.ctx && AU.ctx.state === 'running';
+  // ---- train ----
+  if (train) {
+    var T = train;
+    if (!T.active && lifeT > T.next) {
+      T.active = true; T.n = 10 + Math.floor(Math.random() * 6); T.y = T.first === undefined ? -1500 : -2600; T.first = false; T.horns = [-1250, -560, -170]; T.axlesPrev = null;
+      T.cars.forEach(function (c, i) { c.visible = i < T.n; }); T.loco.visible = true;
+    }
+    if (T.active) {
+      var dy = T.speed / RAIL_K * dt; T.y += dy;
+      var place = function (obj, yc, half) {
+        var yf = yc + half / RAIL_K / S, yb = yc - half / RAIL_K / S, hf = railH(yf), hb = railH(yb);
+        obj.position.set(wx(railX(yc)), (hf + hb) / 2 + 0.55, wz(yc));
+        obj.rotation.set(0, Math.atan2(-1, RAIL_M), Math.atan2(hf - hb, half * 2));
+      };
+      var locoLen = 61, carLen = 43, yL = T.y - locoLen / 2 / S / RAIL_K;
+      place(T.loco, yL, 19);
+      var axles = [-23.6, -19, -14.4, 14.4, 19, 23.6].map(function (a) { return yL + a / S / RAIL_K; });
+      var tailY = yL;
+      for (var i = 0; i < T.n; i++) {
+        var yc = T.y - (locoLen + 1 + carLen / 2 + i * (carLen + 1)) / S / RAIL_K;
+        place(T.cars[i], yc, 15); tailY = yc - carLen / 2 / S / RAIL_K;
+        [-17.8, -12.2, 12.2, 17.8].forEach(function (a) { axles.push(yc + a / S / RAIL_K); });
+      }
+      if (T.horns.length && T.y > T.horns[0]) { T.horns.shift(); hornPattern(); }
+      if (tailY > 3700) { T.active = false; T.loco.visible = false; T.cars.forEach(function (c) { c.visible = false; }); T.next = lifeT + 70 + Math.random() * 90; }
+      if (au && AU.eng) {
+        var e = AU.eng, lx = T.loco.position.x, ly = T.loco.position.y + 12, lz = T.loco.position.z;
+        var d = Math.hypot(lx - cam.x, ly - cam.y, lz - cam.z);
+        setPos(e.pan, lx, ly, lz);
+        e.gain.gain.setTargetAtTime(1.1, AU.ctx.currentTime, 0.4);
+        e.air.frequency.setTargetAtTime(Math.max(250, 6000 * 60 / (60 + d)), AU.ctx.currentTime, 0.2);
+        // Doppler: pitch up while approaching, down after it passes
+        var vel = T.speed, dirx = RAIL_M / RAIL_K * vel, dirz = 1 / RAIL_K * vel;
+        var vr = ((lx - cam.x) * dirx + (lz - cam.z) * dirz) / Math.max(1, d), dop = C_SOUND / (C_SOUND + vr);
+        e.oscs.forEach(function (o) { o.o.frequency.setTargetAtTime(o.f * dop, AU.ctx.currentTime, 0.1); });
+        e.horn.forEach(function (o) { o.o.frequency.setTargetAtTime(o.f * dop, AU.ctx.currentTime, 0.1); });
+        // where the train is closest to you: wheel roar and rail-joint clicks come from there
+        var pw = cam.x / S + CX, pz = cam.z / S + CY;
+        var yProj = (pz + RAIL_M * (pw - RAIL_A + RAIL_M * 90)) / (1 + RAIL_M * RAIL_M);
+        var yNear = Math.max(tailY, Math.min(T.y, yProj)), hN = railH(yNear);
+        setPos(e.wheelPan, wx(railX(yNear)), hN + 2, wz(yNear));
+        e.wheelGain.gain.setTargetAtTime(0.9, AU.ctx.currentTime, 0.3);
+        e.boom.gain.setTargetAtTime(yNear > 170 ? 9 : 0, AU.ctx.currentTime, 0.3);
+        if (T.axlesPrev && T.axlesPrev.length === axles.length) {
+          var jx = wx(railX(yProj)), jh = railH(yProj) + 1, jz = wz(yProj), nClicks = 0;
+          for (var k = 0; k < axles.length && nClicks < 6; k++) if (T.axlesPrev[k] < yProj && axles[k] >= yProj) { playClick(jx, jh, jz, 0.7 + Math.random() * 0.3); nClicks++; }
+        }
+      }
+      T.axlesPrev = axles;
+    } else if (au && AU.eng) { AU.eng.gain.gain.setTargetAtTime(0, AU.ctx.currentTime, 0.5); AU.eng.wheelGain.gain.setTargetAtTime(0, AU.ctx.currentTime, 0.5); }
+  }
+  // ---- gulls ----
+  gulls.forEach(function (g, i) {
+    var u = g.userData, far = Math.hypot((u.cx - player.x) * S, (u.cy - player.y) * S);
+    if (far > 450) { u.cx += (player.x - u.cx) * dt * 0.05; u.cy += (player.y - u.cy) * dt * 0.05; }
+    u.a += u.w * dt; u.ph += dt;
+    var alt = u.alt + Math.sin(u.ph * 0.3 + i) * 10, gx = u.cx + Math.cos(u.a) * u.r, gy = u.cy + Math.sin(u.a) * u.r;
+    var pos = new THREE.Vector3(wx(gx), alt, wz(gy)), vel = pos.clone().sub(u.prev);
+    g.position.copy(pos);
+    if (vel.lengthSq() > 1e-6) { g.rotation.order = 'YXZ'; g.rotation.y = Math.atan2(-vel.z, vel.x); g.rotation.x = (u.w > 0 ? -1 : 1) * 0.35; }
+    u.prev.copy(pos);
+    var flap = Math.sin(u.ph * 1.3 + i) > -0.2 ? Math.sin(u.ph * 9) * 0.55 : 0.08;                 // flap, then glide
+    g.userData.w1.rotation.x = -flap; g.userData['w-1'].rotation.x = flap;
+  });
+  gullTimer -= dt;
+  if (gullTimer <= 0) {
+    gullTimer = 1.5 + Math.random() * 5.5;
+    var gg = gulls[Math.floor(Math.random() * gulls.length)];
+    if (gg && au) gullCall(gg.position.x, gg.position.y, gg.position.z);
+  }
+  // ---- mullet ----
+  fishTimer -= dt;
+  if (fishTimer <= 0) { fishTimer = 2.5 + Math.random() * 6.5; spawnMullet(); }
+  fishes.forEach(function (f) {
+    if (!f.busy) return;
+    f.t += dt;
+    var J = f.jumps[f.k];
+    if (!J) { f.busy = false; f.mesh.visible = false; return; }
+    var tt = (f.t - J.t0) / J.dur;
+    if (tt < 0) { f.mesh.visible = false; return; }
+    if (!J.out) { J.out = true; splash(J.x0, J.z0, false); }
+    if (tt >= 1) { splash(J.x1, J.z1, true); f.k++; f.mesh.visible = false; return; }
+    var x = J.x0 + (J.x1 - J.x0) * tt, z = J.z0 + (J.z1 - J.z0) * tt, h = 4 * J.h * tt * (1 - tt) - 0.1;
+    f.mesh.visible = true; f.mesh.position.set(x, h, z);
+    f.mesh.rotation.set(0, J.yaw, Math.atan(4 * J.h * (1 - 2 * tt) / (Math.hypot(J.x1 - J.x0, J.z1 - J.z0) || 1)) + Math.sin(f.t * 30) * 0.08);
+  });
+  // ---- splash rings and droplets ----
+  rings.forEach(function (r) {
+    if (r.t > 1.6) { r.mesh.visible = false; return; }
+    r.t += dt; var s = r.size * (0.3 + r.t * 1.6);
+    r.mesh.scale.set(s, s, s); r.mesh.material.opacity = Math.max(0, 0.7 * (1 - r.t / 1.6));
+  });
+  if (drops) {
+    var m4 = new THREE.Matrix4(), any = false;
+    drops.userData.list.forEach(function (d, i) {
+      if (d.t > 1) return;
+      d.t += dt; d.v.y -= 32 * dt; d.p.addScaledVector(d.v, dt); any = true;
+      drops.setMatrixAt(i, d.p.y < 0 || d.t > 1 ? m4.makeScale(0, 0, 0) : m4.makeTranslation(d.p.x, d.p.y, d.p.z));
+      if (d.p.y < 0) d.t = 9;
+    });
+    if (any) drops.instanceMatrix.needsUpdate = true;
+  }
+}
+function spawnMullet() {
+  var f = fishes.find(function (q) { return !q.busy; }); if (!f) return;
+  for (var tries = 0; tries < 25; tries++) {
+    var a = Math.random() * 6.283, dist = (25 + Math.random() * 230) / S, x = player.x + Math.cos(a) * dist, y = player.y + Math.sin(a) * dist;
+    if (surface(x, y) !== null || inPoly(x, y, land)) continue;
+    if (walk.some(function (p) { return polyDist(x, y, p) < 4; })) continue;
+    if (occupied.some(function (p) { return polyDist(x, y, p) < 3; })) continue;
+    var yaw = Math.random() * 6.283, n = Math.random() < 0.45 ? 1 : (Math.random() < 0.6 ? 2 : 3), t0 = 0, X = wx(x), Z = wz(y), jumps = [];
+    for (var j = 0; j < n; j++) {
+      var len = 2.5 + Math.random() * 2, dur = 0.42 + Math.random() * 0.2, X1 = X + Math.cos(yaw) * len, Z1 = Z - Math.sin(yaw) * len;
+      jumps.push({ t0: t0, dur: dur, x0: X, z0: Z, x1: X1, z1: Z1, h: 1.2 + Math.random() * 1.6, yaw: yaw });
+      t0 += dur + 0.35 + Math.random() * 0.5; X = X1 + Math.cos(yaw) * 1.5; Z = Z1 - Math.sin(yaw) * 1.5;
+    }
+    f.busy = true; f.t = 0; f.k = 0; f.jumps = jumps;
+    return;
+  }
+}
+function splash(x, z, big) {
+  var r = rings.find(function (q) { return q.t > 1.6; }) || rings[0];
+  r.t = 0; r.size = big ? 1.6 : 1; r.mesh.position.set(x, 0.15, z); r.mesh.visible = true;
+  var n = big ? 14 : 7;
+  drops.userData.list.filter(function (d) { return d.t > 1; }).slice(0, n).forEach(function (d) {
+    d.t = 0; d.p.set(x, 0.1, z); var a = Math.random() * 6.283, s = 2 + Math.random() * 4; d.v.set(Math.cos(a) * s, 6 + Math.random() * (big ? 9 : 5), Math.sin(a) * s);
+  });
+  splashSound(x, 0.5, z, big);
+}
+
 function update(dt) {
   var fx = 0, fy = 0;
   if (keys.w || keys.arrowup) fy += 1;
@@ -905,6 +1452,7 @@ function update(dt) {
     dot.style.top = (r.top - wr.top + (player.y - 90) / 1410 * r.height) + 'px';
     dot.style.setProperty('--yaw', (-player.yaw * 180 / Math.PI) + 'deg');
   }
+  life(dt);
 }
 function resize() {
   var w = wrap.clientWidth, h = wrap.clientHeight;
@@ -913,7 +1461,8 @@ function resize() {
 function loop() {
   requestAnimationFrame(loop);
   var r = wrap.getBoundingClientRect();
-  if (r.bottom < 0 || r.top > innerHeight || document.hidden) { clock.getDelta(); return; }
+  if (r.bottom < 0 || r.top > innerHeight || document.hidden) { clock.getDelta(); if (AU.ctx && AU.ctx.state === 'running') AU.ctx.suspend(); return; }
+  if (AU.ctx && AU.on && AU.ctx.state === 'suspended' && userTouched) AU.ctx.resume();
   update(Math.min(clock.getDelta(), 0.1));
   renderer.render(scene, camera);
 }
@@ -925,6 +1474,7 @@ function start() {
   }
   fetch('images/marina-slip-map.svg').then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (txt) {
     build(txt);
+    buildLife();
     bindInput();
     resize(); addEventListener('resize', resize); document.addEventListener('fullscreenchange', resize);
     // start on the riverwalk at the head of C Dock, looking down the dock
@@ -934,7 +1484,7 @@ function start() {
     if (want) goToSlip(want);
     $('dwWhere').textContent = '';
     loop();
-    window.dockWalk = { player: player, goToSlip: goToSlip, surface: surface, slips: slips, renderer: renderer, scene: scene, camera: camera, update: update };
+    window.dockWalk = { train: function () { return train; }, AU: AU, gulls: gulls, fishes: fishes, spawnMullet: spawnMullet, player: player, goToSlip: goToSlip, surface: surface, slips: slips, renderer: renderer, scene: scene, camera: camera, update: update };
   }).catch(function () { $('dwWhere').textContent = 'Couldn’t load the marina map. Please refresh to try again.'; });
 }
 start();
