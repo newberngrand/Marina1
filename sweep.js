@@ -250,10 +250,17 @@
     });
     byId[id].g.classList.add('sw-hit');
     Object.keys(game.buoy).forEach(function (b) { if (!game.pots[b]) byId[b].g.classList.add('sw-wrong'); });
-    sfx('hit');
     setStatus('');
-    showResult(false, 'Fouled your prop on slip ' + id + '!', 'A crab pot line wrapped your prop. ' + game.opened + ' of ' + (slips.length - game.potCount) + ' safe slips opened.');
     updateStats();
+    var msg = function () {
+      showResult(false, 'Fouled your prop on slip ' + id + '!', 'A crab pot line wrapped your prop, and its crab is not happy. ' + game.opened + ' of ' + (slips.length - game.potCount) + ' safe slips opened.');
+    };
+    // An angry crab climbs out of the pot and thrashes its claws, then the result shows.
+    var poly = byId[id].g.querySelector('polygon, rect');
+    if (window.AngryCrab && poly) {
+      sfx('hit');
+      window.AngryCrab.show(poly.getBoundingClientRect(), { sound: $('swSound').checked }).then(msg);
+    } else { sfx('hit'); msg(); }
   }
 
   function win() {
