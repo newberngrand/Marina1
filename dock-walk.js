@@ -4,6 +4,11 @@ import * as THREE from 'three';
 import { Water } from 'three/addons/objects/Water.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 var S = 0.8;                 // feet per SVG unit (a 30' slip is ~37 units long)
 var CX = 1000, CY = 800;     // SVG point placed at the world origin
@@ -17,6 +22,9 @@ var $ = function (id) { return document.getElementById(id); };
 var wrap = $('dwWrap'), canvas = $('dwCanvas');
 var touchUI = matchMedia('(pointer: coarse)').matches;
 var lowPower = touchUI || Math.min(screen.width, screen.height) < 700;
+// HD = ambient-occlusion post-processing and sharper shadows; on by default on desktops, remembered per browser
+var hq = !lowPower;
+try { var savedQ = localStorage.getItem('dwQuality'); if (savedQ) hq = savedQ === 'high'; } catch (e) {}
 
 function wx(x) { return (x - CX) * S; }
 function wz(y) { return (y - CY) * S; }
@@ -99,69 +107,25 @@ function merged(list, mat) {
   m.castShadow = m.receiveShadow = true;
   return m;
 }
+// Photo-scanned PBR texture sets (CC0, polyhaven.com) in images/pbr: color, normal and roughness maps.
+// UVs here are in feet, so tileFeet is how much ground one copy of the texture covers.
+var texLoader = new THREE.TextureLoader();
+function pbrMaterial(id, tileFeet, opts) {
+  opts = opts || {};
+  var maps = {};
+  ['diff', 'nor', 'rough'].forEach(function (k) {
+    var t = texLoader.load('images/pbr/' + id + '_' + k + '.jpg');
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / tileFeet, 1 / tileFeet); t.anisotropy = 8;
+    if (opts.rot) t.rotation = opts.rot;
+    if (k === 'diff') t.colorSpace = THREE.SRGBColorSpace;
+    maps[k] = t;
+  });
+  var ns = opts.normal || 1;
+  return new THREE.MeshStandardMaterial({ map: maps.diff, normalMap: maps.nor, normalScale: new THREE.Vector2(ns, ns), roughnessMap: maps.rough, roughness: opts.rough || 1, color: opts.color || 0xffffff });
+}
 function canvasTex(w, h, draw) {
   var c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
   var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
-}
-function plankTexture() { // weathered gray deck boards: silvered grain, knots, checks, screws, butt joints, gaps
-  var N = 1024, BOARDS = 12, bh = N / BOARDS, c = document.createElement('canvas'); c.width = c.height = N;
-  var x = c.getContext('2d'), rnd = mulberry32(7);
-  x.fillStyle = '#26231f'; x.fillRect(0, 0, N, N);                        // the gaps between boards
-  for (var i = 0; i < BOARDS; i++) {
-    var y0 = i * bh, gap = 5, joints = [rnd() * N];
-    if (rnd() < 0.7) joints.push((joints[0] + N * (0.35 + rnd() * 0.3)) % N);
-    var pieces = joints.slice().sort(function (a, b) { return a - b; });
-    var starts = [pieces[pieces.length - 1] - N].concat(pieces);
-    for (var p = 0; p < starts.length; p++) {
-      var xa = starts[p] + 3, xb = (p + 1 < starts.length ? starts[p + 1] : pieces[0] + N) - 3;
-      var L = 40 + rnd() * 16, hue = 28 + rnd() * 14, sat = 3 + rnd() * 7;
-      x.save(); x.beginPath(); x.rect(0, y0, N, bh - gap); x.clip();
-      [0, N, -N].forEach(function (off) {
-        x.fillStyle = 'hsl(' + hue + ',' + sat + '%,' + L + '%)'; x.fillRect(xa + off, y0, xb - xa, bh - gap);
-        var g = x.createLinearGradient(0, y0, 0, y0 + bh - gap);             // cupped, sun-bleached board
-        g.addColorStop(0, 'rgba(255,255,255,.10)'); g.addColorStop(0.5, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.22)');
-        x.fillStyle = g; x.fillRect(xa + off, y0, xb - xa, bh - gap);
-      });
-      x.restore();
-    }
-    // grain: long wavy streaks, darker and lighter
-    for (var k = 0; k < 46; k++) {
-      var gy = y0 + 2 + rnd() * (bh - gap - 4), amp = 0.6 + rnd() * 2.2, fr = 0.004 + rnd() * 0.01, ph = rnd() * 6;
-      x.strokeStyle = rnd() < 0.55 ? 'rgba(40,34,28,' + (0.12 + rnd() * 0.22) + ')' : 'rgba(235,232,224,' + (0.08 + rnd() * 0.16) + ')';
-      x.lineWidth = 0.6 + rnd() * 1.4;
-      var sx = rnd() * N, len = 150 + rnd() * 700;
-      [0, -N].forEach(function (off) {
-        x.beginPath();
-        for (var s = 0; s <= len; s += 8) { var px = sx + s, py = gy + Math.sin(px * fr + ph) * amp; if (s) x.lineTo(px + off, py); else x.moveTo(px + off, py); }
-        x.stroke();
-      });
-    }
-    // knots with growth rings bending the grain
-    for (var kn = 0; kn < (rnd() < 0.6 ? 1 : 2); kn++) {
-      var kx = rnd() * N, ky = y0 + 8 + rnd() * (bh - gap - 16), kr = 3 + rnd() * 6;
-      for (var r = kr * 2.6; r > 0; r -= 1.6) { x.strokeStyle = 'rgba(45,36,28,' + (0.1 + (1 - r / (kr * 2.6)) * 0.35) + ')'; x.lineWidth = 1; x.beginPath(); x.ellipse(kx, ky, r * 1.8, r * 0.75, 0, 0, 7); x.stroke(); }
-      x.fillStyle = 'rgba(38,30,24,.75)'; x.beginPath(); x.ellipse(kx, ky, kr, kr * 0.6, 0, 0, 7); x.fill();
-    }
-    // checks (cracks along the grain)
-    for (var ck = 0; ck < 3; ck++) { if (rnd() < 0.4) continue; var cx0 = rnd() * N, cy0 = y0 + 6 + rnd() * (bh - gap - 12); x.strokeStyle = 'rgba(25,22,18,.7)'; x.lineWidth = 1 + rnd(); x.beginPath(); x.moveTo(cx0, cy0); x.lineTo(cx0 + 40 + rnd() * 160, cy0 + (rnd() - 0.5) * 3); x.stroke(); }
-    // stainless screws over each joist (every ~16 inches), with rust bleed
-    for (var jx = 30; jx < N; jx += N / 4.3) for (var sd = 0; sd < 2; sd++) {
-      var sy = y0 + (sd ? bh - gap - 12 : 12);
-      x.fillStyle = 'rgba(70,50,35,.25)'; x.beginPath(); x.ellipse(jx + 2, sy + 3, 3, 6, 0, 0, 7); x.fill();
-      x.fillStyle = '#3a3835'; x.beginPath(); x.arc(jx, sy, 3.2, 0, 7); x.fill();
-      x.fillStyle = '#8d8b86'; x.beginPath(); x.arc(jx - 0.6, sy - 0.6, 1.6, 0, 7); x.fill();
-    }
-    joints.forEach(function (jx2) { x.fillStyle = '#24211d'; x.fillRect(jx2 - 2, y0, 4, bh - gap); });
-  }
-  // overall weathering: lichen-ish and water stains
-  for (var st = 0; st < 260; st++) {
-    x.fillStyle = rnd() < 0.5 ? 'rgba(30,28,24,' + rnd() * 0.07 + ')' : 'rgba(210,214,205,' + rnd() * 0.06 + ')';
-    x.beginPath(); x.ellipse(rnd() * N, rnd() * N, 10 + rnd() * 60, 4 + rnd() * 18, 0, 0, 7); x.fill();
-  }
-  var map = new THREE.CanvasTexture(c); map.colorSpace = THREE.SRGBColorSpace;
-  var bump = new THREE.CanvasTexture(c);
-  [map, bump].forEach(function (t) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 6, 1 / 6); t.anisotropy = 8; });
-  return { map: map, bump: bump };
 }
 function waterNormals() { // tileable ripple normal map, generated so nothing extra has to download
   var N = 256, c = document.createElement('canvas'); c.width = c.height = N;
@@ -387,7 +351,7 @@ function setup() {
   renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: !lowPower, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowPower ? 1.5 : 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.5;
+  renderer.toneMappingExposure = 0.6;
   renderer.shadowMap.enabled = !lowPower;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -396,12 +360,19 @@ function setup() {
   camera = new THREE.PerspectiveCamera(68, 1, 0.3, 9000);
   camera.rotation.order = 'YXZ';
 
+  // The sky is a real photographed sky (images/sky-dome.jpg, the top of a CC0 panorama from polyhaven.com),
+  // and the matching HDR (images/sky-env-1k.hdr) lights and reflects in everything. The sun is placed where it is in the photo.
+  var skyRot = Math.atan2(Math.sin(SKY.sunU * 6.2832), Math.cos(SKY.sunU * 6.2832)) - SKY.rotate; // dome turn that puts the photo sun at SKY.rotate
+  var th = SKY.sunV * SKY.cover * Math.PI, ph = SKY.sunU * 6.2832 - skyRot;
+  sunDir.set(Math.cos(ph) * Math.sin(th), Math.cos(th), Math.sin(ph) * Math.sin(th)).normalize();
+
+  // procedural sky as a fallback until the photo arrives (or if it can't load)
   var sky = new Sky(); sky.scale.setScalar(8000);
   var u = sky.material.uniforms;
   u.turbidity.value = 2.2; u.rayleigh.value = 2.6; u.mieCoefficient.value = 0.003; u.mieDirectionalG.value = 0.8;
-  sunDir.setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 42), THREE.MathUtils.degToRad(200));
   u.sunPosition.value.copy(sunDir);
   scene.add(sky);
+  var clouds = cloudDome(); scene.add(clouds);
 
   var pm = new THREE.PMREMGenerator(renderer), envScene = new THREE.Scene(), sky2 = new Sky();
   sky2.scale.setScalar(1000); sky2.material.uniforms.sunPosition.value.copy(sunDir);
@@ -409,10 +380,22 @@ function setup() {
   envScene.add(sky2);
   scene.environment = pm.fromScene(envScene).texture;
 
-  scene.add(new THREE.HemisphereLight(0xdfefff, 0x5a6b4a, 0.3));
-  sun = new THREE.DirectionalLight(0xfff1dc, 2.2);
+  skyDome = photoSky(skyRot, function () { sky.visible = clouds.visible = false; });
+  scene.add(skyDome);
+  new RGBELoader().load('images/sky-env-1k.hdr', function (t) {
+    t.mapping = THREE.EquirectangularReflectionMapping;
+    var old = scene.environment;
+    scene.environment = pm.fromEquirectangular(t).texture;
+    // three's equirect lookup sits half a turn from the dome's UVs; turn it to line up with the photo sun
+    scene.environmentRotation.set(0, skyRot + Math.PI, 0);
+    scene.environmentIntensity = SKY.envIntensity;
+    t.dispose(); if (old) old.dispose();
+  });
+
+  scene.add(new THREE.HemisphereLight(0xdfefff, 0x5a6b4a, 0.12));
+  sun = new THREE.DirectionalLight(0xfff1dc, SKY.sunIntensity);
   sun.castShadow = renderer.shadowMap.enabled;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(hq ? 4096 : 2048, hq ? 4096 : 2048);
   var sc = sun.shadow.camera; sc.left = sc.bottom = -170; sc.right = sc.top = 170; sc.near = 10; sc.far = 900;
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.4;
   scene.add(sun, sun.target);
@@ -430,23 +413,85 @@ function setup() {
     .replace('vec3( 0.1 ) + reflectionSample * 0.9 + reflectionSample * specularLight', 'reflectionSample * vec3( 0.5, 0.64, 0.84 ) + reflectionSample * specularLight');
   water.rotation.x = -Math.PI / 2;
   scene.add(water);
-  scene.add(cloudDome());
+
+  if (hq) { // ambient occlusion: soft contact shadows where boards meet pilings, boats meet docks, walls meet the ground
+    composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
+    composer.addPass(new RenderPass(scene, camera));
+    var gtao = new GTAOPass(scene, camera, 1, 1);
+    gtao.updateGtaoMaterial({ radius: 4, distanceExponent: 1.4, thickness: 4, scale: 1, samples: 12, distanceFallOff: 1 });
+    gtao.blendIntensity = 0.85;
+    var gRender = gtao.render;
+    gtao.render = function () { // keep the water (and its mirror render) and the sky dome out of the AO depth pass
+      var sv = skyDome && skyDome.visible;
+      water.visible = false; if (sv) skyDome.visible = false;
+      gRender.apply(gtao, arguments);
+      water.visible = true; if (sv) skyDome.visible = true;
+    };
+    composer.addPass(gtao);
+    composer.addPass(new OutputPass());
+  }
+}
+
+// ---------- the photographed sky ----------
+var SKY = {
+  cover: 0.52,        // sky-dome.jpg is the top 52% of the full panorama (zenith to just below the horizon)
+  sunU: 0.5925,       // where the sun sits in the photo (0..1 across, 0..1 down)
+  sunV: 0.587,
+  rotate: Math.atan2(0.31, -0.95), // which way the sun should be in the marina: low in the west-southwest, afternoon
+  sunIntensity: 2.6,
+  envIntensity: 0.9
+};
+var skyDome, composer;
+// The photo is shown exactly as shot. Because the renderer tone-maps everything (ACES), the dome's shader runs the
+// tone curve backwards first, so after tone mapping the pixels land back on the photo's own colors; that also gives
+// the water reflection real sky brightness to work with.
+function photoSky(rot, onReady) {
+  var g = new THREE.SphereGeometry(7600, 96, 32, 0, Math.PI * 2, 0, Math.PI * SKY.cover);
+  g.scale(-1, 1, 1); // seen from inside without mirroring the picture
+  var mat = new THREE.ShaderMaterial({
+    uniforms: { map: { value: null }, exposure: { value: renderer.toneMappingExposure } },
+    vertexShader: 'varying vec2 vUv;\nvoid main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: [
+      'uniform sampler2D map; uniform float exposure; varying vec2 vUv;',
+      'const mat3 ACESIn = mat3(vec3(0.59719, 0.07600, 0.02840), vec3(0.35458, 0.90834, 0.13383), vec3(0.04823, 0.01566, 0.83777));',
+      'const mat3 ACESOut = mat3(vec3(1.60475, -0.10208, -0.00327), vec3(-0.53108, 1.10813, -0.07276), vec3(-0.07367, -0.00605, 1.07602));',
+      'vec3 invFit(vec3 c) {', // inverse of three.js RRTAndODTFit: solve (0.983729c-1)v^2 + (0.432951c-0.0245786)v + (0.238081c+0.000090537) = 0
+      '  vec3 A = 0.983729 * c - 1.0, B = 0.4329510 * c - 0.0245786, C = 0.238081 * c + 0.000090537;',
+      '  return (-B - sqrt(max(B * B - 4.0 * A * C, 0.0))) / (2.0 * A);',
+      '}',
+      'void main() {',
+      '  vec3 c = texture2D(map, vUv).rgb;', // linear (texture is tagged sRGB)
+      '  vec3 x = clamp(inverse(ACESOut) * c, 0.0, 0.985);',
+      '  vec3 col = max(inverse(ACESIn) * invFit(x), 0.0) / (exposure / 0.6);',
+      '  gl_FragColor = vec4(col, 1.0);',
+      '  #include <tonemapping_fragment>',
+      '  #include <colorspace_fragment>',
+      '}'
+    ].join('\n'),
+    side: THREE.FrontSide, depthWrite: false, fog: false
+  });
+  var m = new THREE.Mesh(g, mat);
+  m.rotation.y = rot; m.renderOrder = -1; m.frustumCulled = false; m.visible = false;
+  texLoader.load('images/sky-dome.jpg', function (t) {
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    mat.uniforms.map.value = t; m.visible = true; onReady();
+  });
+  m.onBeforeRender = function () { mat.uniforms.exposure.value = renderer.toneMappingExposure; };
+  return m;
 }
 
 // ---------- build from the SVG ----------
 function build(svgText) {
   var doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
   var q = function (sel) { return Array.prototype.slice.call(doc.querySelectorAll(sel)); };
-  var plank = plankTexture();
-  var woodMat = new THREE.MeshStandardMaterial({ map: plank.map, bumpMap: plank.bump, bumpScale: 2.5, roughness: 0.92, color: 0xffffff });
+  // silvered gray deck boards laid across the docks (one texture = 4.9 ft square), lifted a little: the scan is dark
+  var woodMat = pbrMaterial('wood_planks_grey', 4.92, { rot: Math.PI / 2, normal: 1.4, color: new THREE.Color(1.3, 1.27, 1.22) });
   var vcMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
   var boatMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.05 });
   var woodParts = [], partsVC = [], boatParts = [], grassParts = [], pavedParts = [], roadParts = [], wallParts = {};
-  var grassMat = new THREE.MeshStandardMaterial({ roughness: 1, map: speckleTexture('#5f7440', ['#526636', '#6c8148', '#77894f', '#4a5c31', '#7d7a55', '#665f45'], 3200, 3, 22) });
-  var pavedMat = new THREE.MeshStandardMaterial({ roughness: 0.95, map: speckleTexture('#cfc9bd', ['#bdb6a8', '#dcd6cb', '#b3ab9c'], 1800, 2, 12, function (x, w, h) {
-    x.fillStyle = 'rgba(110,100,90,.45)'; x.fillRect(0, 0, w, 2); x.fillRect(0, 0, 2, h); x.fillRect(0, h / 2, w, 1); x.fillRect(w / 2, 0, 1, h);
-  }) });
-  var roadMat = new THREE.MeshStandardMaterial({ roughness: 0.9, map: speckleTexture('#4f5256', ['#45484c', '#5c5f63', '#3e4145', '#66696d'], 3000, 2, 16) });
+  var grassMat = pbrMaterial('leafy_grass', 6.56, { color: 0xa8c47e });     // lawn (tinted greener: the scan is late-summer brown)
+  var pavedMat = pbrMaterial('brushed_concrete', 8.2, { color: new THREE.Color(1.4, 1.38, 1.34) }); // riverwalk
+  var roadMat = pbrMaterial('asphalt_02', 9.84);
   var bulkMat = new THREE.MeshStandardMaterial({ roughness: 0.9, color: 0x8d877c });
   var wallMats = {}; Object.keys(FACADES).forEach(function (k) { wallMats[k] = new THREE.MeshStandardMaterial({ map: facadeTexture(FACADES[k]), roughness: 0.85, vertexColors: true }); wallParts[k] = []; });
   var flatRoofMat = new THREE.MeshStandardMaterial({ map: roofTexture('flat'), vertexColors: true, roughness: 0.95 });
@@ -954,6 +999,13 @@ function bindInput() {
     else if (wrap.requestFullscreen) wrap.requestFullscreen().catch(function () {});
     else flash('Full screen isn’t available in this browser.');
   });
+  var hqb = $('dwHQ');
+  hqb.classList.toggle('on', hq);
+  hqb.addEventListener('click', function (e) { // switching the post-processing on/off is simplest with a fresh page
+    e.stopPropagation();
+    try { localStorage.setItem('dwQuality', hq ? 'low' : 'high'); } catch (er) {}
+    location.reload();
+  });
   var touched = function () { userTouched = true; if (AU.on) audioStart(); };
   ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) { wrap.addEventListener(ev, touched, { passive: true }); });
   addEventListener('keydown', function (e) { if (wrapActive()) touched(); });
@@ -1439,6 +1491,7 @@ function update(dt) {
 
   sun.position.set(camera.position.x + sunDir.x * 400, sunDir.y * 400, camera.position.z + sunDir.z * 400);
   sun.target.position.set(camera.position.x, 0, camera.position.z);
+  if (skyDome) skyDome.position.set(camera.position.x, 0, camera.position.z); // the sky stays at infinity as you walk
   water.material.uniforms.time.value += dt * 0.6;
   if (marker.visible) { marker.children[1].position.y = 9 + Math.sin(performance.now() / 300) * 0.8; marker.rotation.y += dt; }
 
@@ -1457,6 +1510,7 @@ function update(dt) {
 function resize() {
   var w = wrap.clientWidth, h = wrap.clientHeight;
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); }
 }
 function loop() {
   requestAnimationFrame(loop);
@@ -1464,7 +1518,7 @@ function loop() {
   if (r.bottom < 0 || r.top > innerHeight || document.hidden) { clock.getDelta(); if (AU.ctx && AU.ctx.state === 'running') AU.ctx.suspend(); return; }
   if (AU.ctx && AU.on && AU.ctx.state === 'suspended' && userTouched) AU.ctx.resume();
   update(Math.min(clock.getDelta(), 0.1));
-  renderer.render(scene, camera);
+  if (composer) composer.render(); else renderer.render(scene, camera);
 }
 
 function start() {
