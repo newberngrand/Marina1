@@ -179,7 +179,9 @@ var FACADES = {
   brick:    { kind: 'brick', wall: '#8b4a35', alt: ['#7a3f2c', '#9a5640', '#83442f', '#6f3a2a', '#a35c44'], bayW: 11, floorH: 11, win: 0.4, frame: '#f2eee6', grid: true },
   brick2:   { kind: 'brick', wall: '#a0583b', alt: ['#8f4d33', '#b0654a', '#94513a', '#a9603f'], bayW: 10, floorH: 11, win: 0.38, frame: '#efe9dc', grid: true },
   brick3:   { kind: 'brick', wall: '#6e3b2c', alt: ['#5f3226', '#7c4433', '#663628', '#86503c'], bayW: 10, floorH: 11.5, win: 0.4, frame: '#e9e4d8', grid: true },
-  condo:    { kind: 'brick', wall: '#93503a', alt: ['#844630', '#a05b43', '#8a4934'], bayW: 13, floorH: 10.5, win: 0.55, frame: '#ece6da', balcony: true },
+  // the riverwalk condos, as in the photos: red brick bays alternating with cream stone bays stacked with glass balconies
+  condo:    { kind: 'brick', wall: '#93503a', alt: ['#8c3f2c', '#a04a35', '#963f2e', '#86412f'], bayW: 13, floorH: 10.5, win: 0.5, frame: '#f1ece2', condoBay: true },
+  condoBase:{ kind: 'stone', wall: '#e3d7bd', alt: ['#d9ccb0', '#eadfc8', '#d4c6a9'], bayW: 13, floorH: 11, win: 0.6, frame: '#f4f0e6', grid: true },
   hotel:    { kind: 'brick', wall: '#8a4632', alt: ['#7c3e2c', '#97513b'], bayW: 8, floorH: 10, win: 0.86, frame: '#c98a4a', band: true },
   white:    { kind: 'stucco', wall: '#e9e4d8', alt: ['#dedad0', '#f1ede4', '#d8d2c4'], bayW: 10, floorH: 11, win: 0.42, frame: '#ffffff', grid: true },
   colonial: { kind: 'brick', wall: '#924c36', alt: ['#80412f', '#a15a42'], bayW: 9, floorH: 12, win: 0.36, frame: '#fbf8f2', shutters: true, grid: true },
@@ -203,9 +205,11 @@ function facadeTexture(f) { // one tile = 2 bays x 2 floors, so neighbouring win
     } else {
       for (var n = 0; n < 2500; n++) { x.fillStyle = f.alt[Math.floor(rnd() * f.alt.length)]; x.fillRect(rnd() * T, rnd() * T, 2, 2); }
     }
+    if (f.kind === 'stone') { x.fillStyle = 'rgba(120,105,80,.22)'; for (var sl = 10; sl < T; sl += 21) x.fillRect(0, sl, T, 1.5); } // rusticated stone courses
     for (var row = 0; row < 2; row++) for (var col = 0; col < 2; col++) {
       var ox = col * C, oy = row * C;
       if (f.kind === 'store') { storefront(x, ox, oy, C, rnd, col); continue; }
+      if (f.condoBay && col === 1) { condoBalcony(x, ox, oy, C, rnd); continue; }
       var ww = C * f.win, wx0 = ox + (C - ww) / 2, wy = oy + C * 0.2, wh = C * 0.56;
       if (f.band) { x.fillStyle = '#b8743c'; x.fillRect(ox, oy + C * 0.78, C, C * 0.12); }
       if (f.shutters) {
@@ -243,6 +247,20 @@ function facadeTexture(f) { // one tile = 2 bays x 2 floors, so neighbouring win
   });
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
+}
+function condoBalcony(x, ox, oy, C, rnd) { // a cream stone bay with a sliding door and a glass-and-aluminum balcony
+  x.fillStyle = '#e4d9c1'; x.fillRect(ox, oy, C, C);
+  for (var n = 0; n < 500; n++) { x.fillStyle = ['#d8ccb2', '#ece3cf', '#d2c5aa'][Math.floor(rnd() * 3)]; x.fillRect(ox + rnd() * C, oy + rnd() * C, 2, 2); }
+  x.fillStyle = 'rgba(0,0,0,.12)'; x.fillRect(ox, oy, 3, C); x.fillRect(ox + C - 3, oy, 3, C);           // shadow where the bay steps out
+  x.fillStyle = '#f2eee6'; x.fillRect(ox + C * 0.24, oy + C * 0.12, C * 0.52, C * 0.76);                  // white door frame
+  var g = x.createLinearGradient(0, oy + C * 0.14, 0, oy + C * 0.86);
+  g.addColorStop(0, '#a9bccb'); g.addColorStop(0.5, '#5b7084'); g.addColorStop(1, '#2a3642');
+  x.fillStyle = g; x.fillRect(ox + C * 0.27, oy + C * 0.15, C * 0.46, C * 0.7);
+  x.fillStyle = '#f2eee6'; x.fillRect(ox + C * 0.5 - 1.5, oy + C * 0.15, 3, C * 0.7);
+  x.fillStyle = 'rgba(255,255,255,.16)'; x.beginPath(); x.moveTo(ox + C * 0.27, oy + C * 0.6); x.lineTo(ox + C * 0.47, oy + C * 0.15); x.lineTo(ox + C * 0.55, oy + C * 0.15); x.lineTo(ox + C * 0.27, oy + C * 0.8); x.fill();
+  x.fillStyle = '#d6ccb6'; x.fillRect(ox, oy + C * 0.88, C, C * 0.08);                                   // balcony slab edge
+  x.fillStyle = 'rgba(190,215,225,.55)'; x.fillRect(ox + 2, oy + C * 0.62, C - 4, C * 0.26);             // glass railing panel
+  x.fillStyle = '#c9cdd0'; x.fillRect(ox + 2, oy + C * 0.61, C - 4, 3); for (var p = 2; p < C; p += C / 4) x.fillRect(ox + p, oy + C * 0.61, 2, C * 0.27);
 }
 function storefront(x, ox, oy, C, rnd, col) {
   var signs = ['#1f3b2d', '#5b1f24', '#1d2e4a', '#2b2b2b', '#6b4a1e', '#3c2f4d'];
@@ -403,7 +421,7 @@ function setup() {
   water = new Water(new THREE.PlaneGeometry(12000, 12000), {
     textureWidth: lowPower ? 512 : 1024, textureHeight: lowPower ? 512 : 1024,
     waterNormals: waterNormals(), sunDirection: sunDir.clone(), sunColor: 0x9a917f,
-    waterColor: 0x0d2136, distortionScale: 0.9, fog: true
+    waterColor: 0x15140f, distortionScale: 0.9, fog: true // the Trent's dark, tea-colored water, as in the photos
   });
   water.material.uniforms.size.value = 3.5;
   // Real river water is dark and only mirror-like at low angles: lower the base reflectance and the milky haze
@@ -508,6 +526,10 @@ function build(svgText) {
     if (opts.store && floors > 1) {                       // shop fronts on the ground floor downtown
       wallParts.store.push(paint(walls(poly, base, base + FACADES.store.floorH, FACADES.store.bayW, FACADES.store.floorH), '#' + tint()));
       base += FACADES.store.floorH; floors -= 1;
+    } else if (opts.baseStyle) {                          // a different ground floor (the condos' cream stone base)
+      var bf = FACADES[opts.baseStyle];
+      wallParts[opts.baseStyle].push(paint(walls(poly, base, base + bf.floorH, bf.bayW, bf.floorH), '#ffffff'));
+      base += bf.floorH; floors -= 1;
     }
     var top = base + floors * f.floorH;
     wallParts[style].push(paint(walls(poly, base, top, f.bayW, f.floorH), tc));
@@ -535,6 +557,27 @@ function build(svgText) {
   land = ext.concat([[4600, -2600], [-2600, -2600]]);
   var landG = extrude(land, -3, LAND_H);
   var landMesh = new THREE.Mesh(landG, [grassMat, bulkMat]); landMesh.receiveShadow = true; scene.add(landMesh);
+  // The concrete seawall, textured from a photo of the marina's own bulkhead (images/photo-tex/seawall.jpg: three
+  // sheet-pile panels with the cap on top, the tan tide band and the dark wet growth at the waterline; ~6.2 ft wide)
+  (function () {
+    var t = texLoader.load('images/photo-tex/seawall.jpg');
+    t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping; t.anisotropy = 8;
+    var pos = [], uv = [], run = 0, TILE = 6.2, V0 = -1.6;
+    for (var i = 0; i < ext.length - 1; i++) {
+      var a = ext[i], b = ext[i + 1], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy), ox = -dy / l * 0.4, oy = dx / l * 0.4;
+      var A = [wx(a[0] + ox), wz(a[1] + oy)], B = [wx(b[0] + ox), wz(b[1] + oy)], u0 = run / TILE, u1 = (run + l * S) / TILE;
+      var v = function (h) { return (h - V0) / (LAND_H - V0); };
+      [[A, u0, -3], [B, u1, -3], [B, u1, LAND_H], [A, u0, -3], [B, u1, LAND_H], [A, u0, LAND_H]].forEach(function (p) {
+        pos.push(p[0][0], p[2], p[0][1]); uv.push(p[1], v(p[2]));
+      });
+      run += l * S;
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.computeVertexNormals();
+    var m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: t, roughness: 0.95, side: THREE.DoubleSide }));
+    m.receiveShadow = true; scene.add(m);
+  })();
   // concrete riverwalk along the bulkhead
   for (var i = 0; i < ext.length - 1; i++) {
     var a = ext[i], b = ext[i + 1], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy), nx = dy / l * 26, ny = -dx / l * 26;
@@ -565,7 +608,9 @@ function build(svgText) {
       for (var t = 0; t < 1; t += 0.012) {
         var mx = rp[0][0] + (rp[3][0] - rp[0][0]) * t, my = rp[0][1] + (rp[3][1] - rp[0][1]) * t, w2 = (rp[1][0] - rp[0][0]);
         if (inPoly(mx, my, land)) continue;
-        for (var e = 0.2; e < 1; e += 0.6) { var pg = new THREE.CylinderGeometry(0.9, 0.9, 20, 8); pg.translate(wx(mx + w2 * e), 5, wz(my)); partsVC.push(paint(pg, '#57504a')); }
+        // square-edged concrete piers under a dark steel span, as in the photos of the trestle
+      var pg = new THREE.BoxGeometry(Math.abs(w2) * S * 1.05, 20, 2.6); pg.translate(wx(mx + w2 * 0.5), 4, wz(my)); partsVC.push(paintBy(pg, '#c7bfae', '#b7ae9c'));
+      var cap = new THREE.BoxGeometry(Math.abs(w2) * S * 1.15, 1.2, 3.2); cap.translate(wx(mx + w2 * 0.5), 13.6, wz(my)); partsVC.push(paint(cap, '#c9c1b0'));
       }
       blocked.push(poly);
     }
@@ -578,8 +623,8 @@ function build(svgText) {
   });
 
   // Riverwalk condos on the west end (red brick, five floors, balconies), as in the aerial photos
-  building([[340, 270], [440, 270], [440, 330], [425, 330], [425, 390], [340, 390]], 5, 'condo', '#a19d95', { units: 5 });
-  building([[470, 330], [600, 330], [600, 470], [540, 470], [540, 410], [470, 410]], 5, 'condo', '#a19d95', { units: 6 });
+  building([[340, 270], [440, 270], [440, 330], [425, 330], [425, 390], [340, 390]], 5, 'condo', '#a19d95', { units: 5, baseStyle: 'condoBase', tint: 'ffffff' });
+  building([[470, 330], [600, 330], [600, 470], [540, 470], [540, 410], [470, 410]], 5, 'condo', '#a19d95', { units: 6, baseStyle: 'condoBase', tint: 'ffffff' });
   building([[455, 250], [590, 250], [590, 300], [455, 300]], 4, 'brick2', '#8f8b84', { units: 3 });
   // green-roofed convention center by the Cunningham Bridge
   building([[2000, 95], [2260, 95], [2260, 200], [2000, 200]], 2, 'white', '#3f8c78', { hip: 18, k: 0.55 });
@@ -696,6 +741,15 @@ function build(svgText) {
   // Main docks
   var docks = q('polygon[fill="url(#wood)"]').map(function (p) { return pts(p.getAttribute('points')); });
   docks.forEach(function (poly) { woodParts.push(extrude(poly, DOCK_H - 1.3, DOCK_H)); walk.push(poly); });
+  // black rubber rub rail around the dock edges (half of the strip hides inside the dock, half sticks out)
+  function rubRail(poly, top) {
+    for (var i = 0; i < poly.length; i++) {
+      var a = poly[i], b = poly[(i + 1) % poly.length];
+      if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 3) continue;
+      partsVC.push(paint(extrude(rectPoly(a[0], a[1], b[0], b[1], 0.8), top - 1.05, top - 0.12), '#1d1e20'));
+    }
+  }
+  docks.forEach(function (poly) { rubRail(poly, DOCK_H); });
   // Gangways from each dock head up to the riverwalk
   docks.forEach(function (poly) {
     var srt = poly.slice().sort(function (a, b) { return a[1] - b[1]; }), top = [(srt[0][0] + srt[1][0]) / 2, (srt[0][1] + srt[1][1]) / 2];
@@ -703,13 +757,37 @@ function build(svgText) {
     var y1 = top[1] + 2, y0 = ys - 16, gw = 9, gp = [[top[0] - gw / 2, y0], [top[0] + gw / 2, y0], [top[0] + gw / 2, y1], [top[0] - gw / 2, y1]];
     gangways.push({ x: top[0], y0: y0, y1: y1, ys: ys, poly: gp });
     walk.push(gp);
+    // aluminum gangway (as in the photos): a ridged gray deck, posts and two rails each side
     var len = (y1 - ys) * S, slope = Math.atan2(LAND_H - DOCK_H, len), bx = new THREE.BoxGeometry(gw * S, 0.4, Math.hypot(len, LAND_H - DOCK_H));
     bx.rotateX(-slope); bx.translate(wx(top[0]), (LAND_H + DOCK_H) / 2 - 0.2, wz((y1 + ys) / 2));
-    partsVC.push(paint(bx, '#76787a'));
+    partsVC.push(paint(bx, '#a7adb2'));
+    var alu = '#c6cbcf', hAt = function (y) { return LAND_H + (DOCK_H - LAND_H) * (y - ys) / (y1 - ys); };
+    for (var cl = ys + 1.5; cl < y1 - 0.5; cl += 1.6) { // anti-slip cleats across the deck
+      var ct = new THREE.BoxGeometry(gw * S * 0.96, 0.08, 0.12); ct.rotateX(-slope); ct.translate(wx(top[0]), hAt(cl) + 0.02, wz(cl)); partsVC.push(paint(ct, '#8d9398'));
+    }
     [-1, 1].forEach(function (sd) {
-      var rl = new THREE.BoxGeometry(0.25, 0.25, Math.hypot(len, LAND_H - DOCK_H)); rl.rotateX(-slope);
-      rl.translate(wx(top[0] + sd * gw / 2), (LAND_H + DOCK_H) / 2 + 3, wz((y1 + ys) / 2)); partsVC.push(paint(rl, '#c9ccd0'));
+      [3.3, 1.7].forEach(function (rh) {
+        var rl = new THREE.BoxGeometry(0.16, 0.16, Math.hypot(len, LAND_H - DOCK_H)); rl.rotateX(-slope);
+        rl.translate(wx(top[0] + sd * (gw / 2 - 0.3)), (LAND_H + DOCK_H) / 2 + rh, wz((y1 + ys) / 2)); partsVC.push(paint(rl, alu));
+      });
+      for (var st = ys; st <= y1 + 0.01; st += (y1 - ys) / Math.max(2, Math.round((y1 - ys) * S / 4))) {
+        var po = new THREE.BoxGeometry(0.14, 3.3, 0.14); po.translate(wx(top[0] + sd * (gw / 2 - 0.3)), hAt(st) + 1.65, wz(st)); partsVC.push(paint(po, alu));
+      }
     });
+    // the arched dock gate with a sunburst over it, on the dock at the foot of the gangway (left open)
+    var gy = wz(y1 + 2.5), gx = wx(top[0]), hwid = gw * S / 2 - 0.2, postH = 6.6, gcol = '#d3d7da';
+    [-1, 1].forEach(function (sd) {
+      var gp2 = new THREE.BoxGeometry(0.3, postH, 0.3); gp2.translate(gx + sd * hwid, DOCK_H + postH / 2, gy); partsVC.push(paint(gp2, gcol));
+      var side = new THREE.BoxGeometry(2.6, 0.12, 0.12); // short wing panels beside the gate
+      [0.4, 3.6].forEach(function (h) { var s2 = side.clone(); s2.translate(gx + sd * (hwid + 1.3), DOCK_H + h, gy); partsVC.push(paint(s2, gcol)); });
+      for (var pk = 0.3; pk < 2.6; pk += 0.4) { var pv = new THREE.BoxGeometry(0.08, 3.2, 0.08); pv.translate(gx + sd * (hwid + pk), DOCK_H + 2, gy); partsVC.push(paint(pv, gcol)); }
+    });
+    var arch = new THREE.TorusGeometry(hwid, 0.13, 6, 20, Math.PI); arch.translate(gx, DOCK_H + postH, gy); partsVC.push(paint(arch, gcol));
+    var bar = new THREE.BoxGeometry(hwid * 2, 0.14, 0.14); bar.translate(gx, DOCK_H + postH, gy); partsVC.push(paint(bar, gcol));
+    for (var ray = 1; ray < 8; ray++) { // sunburst spokes
+      var an = ray / 8 * Math.PI, sp2 = new THREE.BoxGeometry(hwid, 0.06, 0.06); sp2.translate(hwid / 2, 0, 0); sp2.rotateZ(an); sp2.translate(gx, DOCK_H + postH, gy); partsVC.push(paint(sp2, gcol));
+    }
+    var hub = new THREE.SphereGeometry(0.45, 10, 6); hub.translate(gx, DOCK_H + postH, gy); partsVC.push(paint(hub, gcol));
   });
 
   // Slips and finger piers
@@ -729,13 +807,13 @@ function build(svgText) {
       if (d < bd) { bd = d; best = i; }
     }
     var ea = poly[best], eb = poly[(best + 1) % poly.length], edge = [(ea[0] + eb[0]) / 2, (ea[1] + eb[1]) / 2];
-    var s = { key: key, dock: dock, num: num, size: g.getAttribute('data-size'), poly: poly, color: color, edge: edge, c: centroid(poly) };
+    var s = { key: key, dock: dock, num: num, size: g.getAttribute('data-size'), poly: poly, color: color, edge: edge, ea: ea, eb: eb, c: centroid(poly) };
     slips.push(s); slipByKey[key] = s;
     g.querySelectorAll('line.finger').forEach(function (ln) {
       var x1 = +ln.getAttribute('x1'), y1 = +ln.getAttribute('y1'), x2 = +ln.getAttribute('x2'), y2 = +ln.getAttribute('y2');
       var l = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / l, uy = (y2 - y1) / l;
       var fp = rectPoly(x1 - ux * 2, y1 - uy * 2, x2, y2, +ln.getAttribute('stroke-width') || 4);
-      woodParts.push(extrude(fp, DOCK_H - 1.1, DOCK_H - 0.02)); walk.push(fp);
+      woodParts.push(extrude(fp, DOCK_H - 1.1, DOCK_H - 0.02)); walk.push(fp); rubRail(fp, DOCK_H - 0.02);
       s.fingers = (s.fingers || []).concat([[x2, y2]]);
     });
   });
@@ -750,10 +828,41 @@ function build(svgText) {
     }
   });
   slips.forEach(function (s) { (s.fingers || []).forEach(function (f) { pil.push([f[0], f[1], 8]); }); });
-  var pilG = new THREE.CylinderGeometry(0.6, 0.65, 1, 10);
-  var pilings = new THREE.InstancedMesh(pilG, new THREE.MeshStandardMaterial({ color: 0xe4e1d8, roughness: 0.7 }), pil.length);
-  pil.forEach(function (p, i) { var top = DOCK_H + p[2], bot = -6; m4.compose(v3.set(wx(p[0]), (top + bot) / 2, wz(p[1])), qn.identity(), new THREE.Vector3(1, top - bot, 1)); pilings.setMatrixAt(i, m4); });
-  pilings.castShadow = true; scene.add(pilings);
+  // dark gray steel pipe pilings with black conical caps, as in the photos
+  var pilG = new THREE.CylinderGeometry(0.55, 0.58, 1, 12);
+  var pilings = new THREE.InstancedMesh(pilG, new THREE.MeshStandardMaterial({ color: 0x45494e, roughness: 0.55, metalness: 0.35 }), pil.length);
+  var pcapG = new THREE.ConeGeometry(0.62, 0.9, 12); pcapG.translate(0, 0.45, 0);
+  var pcaps = new THREE.InstancedMesh(pcapG, new THREE.MeshStandardMaterial({ color: 0x17181a, roughness: 0.5 }), pil.length);
+  pil.forEach(function (p, i) {
+    var top = DOCK_H + p[2], bot = -6; m4.compose(v3.set(wx(p[0]), (top + bot) / 2, wz(p[1])), qn.identity(), new THREE.Vector3(1, top - bot, 1)); pilings.setMatrixAt(i, m4);
+    m4.makeTranslation(wx(p[0]), top, wz(p[1])); pcaps.setMatrixAt(i, m4);
+  });
+  pilings.castShadow = pcaps.castShadow = true; scene.add(pilings, pcaps);
+
+  // white power pedestals at each slip, as in the photos: plinth, square column, outlet panel and a hipped cap
+  (function () {
+    var pp = [];
+    box(pp, 1.5, 0.3, 1.5, 0, 0.15, 0, '#e2e4e1');
+    box(pp, 1.05, 3.0, 1.05, 0, 1.8, 0, '#eef0ec');
+    box(pp, 1.35, 0.55, 1.35, 0, 3.55, 0, '#e8eae6');
+    box(pp, 0.72, 0.95, 0.06, 0, 2.55, 0.55, '#c9cdcf');            // outlet / meter panel, facing the slip
+    box(pp, 0.2, 0.2, 0.05, -0.18, 2.75, 0.59, '#3a3f44'); box(pp, 0.2, 0.2, 0.05, 0.18, 2.75, 0.59, '#3a3f44');
+    box(pp, 0.12, 0.12, 0.05, 0, 3.2, 0.59, '#c0392b');              // the little red "power on" badge
+    var cp = new THREE.ConeGeometry(1.05, 0.55, 4); cp.rotateY(Math.PI / 4); cp.translate(0, 4.1, 0); pp.push(strip(paint(cp, '#f4f5f2')));
+    var knob = new THREE.SphereGeometry(0.14, 8, 6); knob.translate(0, 4.4, 0); pp.push(strip(paint(knob, '#f4f5f2')));
+    var pedG = mergeGeometries(pp, false), list = [];
+    slips.forEach(function (s) {
+      if (!s.ea) return;
+      var ex = s.eb[0] - s.ea[0], ey = s.eb[1] - s.ea[1], el = Math.hypot(ex, ey) || 1;
+      var dx = s.edge[0] - s.c[0], dy = s.edge[1] - s.c[1], dl = Math.hypot(dx, dy) || 1;
+      var px = s.edge[0] + ex / el * el * 0.38 + dx / dl * 2.2, py = s.edge[1] + ey / el * el * 0.38 + dy / dl * 2.2;
+      if (surface(px, py) !== DOCK_H) return;                         // only where there is dock under it
+      list.push([px, py, Math.atan2(-dx, -dy)]);
+    });
+    var peds = new THREE.InstancedMesh(pedG, vcMat, list.length);
+    list.forEach(function (p, i) { m4.compose(v3.set(wx(p[0]), DOCK_H, wz(p[1])), qn.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p[2]), new THREE.Vector3(1, 1, 1)); peds.setMatrixAt(i, m4); });
+    peds.castShadow = peds.receiveShadow = true; scene.add(peds);
+  })();
 
   var lights = q('circle').filter(function (c) { return c.getAttribute('fill') === '#fff6c8'; });
   var postG = new THREE.CylinderGeometry(0.22, 0.28, 3.2, 6); postG.translate(0, 1.6, 0);
@@ -763,7 +872,21 @@ function build(svgText) {
   lights.forEach(function (c, i) { m4.makeTranslation(wx(+c.getAttribute('cx')), DOCK_H, wz(+c.getAttribute('cy'))); posts.setMatrixAt(i, m4); caps.setMatrixAt(i, m4); });
   scene.add(posts, caps);
 
-  // Riverwalk railing, open where the gangways come up
+  // Riverwalk fence, open where the gangways come up: teal ornamental iron with a band of rings under the top rail,
+  // drawn to match the photos. Pickets are a see-through texture on panels; posts are solid.
+  var fenceTex = canvasTex(512, 256, function (x, w, h) {
+    x.clearRect(0, 0, w, h);
+    var col = '#2c5d59', hi = '#3f7a74';
+    x.fillStyle = col;
+    x.fillRect(0, 8, w, 9); x.fillRect(0, 52, w, 8); x.fillRect(0, h - 26, w, 9);        // top rail, ring rail, bottom rail
+    for (var p = 6; p < w; p += 512 / 22) x.fillRect(p, 8, 5, h - 26);                   // pickets
+    x.strokeStyle = col; x.lineWidth = 4;
+    for (var r = 512 / 44 + 6; r < w; r += 512 / 22) { x.beginPath(); x.arc(r, 34, 9, 0, 7); x.stroke(); } // rings between pickets
+    x.fillStyle = hi; x.fillRect(0, 8, w, 2); x.fillRect(0, 52, w, 2);                     // sunlit top edges
+  });
+  fenceTex.wrapS = THREE.RepeatWrapping;
+  var fenceMat = new THREE.MeshStandardMaterial({ map: fenceTex, alphaTest: 0.5, transparent: false, side: THREE.DoubleSide, roughness: 0.6, metalness: 0.2 });
+  var fpos = [], fuv = [], FH = 4.2, frun = 0;
   var rail = [];
   for (var r = 0; r < shore.length - 1; r++) {
     var a3 = shore[r], b3 = shore[r + 1], l3 = Math.hypot(b3[0] - a3[0], b3[1] - a3[1]), step = 9;
@@ -773,12 +896,18 @@ function build(svgText) {
       var gap = gangways.some(function (gw) { return Math.abs((x0 + x1) / 2 - gw.x) < 9; });
       if (gap) continue;
       var nx2 = -(y1 - y0), ny2 = x1 - x0, nl = Math.hypot(nx2, ny2); x0 -= nx2 / nl * 2; y0 -= ny2 / nl * 2; x1 -= nx2 / nl * 2; y1 -= ny2 / nl * 2;
-      var bar = new THREE.BoxGeometry(Math.hypot(x1 - x0, y1 - y0) * S, 0.18, 0.18);
-      bar.rotateY(-Math.atan2(y1 - y0, x1 - x0)); bar.translate(wx((x0 + x1) / 2), LAND_H + 3.4, wz((y0 + y1) / 2)); rail.push(paint(bar, '#2f3b45'));
-      var po = new THREE.BoxGeometry(0.2, 3.4, 0.2); po.translate(wx(x0), LAND_H + 1.7, wz(y0)); rail.push(paint(po, '#2f3b45'));
+      var segL = Math.hypot(x1 - x0, y1 - y0) * S, u0 = frun / 7.2, u1 = (frun + segL) / 7.2; frun += segL;
+      [[x0, y0, u0, 0], [x1, y1, u1, 0], [x1, y1, u1, 1], [x0, y0, u0, 0], [x1, y1, u1, 1], [x0, y0, u0, 1]].forEach(function (v) {
+        fpos.push(wx(v[0]), LAND_H + v[3] * FH, wz(v[1])); fuv.push(v[2], v[3]);
+      });
+      var po = new THREE.BoxGeometry(0.3, FH + 0.3, 0.3); po.translate(wx(x0), LAND_H + (FH + 0.3) / 2, wz(y0)); rail.push(paint(po, '#28534f'));
+      var fin = new THREE.SphereGeometry(0.2, 8, 6); fin.translate(wx(x0), LAND_H + FH + 0.45, wz(y0)); rail.push(paint(fin, '#28534f'));
     }
   }
   scene.add(merged(rail, vcMat));
+  var fg = new THREE.BufferGeometry();
+  fg.setAttribute('position', new THREE.Float32BufferAttribute(fpos, 3)); fg.setAttribute('uv', new THREE.Float32BufferAttribute(fuv, 2)); fg.computeVertexNormals();
+  scene.add(new THREE.Mesh(fg, fenceMat));
 
   // Slip number signs and dock letters
   slips.forEach(function (s) {
