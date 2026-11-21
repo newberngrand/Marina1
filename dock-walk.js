@@ -844,7 +844,8 @@ function build(svgText) {
     var pp = [];
     box(pp, 1.5, 0.3, 1.5, 0, 0.15, 0, '#e2e4e1');
     box(pp, 1.05, 3.0, 1.05, 0, 1.8, 0, '#eef0ec');
-    box(pp, 1.35, 0.55, 1.35, 0, 3.55, 0, '#e8eae6');
+    box(pp, 1.35, 0.12, 1.35, 0, 3.34, 0, '#e8eae6');               // rims above and below the light
+    box(pp, 1.35, 0.12, 1.35, 0, 3.78, 0, '#e8eae6');
     box(pp, 0.72, 0.95, 0.06, 0, 2.55, 0.55, '#c9cdcf');            // outlet / meter panel, facing the slip
     box(pp, 0.2, 0.2, 0.05, -0.18, 2.75, 0.59, '#3a3f44'); box(pp, 0.2, 0.2, 0.05, 0.18, 2.75, 0.59, '#3a3f44');
     box(pp, 0.12, 0.12, 0.05, 0, 3.2, 0.59, '#c0392b');              // the little red "power on" badge
@@ -862,15 +863,14 @@ function build(svgText) {
     var peds = new THREE.InstancedMesh(pedG, vcMat, list.length);
     list.forEach(function (p, i) { m4.compose(v3.set(wx(p[0]), DOCK_H, wz(p[1])), qn.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p[2]), new THREE.Vector3(1, 1, 1)); peds.setMatrixAt(i, m4); });
     peds.castShadow = peds.receiveShadow = true; scene.add(peds);
+    // the dock light: a frosted, softly glowing lens band in the pedestal head, all the way around
+    var lensG = new THREE.BoxGeometry(1.25, 0.34, 1.25); lensG.translate(0, 3.56, 0);
+    var lens = new THREE.InstancedMesh(lensG, new THREE.MeshStandardMaterial({ color: 0xfff8e6, emissive: 0xffe6b0, emissiveIntensity: 0.7, roughness: 0.4 }), list.length);
+    list.forEach(function (p, i) { m4.compose(v3.set(wx(p[0]), DOCK_H, wz(p[1])), qn.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p[2]), new THREE.Vector3(1, 1, 1)); lens.setMatrixAt(i, m4); });
+    scene.add(lens);
   })();
 
-  var lights = q('circle').filter(function (c) { return c.getAttribute('fill') === '#fff6c8'; });
-  var postG = new THREE.CylinderGeometry(0.22, 0.28, 3.2, 6); postG.translate(0, 1.6, 0);
-  var capG = new THREE.SphereGeometry(0.42, 10, 8); capG.translate(0, 3.4, 0);
-  var posts = new THREE.InstancedMesh(postG, new THREE.MeshStandardMaterial({ color: 0x2f3b45, roughness: 0.6 }), lights.length);
-  var caps = new THREE.InstancedMesh(capG, new THREE.MeshStandardMaterial({ color: 0xfff6c8, emissive: 0xffe9a0, emissiveIntensity: 0.6 }), lights.length);
-  lights.forEach(function (c, i) { m4.makeTranslation(wx(+c.getAttribute('cx')), DOCK_H, wz(+c.getAttribute('cy'))); posts.setMatrixAt(i, m4); caps.setMatrixAt(i, m4); });
-  scene.add(posts, caps);
+  // (no separate light posts down the middle of the docks: the dock lights are built into the pedestal tops)
 
   // Riverwalk fence, open where the gangways come up: teal ornamental iron with a band of rings under the top rail,
   // drawn to match the photos. Pickets are a see-through texture on panels; posts are solid.
@@ -1336,7 +1336,7 @@ function audioStart() {
   if (AU.ctx) { if (AU.on && AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
   var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
   var ctx = AU.ctx = new AC();
-  var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(ctx.destination);
+  var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 4; comp.connect(ctx.destination); // -10: headroom so the louder train isn't squashed back down
   AU.master = ctx.createGain(); AU.master.gain.value = AU.on ? 0.9 : 0; AU.master.connect(comp);
   var len = ctx.sampleRate * 2, nb = ctx.createBuffer(1, len, ctx.sampleRate), nd = nb.getChannelData(0);
   for (var i = 0; i < len; i++) nd[i] = Math.random() * 2 - 1;
@@ -1356,9 +1356,9 @@ function audioStart() {
   lap.connect(lf); lf.connect(lg); lg.connect(AU.master); lap.start();
   buildEngineSound();
 }
-function panner(ref, roll) {
+function panner(ref, roll, dest) {
   var p = AU.ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse';
-  p.refDistance = ref || 25; p.rolloffFactor = roll || 1.1; p.maxDistance = 20000; p.connect(AU.master);
+  p.refDistance = ref || 25; p.rolloffFactor = roll || 1.1; p.maxDistance = 20000; p.connect(dest || AU.master);
   return p;
 }
 function setPos(p, x, y, z) {
@@ -1367,7 +1367,8 @@ function setPos(p, x, y, z) {
 }
 function buildEngineSound() { // diesel prime mover, turbo, rolling rumble and horn, all through 3D panners
   var ctx = AU.ctx, e = AU.eng = {};
-  e.pan = panner(45, 1.0); e.wheelPan = panner(35, 1.05); e.clickPan = panner(30, 1.1);
+  e.bus = ctx.createGain(); e.bus.gain.value = 1.5; e.bus.connect(AU.master);  // the whole train (engine, wheels, clicks, horn) 50% louder
+  e.pan = panner(45, 1.0, e.bus); e.wheelPan = panner(35, 1.05, e.bus); e.clickPan = panner(30, 1.1, e.bus);
   e.air = ctx.createBiquadFilter(); e.air.type = 'lowpass'; e.air.frequency.value = 1200; e.air.connect(e.pan);  // distance muffles the highs
   e.gain = ctx.createGain(); e.gain.gain.value = 0; e.gain.connect(e.air);
   e.chug = ctx.createGain(); e.chug.gain.value = 0.55; e.chug.connect(e.gain);
