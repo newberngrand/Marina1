@@ -1543,6 +1543,7 @@ footer.site-footer {
 
 /* ---------- Documents out for review (Admin) and the review page ---------- */
 .rv-who { border: 1px solid #e2e6ea; border-radius: 8px; padding: 10px 14px 12px; margin: 14px 0 6px; display: grid; gap: 10px; }
+.admin-grid .rv-who { margin: 0; }
 .rv-who legend { font-weight: 700; color: var(--navy); padding: 0 4px; }
 .rv-who label:not(.check) { display: grid; gap: 4px; font-size: 0.92rem; }
 .rv-head { margin: 22px 0 10px; color: var(--navy); }

@@ -876,7 +876,7 @@
   function setupDocs() {
     $('docCategory').innerHTML = D.DOC_CATEGORIES.map(function (c) {
       return '<option value="' + c.id + '">' + c.label + '</option>';
-    }).join('');
+    }).join('') + '<option value="review">For Review (email the board, slips or anyone)</option>';
     $('docCategory').addEventListener('change', function () {
       updateDateLabel();
       // New uploads: suggest Public for permits, rules and forms until the box is changed by hand.
@@ -912,7 +912,17 @@
   var PUBLIC_BY_DEFAULT = ['permits', 'rules', 'forms'], docPublicTouched = false;
 
   function updateDateLabel() {
-    var cat = D.DOC_CATEGORIES.find(function (c) { return c.id === $('docCategory').value; });
+    var review = $('docCategory').value === 'review';
+    var cat = review ? { id: 'review', dateLabel: 'Respond by' } : D.DOC_CATEGORIES.find(function (c) { return c.id === $('docCategory').value; });
+    // "For Review": the date is the respond-by date and the description is the message to reviewers.
+    $('docReviewNote').hidden = $('rvWho').hidden = !review;
+    $('docActiveWrap').hidden = $('docPublicWrap').hidden = review;
+    $('docDescLabel').textContent = review ? 'Message to reviewers (optional)' : 'Description (optional)';
+    $('docDesc').maxLength = review ? 4000 : 400;
+    $('docDesc').rows = review ? 3 : 2;
+    $('docTitle').maxLength = review ? 200 : 150;
+    $('docFormTitle').textContent = review ? 'Upload a Document for Review' : $('docId').value ? 'Edit Document' : 'Upload Document';
+    $('docSave').textContent = review ? 'Upload & Send Invites' : $('docId').value ? 'Save Changes' : 'Upload';
     $('docDateLabel').textContent = cat.dateLabel + (cat.id === 'minutes' ? ' (required)' : ' (optional)');
     $('docDate').required = cat.id === 'minutes';
     $('docMinutesNote').hidden = cat.id !== 'minutes';
@@ -927,6 +937,8 @@
     $('docSave').textContent = d ? 'Save Changes' : 'Upload';
     $('docId').value = d ? d.id : '';
     $('docCategory').value = d ? d.category : 'minutes';
+    $('docCategory').querySelector('option[value=review]').disabled = !!d;  // an existing document can't become a review
+    $('rvBoard').checked = true; $('rvSlips').value = ''; $('rvEmails').value = '';
     $('docDate').value = d && d.doc_date ? d.doc_date : '';
     $('docTitle').value = d ? d.title : '';
     $('docDesc').value = d ? d.description : '';
@@ -950,6 +962,7 @@
 
   function saveDoc(e) {
     e.preventDefault();
+    if ($('docCategory').value === 'review') return sendForReview();
     var id = $('docId').value;
     var file = $('docFile').files[0];
     var row = {
@@ -1347,21 +1360,6 @@
     sb.from('members').select('slip', { count: 'exact', head: true }).eq('is_board', true).eq('active', true).then(function (r) {
       $('rvBoardCount').textContent = r.count ? '(' + r.count + ' members)' : '';
     });
-    $('rvNew').addEventListener('click', function () {
-      $('rvForm').reset();
-      $('rvBoard').checked = true;
-      showErr($('rvError'), '');
-      $('docForm').hidden = true;
-      $('rvForm').hidden = false;
-      $('rvForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    $('docNew').addEventListener('click', function () { $('rvForm').hidden = true; });
-    $('rvCancel').addEventListener('click', function () { $('rvForm').hidden = true; });
-    $('rvFile').addEventListener('change', function () {
-      var f = $('rvFile').files[0];
-      if (f && !$('rvTitle').value.trim()) $('rvTitle').value = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
-    });
-    $('rvForm').addEventListener('submit', sendForReview);
     $('rvList').addEventListener('click', reviewClick);
     $('rvList').addEventListener('submit', function (e) {
       var f = e.target.closest('form[data-rv-add]');
@@ -1377,34 +1375,34 @@
     loadReviews();
   }
 
-  function sendForReview(e) {
-    e.preventDefault();
-    var err = $('rvError'), btn = $('rvSave'), file = $('rvFile').files[0];
-    var title = $('rvTitle').value.trim();
+  // Upload Document form with Section "For Review": upload the file, then email the reviewers.
+  function sendForReview() {
+    var err = $('docError'), btn = $('docSave'), file = $('docFile').files[0];
+    var title = $('docTitle').value.trim();
     var board = $('rvBoard').checked, slips = $('rvSlips').value.trim(), emails = $('rvEmails').value.trim();
     if (!title) return showErr(err, 'Please enter a title.');
     if (!file) return showErr(err, 'Please choose a file.');
     if (file.size > 25 * 1024 * 1024) return showErr(err, 'That file is larger than 25 MB.');
     if (!board && !slips && !emails) return showErr(err, 'Choose who should review it: the board, some slips, or email addresses.');
     showErr(err, '');
-    btn.disabled = true; btn.textContent = 'Uploading…';
+    btn.disabled = true; btn.textContent = 'Uploading\u2026';
     var path = 'reviews/' + new Date().getFullYear() + '/' + Date.now() + '-' + safeName(file.name), reviewId = null;
     sb.storage.from('marina-docs').upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
       .then(function (r) {
         if (r.error) throw new Error(r.error.message.indexOf('mime') !== -1 ? 'That file type is not allowed.' : r.error.message);
-        return sb.from('doc_reviews').insert({ title: title, message: $('rvMessage').value.trim(), due_date: $('rvDue').value || null,
+        return sb.from('doc_reviews').insert({ title: title, message: $('docDesc').value.trim(), due_date: $('docDate').value || null,
           storage_path: path, file_name: file.name, mime_type: file.type || '', size_bytes: file.size }).select('id').single();
       })
       .then(function (r) {
         if (r.error) { sb.storage.from('marina-docs').remove([path]); throw new Error(r.error.message); }
         reviewId = r.data.id;
-        btn.textContent = 'Sending invites…';
+        btn.textContent = 'Sending invites\u2026';
         return callReview({ action: 'invite', review_id: reviewId, board: board, slips: slips, emails: emails });
       })
       .then(function (r) {
         rvOpen[reviewId] = inviteSummary(r);
-        $('rvForm').hidden = true;
-        return loadReviews();
+        $('docForm').hidden = true;
+        return loadReviews().then(function () { $('rvSection').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
       })
       .catch(function (ex) {
         showErr(err, reviewId ? 'The document was saved, but invites were not sent: ' + ex.message + ' You can add reviewers from the Out for Review list.' : ex.message);
