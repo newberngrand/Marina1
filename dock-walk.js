@@ -1095,11 +1095,10 @@ function bindInput() {
       moveVec.x = dx / m; moveVec.y = -dy / m;
       $('dwKnob').style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
     } else if (look && e.pointerId === look.id) {
-      // touch: the thumb points where you look (right = look right, up = look up);
-      // mouse: grab-and-drag the view, as before
-      var touch = e.pointerType === 'touch', sens = touch ? 0.006 : 0.0045, dir = touch ? -1 : 1;
-      player.yaw += (e.clientX - look.x) * sens * dir;
-      player.pitch = Math.max(-1.35, Math.min(1.1, player.pitch + (e.clientY - look.y) * sens * dir));
+      // touch and mouse alike: drag toward where you want to look (right = look right, up = look up)
+      var sens = e.pointerType === 'touch' ? 0.006 : 0.0045;
+      player.yaw -= (e.clientX - look.x) * sens;
+      player.pitch = Math.max(-1.35, Math.min(1.1, player.pitch - (e.clientY - look.y) * sens));
       look.x = e.clientX; look.y = e.clientY;
     }
   });
