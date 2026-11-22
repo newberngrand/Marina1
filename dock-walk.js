@@ -1643,6 +1643,22 @@ function resize() {
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); }
 }
+// Silence the sound the moment the page is left or hidden. The loop below can't do it:
+// browsers stop running it for hidden pages, and some keep a left page's audio going
+// (back/forward cache). Coming back resumes it from the loop as usual.
+function audioPause() {
+  if (AU.master && AU.ctx) AU.master.gain.setValueAtTime(0, AU.ctx.currentTime);
+  if (AU.ctx && AU.ctx.state === 'running') AU.ctx.suspend();
+}
+addEventListener('pagehide', audioPause);
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) audioPause();
+  else if (AU.master && AU.ctx) AU.master.gain.setTargetAtTime(AU.on ? 0.9 : 0, AU.ctx.currentTime, 0.2);
+});
+addEventListener('pageshow', function (e) {
+  if (e.persisted && AU.master && AU.ctx) AU.master.gain.setTargetAtTime(AU.on ? 0.9 : 0, AU.ctx.currentTime, 0.2);
+});
+
 function loop() {
   requestAnimationFrame(loop);
   var r = wrap.getBoundingClientRect();
