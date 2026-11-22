@@ -222,6 +222,7 @@
   function loadDocs(sb) {
     sb.from('documents').select('id, category, title, description, doc_date, storage_path, file_name')
       .eq('active', true)
+      .neq('category', 'board')  // board members see these on the Board page
       .order('doc_date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .then(function (r) {

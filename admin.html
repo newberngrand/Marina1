@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611221030">
+<link rel="stylesheet" href="style.css?v=202611221215">
 </head>
 <body data-member-portal>
 
@@ -302,11 +302,55 @@
       <div class="admin-panel" data-panel="docs" hidden>
         <div class="admin-panel-head">
           <h2>Marina Documents</h2>
-          <button type="button" class="btn btn-gold" id="docNew">+ Upload Document</button>
+          <div class="portal-actions" style="margin:0">
+            <button type="button" class="btn btn-outline" id="rvNew">+ Send for Review</button>
+            <button type="button" class="btn btn-gold" id="docNew">+ Upload Document</button>
+          </div>
+        </div>
+
+        <form class="portal-card admin-form" id="rvForm" hidden>
+          <h3>Send a Document for Review</h3>
+          <p class="note" style="margin:0 0 10px">Each reviewer gets an email with a private link. They can open the document without logging in, then approve it, ask for changes, or leave a comment. Their answers show up below. The document isn&rsquo;t added to Marina Documents.</p>
+          <div class="admin-grid">
+            <label class="full">Title
+              <input type="text" id="rvTitle" maxlength="200" required placeholder="e.g. Draft 2027 Budget">
+            </label>
+            <label class="full">File (PDF, Word, Excel, PowerPoint or image; up to 25 MB)
+              <input type="file" id="rvFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp" required>
+            </label>
+            <label class="full">Message to reviewers (optional)
+              <textarea id="rvMessage" rows="3" maxlength="4000" placeholder="What would you like them to look at?"></textarea>
+            </label>
+            <label>Respond by (optional)
+              <input type="date" id="rvDue">
+            </label>
+          </div>
+          <fieldset class="rv-who">
+            <legend>Who should review it?</legend>
+            <label class="check"><input type="checkbox" id="rvBoard" checked> <span>The Board of Directors <span class="note" id="rvBoardCount"></span></span></label>
+            <label>Slips (optional)
+              <input type="text" id="rvSlips" placeholder="e.g. A12, B7, C3">
+            </label>
+            <label>Invite by email (optional)
+              <textarea id="rvEmails" rows="2" placeholder="pat@example.com, Chris Lee &lt;chris@example.com&gt;"></textarea>
+              <span class="note">Anyone, member or not. One per line or separated by commas.</span>
+            </label>
+          </fieldset>
+          <div class="member-login-error" id="rvError" hidden></div>
+          <div class="portal-actions">
+            <button type="submit" class="btn btn-gold" id="rvSave">Upload &amp; Send Invites</button>
+            <button type="button" class="btn btn-outline" id="rvCancel">Cancel</button>
+          </div>
+        </form>
+
+        <div id="rvSection" hidden>
+          <h3 class="rv-head">Out for Review</h3>
+          <div id="rvList"></div>
         </div>
 
         <form class="portal-card admin-form" id="docForm" hidden>
           <h3 id="docFormTitle">Upload Document</h3>
+          <p class="board-alert" id="docBoardNote" hidden>Board Documents are only visible to board members (on the <a href="board.html">Board page</a>) and admins. They are never public.</p>
           <p class="board-alert" id="docMinutesNote" hidden>New or replaced meeting minutes stay hidden from members until every board member approves them on the <a href="board.html">Board page</a>.</p>
           <input type="hidden" id="docId">
           <div class="admin-grid">
@@ -622,9 +666,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611221030"></script>
-<script src="member-data.js?v=202611221030"></script>
-<script src="video-utils.js?v=202611221030"></script>
-<script src="admin.js?v=202611221030"></script>
+<script src="member-login.js?v=202611221215"></script>
+<script src="member-data.js?v=202611221215"></script>
+<script src="video-utils.js?v=202611221215"></script>
+<script src="admin.js?v=202611221215"></script>
 </body>
 </html>

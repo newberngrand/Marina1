@@ -31,6 +31,7 @@
         loadReview(justSubmitted ? 'Your minutes were submitted. Every board member can now review and approve them below.' : '');
         if (justSubmitted) history.replaceState(null, '', location.pathname);
         loadPublished();
+        setupBoardDocs();
         setupUpload();
         setupWriting();
       });
@@ -217,6 +218,61 @@
             '<div class="note">Published ' + D.esc(fmtDate(x.published_at)) + '</div></li>';
         }).join('') + '</ul>' : '<p class="note" style="margin:0">No minutes have been published through board review yet.</p>';
       });
+  }
+
+  /* ---------- board-only documents ---------- */
+  var boardDocs = [];
+  function loadBoardDocs() {
+    return sb.from('documents').select('id, title, description, doc_date, storage_path, file_name, size_bytes, created_at')
+      .eq('category', 'board').eq('active', true)
+      .order('doc_date', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false })
+      .then(function (r) {
+        boardDocs = r.data || [];
+        $('boardDocList').innerHTML = boardDocs.length ? '<ul class="doc-list">' + boardDocs.map(function (d, i) {
+          return '<li><button type="button" class="doc-link" data-bdoc="' + i + '">' + D.esc(d.title) + '</button>' +
+            (d.doc_date ? ' <span class="note">&middot; ' + D.esc(D.fmtDay(d.doc_date)) + '</span>' : '') +
+            (d.description ? '<div class="note">' + D.esc(d.description) + '</div>' : '') + '</li>';
+        }).join('') + '</ul>' : '<p class="note" style="margin:0">No board documents yet.</p>';
+      });
+  }
+  function setupBoardDocs() {
+    loadBoardDocs();
+    $('boardDocList').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-bdoc]');
+      if (!b) return;
+      var d = boardDocs[+b.getAttribute('data-bdoc')];
+      D.openDocument(sb, d.storage_path, d.file_name, { id: d.id, title: d.title, category: 'board' });
+    });
+    $('bdDocFile').addEventListener('change', function () {
+      var f = $('bdDocFile').files[0];
+      if (f && !$('bdDocTitle').value.trim()) $('bdDocTitle').value = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+    });
+    $('bdDocForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var f = $('bdDocFile').files[0], err = $('bdDocError'), btn = $('bdDocSave');
+      var title = $('bdDocTitle').value.trim();
+      err.hidden = true;
+      if (!title || !f) { err.textContent = 'Please enter a title and choose a file.'; err.hidden = false; return; }
+      if (f.size > 25 * 1024 * 1024) { err.textContent = 'That file is larger than 25 MB.'; err.hidden = false; return; }
+      btn.disabled = true; btn.textContent = 'Uploading…';
+      var date = $('bdDocDate').value || null;
+      var path = 'board/' + (date || new Date().toISOString()).slice(0, 4) + '/' + Date.now() + '-' +
+        f.name.normalize('NFKD').replace(/[^\w.\-]+/g, '-').replace(/-+/g, '-').slice(-80);
+      sb.storage.from('marina-docs').upload(path, f, { contentType: f.type || 'application/octet-stream', upsert: false })
+        .then(function (r) {
+          if (r.error) throw new Error(r.error.message.indexOf('mime') !== -1 ? 'That file type is not allowed.' : r.error.message);
+          return sb.from('documents').insert({ category: 'board', title: title, description: $('bdDocDesc').value.trim(), doc_date: date,
+            storage_path: path, file_name: f.name, mime_type: f.type || '', size_bytes: f.size, active: true, is_public: false });
+        })
+        .then(function (r) {
+          if (r.error) { sb.storage.from('marina-docs').remove([path]); throw new Error(r.error.message); }
+          $('bdDocForm').reset();
+          $('bdDocForm').closest('details').open = false;
+          return loadBoardDocs();
+        })
+        .catch(function (ex) { err.textContent = ex.message; err.hidden = false; })
+        .then(function () { btn.disabled = false; btn.textContent = 'Upload'; });
+    });
   }
 
   /* ---------- upload ---------- */

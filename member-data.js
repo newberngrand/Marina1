@@ -32,7 +32,8 @@
     { id: 'permits', label: 'Permits & Licenses', dateLabel: 'Issue date' },
     { id: 'insurance', label: 'Insurance', dateLabel: 'Effective date' },
     { id: 'forms', label: 'Forms', dateLabel: 'Date' },
-    { id: 'other', label: 'Other Documents', dateLabel: 'Date' }
+    { id: 'other', label: 'Other Documents', dateLabel: 'Date' },
+    { id: 'board', label: 'Board Documents', dateLabel: 'Date', boardOnly: true }
   ];
 
   function label(list, id) {

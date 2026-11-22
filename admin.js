@@ -906,6 +906,7 @@
       }
     });
     loadDocs();
+    setupReviews();
   }
 
   var PUBLIC_BY_DEFAULT = ['permits', 'rules', 'forms'], docPublicTouched = false;
@@ -915,6 +916,10 @@
     $('docDateLabel').textContent = cat.dateLabel + (cat.id === 'minutes' ? ' (required)' : ' (optional)');
     $('docDate').required = cat.id === 'minutes';
     $('docMinutesNote').hidden = cat.id !== 'minutes';
+    // Board Documents are never public.
+    $('docBoardNote').hidden = cat.id !== 'board';
+    if (cat.id === 'board') $('docPublic').checked = false;
+    $('docPublic').disabled = cat.id === 'board';
   }
 
   function openDocForm(d) {
@@ -1007,7 +1012,7 @@
       '<td>' + (d.approval_status === 'pending'
           ? '<a class="badge badge-board" href="board.html" title="Review and approve on the Board page">Awaiting board approval &rarr;</a><div class="note">' + (docApprovals[d.id] || 0) + ' of ' + boardSize + ' approved &middot; <a href="board.html">Board page</a></div>'
           : (d.active ? 'Visible' : '<span class="inactive">Hidden</span>')) +
-        '<div>' + (d.is_public ? '<span class="badge badge-public">Public</span>' : '<span class="badge badge-private">Members only</span>') + '</div></td>' +
+        '<div>' + (d.category === 'board' ? '<span class="badge badge-board">Board only</span>' : d.is_public ? '<span class="badge badge-public">Public</span>' : '<span class="badge badge-private">Members only</span>') + '</div></td>' +
       '<td class="row-actions">' +
         '<button type="button" class="btn-sm" data-act="open" data-id="' + d.id + '">Open</button>' +
         '<button type="button" class="btn-sm" data-act="edit" data-id="' + d.id + '">Edit</button>' +
@@ -1308,6 +1313,200 @@
       var want = (k + 1) * 10;
       return x.sort_order === want ? null : sb.from('gallery_videos').update({ sort_order: want }).eq('id', x.id);
     })).then(loadVideos);
+  }
+
+  /* ---------- Documents out for review ---------- */
+  var reviews = [], reviewers = {}, rvOpen = {};
+
+  function callReview(payload) {
+    return sb.functions.invoke('review', { body: payload }).then(function (r) {
+      if (r.error) {
+        var ctx = r.error.context;
+        if (ctx && typeof ctx.json === 'function') {
+          return ctx.json().then(function (b) { throw new Error(b.error || r.error.message); }, function () { throw new Error(r.error.message); });
+        }
+        throw new Error(r.error.message);
+      }
+      if (r.data && r.data.error) throw new Error(r.data.error);
+      return r.data;
+    });
+  }
+
+  // What happened with an invite, in words ("3 invited. Slip Z9 wasn't found.").
+  function inviteSummary(r) {
+    var bits = [];
+    bits.push(r.added ? r.added + ' invitation' + (r.added > 1 ? 's' : '') + ' sent' + (r.failed ? ' (' + r.failed + ' could not be emailed; use Resend later)' : '') + '.' : 'No new reviewers.');
+    if (r.already) bits.push(r.already + ' already invited.');
+    if (r.unknown && r.unknown.length) bits.push('Not found: slip ' + r.unknown.join(', ') + '.');
+    if (r.noEmail && r.noEmail.length) bits.push('No email on file for slip ' + r.noEmail.join(', ') + '.');
+    if (r.badEmail && r.badEmail.length) bits.push('Not a valid email: ' + r.badEmail.join(', ') + '.');
+    return bits.join(' ');
+  }
+
+  function setupReviews() {
+    sb.from('members').select('slip', { count: 'exact', head: true }).eq('is_board', true).eq('active', true).then(function (r) {
+      $('rvBoardCount').textContent = r.count ? '(' + r.count + ' members)' : '';
+    });
+    $('rvNew').addEventListener('click', function () {
+      $('rvForm').reset();
+      $('rvBoard').checked = true;
+      showErr($('rvError'), '');
+      $('docForm').hidden = true;
+      $('rvForm').hidden = false;
+      $('rvForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    $('docNew').addEventListener('click', function () { $('rvForm').hidden = true; });
+    $('rvCancel').addEventListener('click', function () { $('rvForm').hidden = true; });
+    $('rvFile').addEventListener('change', function () {
+      var f = $('rvFile').files[0];
+      if (f && !$('rvTitle').value.trim()) $('rvTitle').value = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+    });
+    $('rvForm').addEventListener('submit', sendForReview);
+    $('rvList').addEventListener('click', reviewClick);
+    $('rvList').addEventListener('submit', function (e) {
+      var f = e.target.closest('form[data-rv-add]');
+      if (!f) return;
+      e.preventDefault();
+      var id = f.getAttribute('data-rv-add'), msg = f.querySelector('.rv-add-msg'), btn = f.querySelector('button[type=submit]');
+      btn.disabled = true; msg.textContent = 'Sending…'; msg.hidden = false;
+      callReview({ action: 'invite', review_id: id, board: f.querySelector('[name=board]').checked,
+        slips: f.querySelector('[name=slips]').value, emails: f.querySelector('[name=emails]').value })
+        .then(function (r) { rvOpen[id] = inviteSummary(r); return loadReviews(); })
+        .catch(function (ex) { msg.textContent = ex.message; btn.disabled = false; });
+    });
+    loadReviews();
+  }
+
+  function sendForReview(e) {
+    e.preventDefault();
+    var err = $('rvError'), btn = $('rvSave'), file = $('rvFile').files[0];
+    var title = $('rvTitle').value.trim();
+    var board = $('rvBoard').checked, slips = $('rvSlips').value.trim(), emails = $('rvEmails').value.trim();
+    if (!title) return showErr(err, 'Please enter a title.');
+    if (!file) return showErr(err, 'Please choose a file.');
+    if (file.size > 25 * 1024 * 1024) return showErr(err, 'That file is larger than 25 MB.');
+    if (!board && !slips && !emails) return showErr(err, 'Choose who should review it: the board, some slips, or email addresses.');
+    showErr(err, '');
+    btn.disabled = true; btn.textContent = 'Uploading…';
+    var path = 'reviews/' + new Date().getFullYear() + '/' + Date.now() + '-' + safeName(file.name), reviewId = null;
+    sb.storage.from('marina-docs').upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message.indexOf('mime') !== -1 ? 'That file type is not allowed.' : r.error.message);
+        return sb.from('doc_reviews').insert({ title: title, message: $('rvMessage').value.trim(), due_date: $('rvDue').value || null,
+          storage_path: path, file_name: file.name, mime_type: file.type || '', size_bytes: file.size }).select('id').single();
+      })
+      .then(function (r) {
+        if (r.error) { sb.storage.from('marina-docs').remove([path]); throw new Error(r.error.message); }
+        reviewId = r.data.id;
+        btn.textContent = 'Sending invites…';
+        return callReview({ action: 'invite', review_id: reviewId, board: board, slips: slips, emails: emails });
+      })
+      .then(function (r) {
+        rvOpen[reviewId] = inviteSummary(r);
+        $('rvForm').hidden = true;
+        return loadReviews();
+      })
+      .catch(function (ex) {
+        showErr(err, reviewId ? 'The document was saved, but invites were not sent: ' + ex.message + ' You can add reviewers from the Out for Review list.' : ex.message);
+        if (reviewId) loadReviews();
+      })
+      .then(function () { btn.disabled = false; btn.textContent = 'Upload & Send Invites'; });
+  }
+
+  var DECISION = { approved: ['Approved', 'badge-public'], changes: ['Changes requested', 'badge-returned'], comment: ['Commented', 'badge-meeting'] };
+
+  function loadReviews() {
+    return Promise.all([
+      sb.from('doc_reviews').select('*').order('created_at', { ascending: false }).limit(100),
+      sb.from('doc_reviewers').select('*').limit(5000)
+    ]).then(function (res) {
+      if (res[0].error) { $('rvSection').hidden = true; return; }
+      reviews = res[0].data || [];
+      reviewers = {};
+      (res[1].data || []).forEach(function (x) { (reviewers[x.review_id] = reviewers[x.review_id] || []).push(x); });
+      $('rvSection').hidden = !reviews.length;
+      reviews.sort(function (a, b) { return (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1); });
+      $('rvList').innerHTML = reviews.map(reviewCard).join('');
+    });
+  }
+
+  function reviewCard(rv) {
+    var list = (reviewers[rv.id] || []).slice().sort(function (a, b) {
+      return (a.via === 'board' ? 0 : a.via === 'slip' ? 1 : 2) - (b.via === 'board' ? 0 : b.via === 'slip' ? 1 : 2) || (a.name || a.email).localeCompare(b.name || b.email);
+    });
+    var n = list.length, done = list.filter(function (x) { return x.decision; });
+    var appr = done.filter(function (x) { return x.decision === 'approved'; }).length;
+    var chg = done.filter(function (x) { return x.decision === 'changes'; }).length;
+    var opened = list.filter(function (x) { return x.viewed_at; }).length;
+    var open = rv.id in rvOpen;
+    var pct = n ? Math.round(done.length * 100 / n) : 0;
+    var html = '<div class="portal-card rv-card' + (rv.status === 'closed' ? ' rv-closed' : '') + '">' +
+      '<div class="rv-card-head"><div><strong>' + D.esc(rv.title) + '</strong> ' +
+        (rv.status === 'closed' ? '<span class="badge badge-private">Closed</span>' : '<span class="badge badge-notice">Open</span>') +
+        '<div class="note">Sent ' + D.esc(D.fmtWhen(rv.created_at)) + (rv.due_date ? ' &middot; respond by ' + D.esc(D.fmtDay(rv.due_date)) : '') +
+        ' &middot; ' + D.esc(rv.file_name) + (rv.size_bytes ? ' (' + D.fileSize(rv.size_bytes) + ')' : '') + '</div></div>' +
+        '<div class="row-actions">' +
+          '<button type="button" class="btn-sm" data-rv="open" data-id="' + rv.id + '">Open file</button>' +
+          '<button type="button" class="btn-sm" data-rv="toggle" data-id="' + rv.id + '">' + (open ? 'Hide responses' : 'Responses') + '</button>' +
+          '<button type="button" class="btn-sm" data-rv="status" data-id="' + rv.id + '">' + (rv.status === 'open' ? 'Close review' : 'Reopen') + '</button>' +
+          '<button type="button" class="btn-sm btn-danger" data-rv="delete" data-id="' + rv.id + '">Delete</button>' +
+        '</div></div>' +
+      '<div class="rv-progress" title="' + done.length + ' of ' + n + ' responded"><div class="an-chart-track"><div class="an-chart-bar" style="width:' + pct + '%"></div></div>' +
+        '<span><strong>' + done.length + ' of ' + n + '</strong> responded &middot; ' + appr + ' approved' + (chg ? ' &middot; <strong>' + chg + ' want changes</strong>' : '') + ' &middot; ' + opened + ' opened it</span></div>';
+    if (open) {
+      if (rvOpen[rv.id]) html += '<p class="member-login-note" style="margin:10px 0 0">' + D.esc(rvOpen[rv.id]) + '</p>';
+      html += '<div class="admin-table-wrap" style="margin-top:10px"><table class="admin-table"><thead><tr><th>Reviewer</th><th>Invited</th><th>Opened</th><th>Response</th><th></th></tr></thead><tbody>' +
+        (list.length ? list.map(function (x) {
+          var d = DECISION[x.decision];
+          var via = x.via === 'board' ? 'Board' + (x.slip ? ' &middot; slip ' + D.esc(x.slip) : '') : x.via === 'slip' ? 'Slip ' + D.esc(x.slip) : 'Email invite';
+          return '<tr><td><strong>' + D.esc(x.name || x.email) + '</strong><div class="note">' + via + (x.name ? ' &middot; ' + D.esc(x.email) : '') + '</div></td>' +
+            '<td class="nowrap">' + (x.email_status === 'sent' ? D.esc(D.fmtWhen(x.invited_at)) : x.email_status === 'failed' ? '<span class="inactive" title="' + D.esc(x.email_error || '') + '">Email failed</span>' : '<span class="note">Not sent</span>') + '</td>' +
+            '<td class="nowrap">' + (x.viewed_at ? D.esc(D.fmtWhen(x.viewed_at)) : '<span class="note">No</span>') + '</td>' +
+            '<td>' + (d ? '<span class="badge ' + d[1] + '">' + d[0] + '</span> <span class="note">' + D.esc(D.fmtWhen(x.responded_at)) + '</span>' +
+              (x.comment ? '<div class="rv-comment">' + D.esc(x.comment).replace(/\n/g, '<br>') + '</div>' : '') : '<span class="note">Waiting</span>') + '</td>' +
+            '<td class="row-actions"><button type="button" class="btn-sm" data-rv="resend" data-id="' + x.id + '">Resend</button>' +
+              '<button type="button" class="btn-sm btn-danger" data-rv="remove" data-id="' + x.id + '">Remove</button></td></tr>';
+        }).join('') : '<tr><td colspan="5" class="note">No reviewers yet.</td></tr>') + '</tbody></table></div>';
+      if (rv.status === 'open') {
+        var hasBoard = list.some(function (x) { return x.via === 'board'; });
+        html += '<form class="rv-add" data-rv-add="' + rv.id + '"><strong>Add reviewers</strong>' +
+          '<label class="check"><input type="checkbox" name="board"> <span>The Board' + (hasBoard ? ' <span class="note">(anyone new on the board)</span>' : '') + '</span></label>' +
+          '<input type="text" name="slips" placeholder="Slips, e.g. A12, B7" aria-label="Slips">' +
+          '<input type="text" name="emails" placeholder="Emails, e.g. pat@example.com" aria-label="Email addresses">' +
+          '<button type="submit" class="btn-sm btn-primary-sm">Send invites</button>' +
+          '<span class="note rv-add-msg" hidden></span></form>';
+      }
+    }
+    return html + '</div>';
+  }
+
+  function reviewClick(e) {
+    var b = e.target.closest('button[data-rv]');
+    if (!b) return;
+    var act = b.getAttribute('data-rv'), id = b.getAttribute('data-id');
+    var rv = reviews.find(function (x) { return x.id === id; });
+    if (act === 'open' && rv) D.openDocument(sb, rv.storage_path, rv.file_name, { id: rv.id, title: rv.title, category: 'review' });
+    if (act === 'toggle') { if (id in rvOpen) delete rvOpen[id]; else rvOpen[id] = ''; $('rvList').innerHTML = reviews.map(reviewCard).join(''); }
+    if (act === 'status' && rv) {
+      sb.from('doc_reviews').update({ status: rv.status === 'open' ? 'closed' : 'open' }).eq('id', id).then(loadReviews);
+    }
+    if (act === 'delete' && rv && confirm('Delete the review "' + rv.title + '", its file and all responses? This cannot be undone.\n\nTip: Close review keeps the responses but stops new ones.')) {
+      sb.storage.from('marina-docs').remove([rv.storage_path]).then(function () {
+        return sb.from('doc_reviews').delete().eq('id', id);
+      }).then(function () { delete rvOpen[id]; return loadReviews(); });
+    }
+    var who = null;
+    Object.keys(reviewers).some(function (k) { who = reviewers[k].find(function (x) { return x.id === id; }); return who; });
+    if (act === 'resend' && who) {
+      b.disabled = true; b.textContent = 'Sending…';
+      callReview({ action: 'resend', reviewer_id: id }).then(function () {
+        rvOpen[who.review_id] = 'Sent the review link to ' + (who.name || who.email) + ' again.';
+        return loadReviews();
+      }).catch(function (ex) { alert(ex.message); b.disabled = false; b.textContent = 'Resend'; });
+    }
+    if (act === 'remove' && who && confirm('Remove ' + (who.name || who.email) + ' from this review? Their link will stop working' + (who.decision ? ' and their response will be deleted' : '') + '.')) {
+      sb.from('doc_reviewers').delete().eq('id', id).then(loadReviews);
+    }
   }
 
   /* ---------- Email members (announcements) ---------- */

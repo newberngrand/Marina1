@@ -6,7 +6,7 @@
 <title>Board | New Bern Grand Marina</title>
 <meta name="description" content="Board of Directors: review and approve meeting minutes.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611221030">
+<link rel="stylesheet" href="style.css?v=202611221215">
 </head>
 <body data-member-portal>
 
@@ -61,6 +61,24 @@
         <h3>Minutes waiting for your approval</h3>
         <p class="note" style="margin:-4px 0 14px">Open each set of minutes first; <strong>Approve</strong> becomes available once you have opened them.</p>
         <div id="reviewList"><p class="note">Loading&hellip;</p></div>
+      </div>
+      <div class="portal-card">
+        <h3>Board Documents</h3>
+        <p class="note" style="margin:-4px 0 12px">Only board members and marina admins can see these. They never appear on the Members or Documents pages.</p>
+        <div id="boardDocList"><p class="note">Loading&hellip;</p></div>
+        <details class="board-doc-add">
+          <summary class="btn btn-outline">+ Add a Board Document</summary>
+          <form class="member-form board-upload" id="bdDocForm">
+            <div class="signup-grid">
+              <label class="full">Title<input type="text" id="bdDocTitle" maxlength="150" required></label>
+              <label>Date (optional)<input type="date" id="bdDocDate"></label>
+              <label class="full">Description (optional)<input type="text" id="bdDocDesc" maxlength="400"></label>
+              <label class="full">File (PDF, Word, Excel, PowerPoint or image; up to 25 MB)<input type="file" id="bdDocFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp" required></label>
+            </div>
+            <div class="member-login-error" id="bdDocError" hidden></div>
+            <div class="portal-actions" style="margin-top:4px"><button type="submit" class="btn btn-gold" id="bdDocSave">Upload</button></div>
+          </form>
+        </details>
       </div>
       <div class="portal-card">
         <h3>Write minutes</h3>
@@ -161,9 +179,9 @@
   </a>
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611221030"></script>
-<script src="member-data.js?v=202611221030"></script>
-<script src="minutes-tools.js?v=202611221030"></script>
-<script src="board.js?v=202611221030"></script>
+<script src="member-login.js?v=202611221215"></script>
+<script src="member-data.js?v=202611221215"></script>
+<script src="minutes-tools.js?v=202611221215"></script>
+<script src="board.js?v=202611221215"></script>
 </body>
 </html>
