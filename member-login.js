@@ -87,6 +87,19 @@
     }
     return send(true).catch(function () {});
   }
+  // Arrived from a member-email button (go.html adds ?t=<token>): once logged in,
+  // record that this person reached the page, then tidy the address bar.
+  // Without a login the token stays in the address, so it's recorded after login.
+  function emailArrival() {
+    var p = new URLSearchParams(location.search), t = p.get('t');
+    if (!t || !/^[0-9a-f-]{36}$/i.test(t)) return;
+    try { if (window.top !== window.self) return; } catch (e) { return; }
+    getClient().then(function (sb) { return sb.rpc('announcement_arrived', { p_token: t }); }).then(function () {
+      p.delete('t');
+      var q = p.toString();
+      history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash);
+    }).catch(function () {});
+  }
   // Wait for a log record briefly (e.g. before leaving the page), but never hang.
   function trackThen(action, o) {
     return Promise.race([track(action, o), new Promise(function (ok) { setTimeout(ok, 800); })]);
@@ -450,7 +463,7 @@
         });
         return sb.auth.getSession();
       }).then(function (r) {
-        if (r.data.session) showSignedIn(r.data.session.user);
+        if (r.data.session) { showSignedIn(r.data.session.user); emailArrival(); }
       }).catch(function () {});
     }
 

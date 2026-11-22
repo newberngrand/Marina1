@@ -1388,8 +1388,17 @@
         .catch(function (ex) { alert(ex.message); })
         .then(loadAnnouncements);
     });
+    $('anHistory').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-an-clicks]');
+      if (!b) return;
+      var id = b.getAttribute('data-an-clicks'), row = document.getElementById('anClicks-' + id);
+      if (row) { row.remove(); b.textContent = 'Who clicked'; return; }
+      b.textContent = 'Hide list';
+      b.closest('tr').insertAdjacentHTML('afterend', '<tr class="an-clicks-row" id="anClicks-' + id + '"><td colspan="7"><p class="note">Loading&hellip;</p></td></tr>');
+      showClickList(id);
+    });
     sb.from('events').select('id, title, event_type, active').eq('active', true).order('created_at', { ascending: false }).then(function (r) {
-      $('anEvent').innerHTML = '<option value="">No button</option>' + (r.data || []).map(function (ev) {
+      $('anEvent').innerHTML = '<option value="">No button</option><option value="portal">Member Portal (login page)</option>' + (r.data || []).map(function (ev) {
         return '<option value="' + ev.id + '">' + D.esc(ev.title) + ' (' + D.eventTypeLabel(ev.event_type) + ')</option>';
       }).join('');
     });
@@ -1417,26 +1426,89 @@
 
   function previewAnnouncement() {
     var ev = $('anEvent').selectedOptions[0];
+    var btnLabel = !ev || !ev.value ? '' : ev.value === 'portal' ? 'Go to the Member Portal' : ev.textContent.replace(/ \([^)]*\)$/, '');
     $('anPrevSubject').textContent = $('anSubject').value.trim() || '(no subject)';
     $('anPreview').innerHTML = '<p>Dear [Owner name],</p><div>' + (D.richText($('anBody').value) || '<span class="note">Your message appears here.</span>') + '</div>' +
-      (ev && ev.value ? '<p><span class="an-btn">' + D.esc(ev.textContent.replace(/ \([^)]*\)$/, '')) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') +
+      (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') +
       '<p style="margin-top:18px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br>newberngrand.com</p>' +
       '<p class="note an-foot">You\'re receiving this as the owner of record for slip [slips] at New Bern Grand Marina.</p>';
   }
 
+  var anRows = {};
   function loadAnnouncements() {
     sb.from('announcements').select('*').order('created_at', { ascending: false }).limit(50).then(function (r) {
       var rows = r.data || [];
-      $('anHistory').innerHTML = rows.length ? rows.map(function (a) {
-        var pending = a.total - a.sent - a.failed;
-        return '<tr><td class="note nowrap">' + D.esc(D.fmtWhen(a.created_at)) + '</td><td><strong>' + D.esc(a.subject) + '</strong>' +
-          (a.note ? '<div class="note">' + D.esc(a.note) + '</div>' : '') + '</td>' +
-          '<td class="note">' + ({ all: 'All owners', voting: 'Voting slips', docks: 'Dock ' + D.esc(a.target), slips: 'Slips ' + D.esc(a.target), ltc: 'Long-term cruisers', stc: 'Transients', employee: 'Employees' }[a.audience] || a.audience) + '</td>' +
-          '<td>' + a.sent + ' of ' + a.total + (a.failed ? ' <span class="inactive">(' + a.failed + ' failed)</span>' : '') + '</td>' +
-          '<td>' + (a.status === 'done' ? 'Done' : '<span class="inactive">' + (a.status === 'paused' ? 'Paused' : 'Sending') + '</span>') + '</td>' +
-          '<td class="row-actions">' + (pending > 0 ? '<button type="button" class="btn-sm btn-primary-sm" data-an-resume="' + a.id + '">Resume (' + pending + ' left)</button>' : '') + '</td></tr>';
-      }).join('') : '<tr><td colspan="6" class="note">Nothing sent yet.</td></tr>';
+      rows.forEach(function (a) { anRows[a.id] = a; });
+      var tracked = rows.filter(function (a) { return a.tracked; }).map(function (a) { return a.id; });
+      // Only the recipients who clicked (or reached the page) are needed for the counts.
+      var clicked = tracked.length
+        ? sb.from('announcement_recipients').select('announcement_id, clicks, arrived_at')
+            .in('announcement_id', tracked).or('clicks.gt.0,arrived_at.not.is.null').limit(5000)
+        : Promise.resolve({ data: [] });
+      return clicked.then(function (c) {
+        var n = {};
+        (c.data || []).forEach(function (x) {
+          var k = n[x.announcement_id] || (n[x.announcement_id] = { clicked: 0, arrived: 0 });
+          k.clicked++; if (x.arrived_at) k.arrived++;
+        });
+        $('anHistory').innerHTML = rows.length ? rows.map(function (a) {
+          var pending = a.total - a.sent - a.failed, k = n[a.id] || { clicked: 0, arrived: 0 };
+          var clicks = !a.tracked ? '<span class="note">' + (a.event_id || a.portal_button ? 'Not tracked (sent before tracking)' : 'No button') + '</span>'
+            : '<strong>' + k.clicked + '</strong> of ' + a.sent + (a.sent ? ' (' + Math.round(k.clicked * 100 / a.sent) + '%)' : '') +
+              '<div class="note">' + k.arrived + ' logged in</div>';
+          return '<tr><td class="note nowrap">' + D.esc(D.fmtWhen(a.created_at)) + '</td><td><strong>' + D.esc(a.subject) + '</strong>' +
+            (a.note ? '<div class="note">' + D.esc(a.note) + '</div>' : '') + '</td>' +
+            '<td class="note">' + ({ all: 'All owners', voting: 'Voting slips', docks: 'Dock ' + D.esc(a.target), slips: 'Slips ' + D.esc(a.target), ltc: 'Long-term cruisers', stc: 'Transients', employee: 'Employees' }[a.audience] || a.audience) + '</td>' +
+            '<td>' + a.sent + ' of ' + a.total + (a.failed ? ' <span class="inactive">(' + a.failed + ' failed)</span>' : '') + '</td>' +
+            '<td>' + clicks + '</td>' +
+            '<td>' + (a.status === 'done' ? 'Done' : '<span class="inactive">' + (a.status === 'paused' ? 'Paused' : 'Sending') + '</span>') + '</td>' +
+            '<td class="row-actions">' + (a.tracked ? '<button type="button" class="btn-sm" data-an-clicks="' + a.id + '">Who clicked</button>' : '') +
+            (pending > 0 ? '<button type="button" class="btn-sm btn-primary-sm" data-an-resume="' + a.id + '">Resume (' + pending + ' left)</button>' : '') + '</td></tr>';
+        }).join('') : '<tr><td colspan="7" class="note">Nothing sent yet.</td></tr>';
+      });
     });
+  }
+
+  // Everyone an email went to: who clicked the button, when, whether they logged in,
+  // and (for a vote) whether they voted. People who clicked are listed first.
+  function showClickList(id) {
+    var a = anRows[id], cell = document.querySelector('#anClicks-' + id + ' td');
+    Promise.all([
+      sb.from('announcement_recipients').select('email, name, slips, status, clicks, scanner_clicks, first_click_at, last_click_at, arrived_at, arrived_slip')
+        .eq('announcement_id', id).limit(5000),
+      a.event_id ? sb.from('events').select('event_type').eq('id', a.event_id).maybeSingle() : Promise.resolve({ data: null })
+    ]).then(function (res) {
+      var list = res[0].data || [], isVote = !!(res[1].data && res[1].data.event_type === 'vote');
+      return (isVote ? sb.from('votes').select('slip').eq('event_id', a.event_id) : Promise.resolve({ data: [] })).then(function (v) {
+        var voted = {};
+        (v.data || []).forEach(function (x) { voted[x.slip] = true; });
+        function did(r) { return r.clicks > 0 || !!r.arrived_at; }
+        function slipKey(r) { return (r.slips && r.slips[0]) || ''; }
+        list.sort(function (x, y) {
+          return (did(y) ? 1 : 0) - (did(x) ? 1 : 0) || slipKey(x).localeCompare(slipKey(y), undefined, { numeric: true });
+        });
+        var clicked = list.filter(did).length;
+        var arrived = list.filter(function (r) { return r.arrived_at; }).length;
+        var scannerOnly = list.filter(function (r) { return !did(r) && r.scanner_clicks > 0; }).length;
+        var votedCount = list.filter(function (r) { return (r.slips || []).some(function (s) { return voted[s]; }); }).length;
+        var head = '<p style="margin:4px 0 10px"><strong>' + clicked + ' of ' + list.length + '</strong> clicked the button' +
+          ' &middot; ' + arrived + ' logged in' + (isVote ? ' &middot; ' + votedCount + ' voted' : '') +
+          ' &middot; ' + (list.length - clicked) + ' haven&rsquo;t clicked</p>' +
+          (scannerOnly ? '<p class="note" style="margin:-4px 0 10px">' + scannerOnly + ' more had the link opened only by an email security scanner, which isn&rsquo;t counted as a click.</p>' : '');
+        var table = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Slip</th><th>Owner</th><th>Clicked</th><th>Logged in</th>' +
+          (isVote ? '<th>Voted</th>' : '') + '</tr></thead><tbody>' +
+          list.map(function (r) {
+            var slips = r.slips || [];
+            var slipsVoted = slips.filter(function (s) { return voted[s]; });
+            return '<tr><td class="nowrap">' + D.esc(slips.join(', ')) + '</td><td>' + D.esc(r.name || r.email) +
+              (r.status !== 'sent' ? ' <span class="inactive">(' + (r.status === 'failed' ? 'email failed' : 'not sent yet') + ')</span>' : '') + '</td>' +
+              '<td>' + (did(r) ? D.esc(D.fmtWhen(r.first_click_at || r.arrived_at)) + (r.clicks > 1 ? ' <span class="note">(' + r.clicks + ' times)</span>' : '') : '<span class="note">No</span>') + '</td>' +
+              '<td>' + (r.arrived_at ? 'Yes' + (r.arrived_slip && slips.indexOf(r.arrived_slip) < 0 ? ' <span class="note">(as ' + D.esc(r.arrived_slip) + ')</span>' : '') : '<span class="note">No</span>') + '</td>' +
+              (isVote ? '<td>' + (slipsVoted.length ? 'Yes' + (slips.length > 1 ? ' <span class="note">(' + D.esc(slipsVoted.join(', ')) + ')</span>' : '') : '<span class="note">No</span>') + '</td>' : '') + '</tr>';
+          }).join('') + '</tbody></table></div>';
+        cell.innerHTML = head + table;
+      });
+    }).catch(function (ex) { cell.innerHTML = '<p class="inactive">' + D.esc(ex.message || 'Could not load the list.') + '</p>'; });
   }
 
   /* ---------- Activity log ---------- */

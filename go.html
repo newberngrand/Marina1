@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opening&hellip; | New Bern Grand Marina</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<style>
+  :root { --ink: #1c2733; --muted: #5c6b7a; --bg: #f4f6f8; --link: #1c5d6e; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #e6ebf0; --muted: #9aa7b4; --bg: #10171e; --link: #7cc3d4; } }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         background: var(--bg); color: var(--ink); font-family: Arial, sans-serif; text-align: center; padding: 16px; }
+  p { margin: 8px 0; } .note { color: var(--muted); font-size: 14px; } a { color: var(--link); }
+</style>
+</head>
+<body>
+<div>
+  <p><strong>New Bern Grand Marina</strong></p>
+  <p class="note" id="msg">Opening the member page&hellip;</p>
+  <noscript><p><a href="member-portal.html">Continue to the member portal</a></p></noscript>
+</div>
+<script>
+/* Member-email button link: go.html?t=<personal token>.
+   Records the click (so the board can see who opened the link) and forwards to
+   the event or member portal, keeping the token so the visit can be matched to the
+   login. If anything goes wrong the visitor is still sent on. */
+(function () {
+  var URL_ = 'https://afejychfqezorwyqfcsh.supabase.co/rest/v1/rpc/announcement_click';
+  var KEY = 'sb_publishable_feYqbTeGauYt9xQaQk0mtw_7ZZsFbmM';
+  var t = new URLSearchParams(location.search).get('t') || '';
+  var ok = /^[0-9a-f-]{36}$/i.test(t);
+  var gone = false;
+  function go(dest) {
+    if (gone) return; gone = true;
+    dest = dest || 'member-portal.html';
+    if (ok) dest += (dest.indexOf('?') < 0 ? '?' : '&') + 't=' + encodeURIComponent(t);
+    location.replace(dest);
+  }
+  if (!ok) { go(); return; }
+  setTimeout(function () { go(); }, 5000);
+  fetch(URL_, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: KEY },
+    body: JSON.stringify({ p_token: t, p_user_agent: navigator.userAgent || '', p_automated: !!navigator.webdriver })
+  }).then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { go(j && /^(event\.html\?id=[0-9a-f-]{36}|member-portal\.html)$/i.test(j.dest) ? j.dest : null); },
+          function () { go(); });
+})();
+</script>
+</body>
+</html>

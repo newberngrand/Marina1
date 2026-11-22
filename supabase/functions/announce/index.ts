@@ -5,6 +5,9 @@
 //   { action: "test", subject, body, event_id?, to }                 -> one test email
 //   { action: "send", subject, body, audience, event_id? }           -> create + start sending
 //   { action: "resume", announcement_id }                            -> keep sending a paused one
+// event_id may be "portal" for a button to the Member Portal instead of an event.
+// Each recipient's button is a personal link (go.html?t=<token>) so the Admin page
+// can show who clicked; test emails link straight to the page.
 // Sends in batches of up to 100 through Resend. If Resend refuses because of a
 // sending limit, the announcement is paused and can be resumed later; every
 // address gets the email exactly once.
@@ -27,10 +30,18 @@ const linkify = (s: string) => esc(s)
 
 type Recip = { email: string; name: string; slips: string[] };
 
-function buildHtml(body: string, r: Recip, ev: { id: string; title: string } | null) {
+type Btn = { label: string; page: string } | null;
+// What the email's button points to: an event, the Member Portal, or nothing.
+function buttonFor(ev: { id: string; title: string } | null, portal: boolean): Btn {
+  if (ev) return { label: ev.title, page: `event.html?id=${ev.id}` };
+  if (portal) return { label: "Go to the Member Portal", page: "member-portal.html" };
+  return null;
+}
+
+function buildHtml(body: string, r: Recip, btn: Btn, link: string) {
   const greet = r.name ? `Dear ${esc(r.name)},` : "Dear Member,";
-  const button = ev
-    ? `<p style="margin:22px 0"><a href="${SITE}/event.html?id=${ev.id}" style="display:inline-block;padding:12px 20px;background:#0b2540;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">${esc(ev.title)} &rarr;</a></p>
+  const button = btn
+    ? `<p style="margin:22px 0"><a href="${esc(link)}" style="display:inline-block;padding:12px 20px;background:#0b2540;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">${esc(btn.label)} &rarr;</a></p>
        <p style="color:#5c6b7a;font-size:13px;margin-top:-10px">You'll be asked to log in with your slip number and password.</p>`
     : "";
   const slipLine = r.slips.length
@@ -107,7 +118,7 @@ Deno.serve(async (req) => {
     return { list: [...map.values()], unknown, noEmail };
   }
   async function eventInfo(id: unknown) {
-    if (!id) return null;
+    if (!id || !/^[0-9a-f-]{36}$/i.test(String(id))) return null;
     const { data } = await db.from("events").select("id, title").eq("id", String(id)).maybeSingle();
     return data;
   }
@@ -122,13 +133,13 @@ Deno.serve(async (req) => {
   async function pump(id: string) {
     const { data: a } = await db.from("announcements").select("*").eq("id", id).maybeSingle();
     if (!a) return { error: "Announcement not found" };
-    const ev = await eventInfo(a.event_id);
+    const btn = buttonFor(await eventInfo(a.event_id), a.portal_button);
     let note = "";
     while (true) {
-      const { data: batch } = await db.from("announcement_recipients").select("email, name, slips")
+      const { data: batch } = await db.from("announcement_recipients").select("email, name, slips, token")
         .eq("announcement_id", id).eq("status", "pending").limit(100);
       if (!batch?.length) break;
-      const res = await resendBatch(batch.map((r) => ({ from, to: [r.email], subject: a.subject, html: buildHtml(a.body, r as Recip, ev) })));
+      const res = await resendBatch(batch.map((r) => ({ from, to: [r.email], subject: a.subject, html: buildHtml(a.body, r as Recip, btn, `${SITE}/go.html?t=${r.token}`) })));
       if (res.status === 429 || /quota|limit/i.test(res.text)) {
         note = "Paused: the email service's sending limit was reached. Use Resume later (the free plan allows 100 emails per day).";
         break;
@@ -162,9 +173,9 @@ Deno.serve(async (req) => {
     if ("err" in t) return reply(400, { error: t.err });
     const to = String(b.to ?? me.email ?? "").trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return reply(400, { error: "Enter an email address for the test." });
-    const ev = await eventInfo(b.event_id);
+    const btn = buttonFor(await eventInfo(b.event_id), b.event_id === "portal");
     const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject,
-      html: buildHtml(t.body, { email: to, name: "Sample Owner", slips: ["A12"] }, ev) }]);
+      html: buildHtml(t.body, { email: to, name: "Sample Owner", slips: ["A12"] }, btn, btn ? `${SITE}/${btn.page}` : "") }]);
     if (res.status >= 300) return reply(400, { error: `Test email failed: ${res.status} ${res.text}` });
     return reply(200, { ok: true, message: `Test sent to ${to}.` });
   }
@@ -182,7 +193,8 @@ Deno.serve(async (req) => {
     const targetText = audience === "docks" ? target.docks.join(", ") : audience === "slips" ? target.slips.join(", ") : "";
     const ev = await eventInfo(b.event_id);
     const { data: a, error } = await db.from("announcements").insert({
-      subject: t.subject, body: t.body, audience, target: targetText, event_id: ev?.id ?? null, sent_by: me.slip, total: list.length,
+      subject: t.subject, body: t.body, audience, target: targetText, event_id: ev?.id ?? null,
+      portal_button: !ev && b.event_id === "portal", tracked: !!ev || b.event_id === "portal", sent_by: me.slip, total: list.length,
     }).select("id").single();
     if (error || !a) return reply(500, { error: error?.message ?? "Could not create the announcement." });
     await db.from("announcement_recipients").insert(list.map((r) => ({ announcement_id: a.id, email: r.email, name: r.name, slips: r.slips })));
