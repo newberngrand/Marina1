@@ -485,6 +485,7 @@ nav.main-nav a.active {
 .an-preview { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-size: 0.92rem; line-height: 1.55; max-height: 520px; overflow-y: auto; }
 .an-btn { display: inline-block; padding: 10px 16px; background: var(--navy); color: #fff; border-radius: 6px; font-weight: 700; }
 .an-foot { border-top: 1px solid var(--line); padding-top: 8px; font-size: 0.78rem !important; }
+.an-test-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #f3e3b3; color: #6b4e00; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; }
 @media (max-width: 900px) { .email-layout { grid-template-columns: 1fr; } .an-preview-card { position: static; } }
 
 /* Admin gallery */

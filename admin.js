@@ -1355,7 +1355,7 @@
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return showErr(err, 'Type the email address to send the test to.');
       var btn = $('anTest'); btn.disabled = true; btn.textContent = 'Sending\u2026';
       callAnnounce({ action: 'test', subject: $('anSubject').value, body: $('anBody').value, event_id: $('anEvent').value || null, to: to })
-        .then(function (r) { done.textContent = r.message + ' Check that inbox (and spam) before sending to everyone.'; done.hidden = false; })
+        .then(function (r) { done.textContent = r.message + ' Check that inbox (and spam) before sending to everyone.'; done.hidden = false; if (r.tracked) loadAnnouncements(); })
         .catch(function (ex) { showErr(err, ex.message); })
         .then(function () { btn.disabled = false; btn.textContent = 'Send test'; });
     });
@@ -1458,7 +1458,7 @@
               '<div class="note">' + k.arrived + ' logged in</div>';
           return '<tr><td class="note nowrap">' + D.esc(D.fmtWhen(a.created_at)) + '</td><td><strong>' + D.esc(a.subject) + '</strong>' +
             (a.note ? '<div class="note">' + D.esc(a.note) + '</div>' : '') + '</td>' +
-            '<td class="note">' + ({ all: 'All owners', voting: 'Voting slips', docks: 'Dock ' + D.esc(a.target), slips: 'Slips ' + D.esc(a.target), ltc: 'Long-term cruisers', stc: 'Transients', employee: 'Employees' }[a.audience] || a.audience) + '</td>' +
+            '<td class="note">' + (a.is_test ? '<span class="an-test-tag">TEST</span> to ' + D.esc(a.target) : { all: 'All owners', voting: 'Voting slips', docks: 'Dock ' + D.esc(a.target), slips: 'Slips ' + D.esc(a.target), ltc: 'Long-term cruisers', stc: 'Transients', employee: 'Employees' }[a.audience] || a.audience) + '</td>' +
             '<td>' + a.sent + ' of ' + a.total + (a.failed ? ' <span class="inactive">(' + a.failed + ' failed)</span>' : '') + '</td>' +
             '<td>' + clicks + '</td>' +
             '<td>' + (a.status === 'done' ? 'Done' : '<span class="inactive">' + (a.status === 'paused' ? 'Paused' : 'Sending') + '</span>') + '</td>' +

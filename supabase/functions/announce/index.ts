@@ -173,11 +173,31 @@ Deno.serve(async (req) => {
     if ("err" in t) return reply(400, { error: t.err });
     const to = String(b.to ?? me.email ?? "").trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return reply(400, { error: "Enter an email address for the test." });
-    const btn = buttonFor(await eventInfo(b.event_id), b.event_id === "portal");
+    const ev = await eventInfo(b.event_id);
+    const btn = buttonFor(ev, b.event_id === "portal");
+    const sample = { email: to, name: "Sample Owner", slips: ["A12"] };
+    if (!btn) {
+      const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject, html: buildHtml(t.body, sample, null, "") }]);
+      if (res.status >= 300) return reply(400, { error: `Test email failed: ${res.status} ${res.text}` });
+      return reply(200, { ok: true, message: `Test sent to ${to}.` });
+    }
+    // With a button, keep the test in the Sent list (marked TEST) with a tracked link,
+    // so the admin can click it and see the click recorded.
+    const { data: a, error } = await db.from("announcements").insert({
+      subject: "[TEST] " + t.subject, body: t.body, audience: "slips", target: to, event_id: ev?.id ?? null,
+      portal_button: !ev, tracked: true, is_test: true, sent_by: me.slip, total: 1,
+    }).select("id").single();
+    if (error || !a) return reply(500, { error: error?.message ?? "Could not record the test." });
+    const { data: rec } = await db.from("announcement_recipients")
+      .insert({ announcement_id: a.id, email: to, name: "", slips: [] }).select("token").single();
     const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject,
-      html: buildHtml(t.body, { email: to, name: "Sample Owner", slips: ["A12"] }, btn, btn ? `${SITE}/${btn.page}` : "") }]);
-    if (res.status >= 300) return reply(400, { error: `Test email failed: ${res.status} ${res.text}` });
-    return reply(200, { ok: true, message: `Test sent to ${to}.` });
+      html: buildHtml(t.body, sample, btn, `${SITE}/go.html?t=${rec?.token}`) }]);
+    const ok = res.status < 300;
+    await db.from("announcement_recipients").update(ok ? { status: "sent", sent_at: new Date().toISOString() } : { status: "failed", error: `${res.status} ${res.text}`.slice(0, 500) })
+      .eq("announcement_id", a.id);
+    await db.from("announcements").update({ sent: ok ? 1 : 0, failed: ok ? 0 : 1, status: "done" }).eq("id", a.id);
+    if (!ok) return reply(400, { error: `Test email failed: ${res.status} ${res.text}` });
+    return reply(200, { ok: true, tracked: true, message: `Test sent to ${to}. It's listed under Sent announcements (marked TEST) so you can click its button and check Who clicked.` });
   }
 
   if (action === "send") {
