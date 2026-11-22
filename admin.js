@@ -1506,7 +1506,19 @@
               '<td>' + (r.arrived_at ? 'Yes' + (r.arrived_slip && slips.indexOf(r.arrived_slip) < 0 ? ' <span class="note">(as ' + D.esc(r.arrived_slip) + ')</span>' : '') : '<span class="note">No</span>') + '</td>' +
               (isVote ? '<td>' + (slipsVoted.length ? 'Yes' + (slips.length > 1 ? ' <span class="note">(' + D.esc(slipsVoted.join(', ')) + ')</span>' : '') : '<span class="note">No</span>') + '</td>' : '') + '</tr>';
           }).join('') + '</tbody></table></div>';
-        cell.innerHTML = head + table;
+        // Bar chart: every bar is measured against the emails sent for this mailer.
+        var sentN = list.filter(function (r) { return r.status === 'sent'; }).length;
+        var bars = [['Emails sent', sentN], ['Clicked', clicked], ['Logged in', arrived]];
+        if (isVote) bars.push(['Voted', votedCount]);
+        var chart = '<div class="an-chart" role="img" aria-label="' + bars.map(function (b) { return b[0] + ' ' + b[1]; }).join(', ') + ' (out of ' + sentN + ' sent)">' +
+          bars.map(function (b, i) {
+            var pct = sentN ? Math.min(100, Math.round(b[1] * 100 / sentN)) : 0;
+            var tip = b[0] + ': ' + b[1] + ' of ' + sentN + ' sent' + (i ? ' (' + pct + '%)' : '');
+            return '<div class="an-chart-row" title="' + D.esc(tip) + '"><span class="an-chart-label">' + b[0] + '</span>' +
+              '<span class="an-chart-track"><span class="an-chart-bar' + (i ? '' : ' an-chart-base') + '" style="width:' + (b[1] ? Math.max(pct, 1) : 0) + '%"></span></span>' +
+              '<span class="an-chart-val"><strong>' + b[1] + '</strong>' + (i ? ' <span class="note">' + pct + '%</span>' : '') + '</span></div>';
+          }).join('') + '</div>';
+        cell.innerHTML = chart + head + table;
       });
     }).catch(function (ex) { cell.innerHTML = '<p class="inactive">' + D.esc(ex.message || 'Could not load the list.') + '</p>'; });
   }
