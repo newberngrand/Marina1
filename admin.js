@@ -105,10 +105,19 @@
       if (act === 'results') showResults(ev);
       if (act === 'signups') showSignups(ev);
       if (act === 'toggle') sb.from('events').update({ active: !ev.active }).eq('id', ev.id).then(loadEvents);
-      if (act === 'delete' && confirm('Delete "' + ev.title + '"? This cannot be undone.\n\nTip: choose Deactivate instead to just hide it from members.')) {
+      var testVote = ev.event_type === 'vote' && ev.vote_test;
+      if (act === 'clear' && testVote && confirm('Clear all ' + (voteCounts[ev.id] || 0) + ' ballots from the test vote "' + ev.title + '"? This cannot be undone.')) {
+        sb.rpc('clear_test_votes', { p_event: ev.id }).then(function (r) {
+          if (r.error) alert(r.error.message);
+          loadEvents();
+        });
+      }
+      if (act === 'delete' && confirm('Delete "' + ev.title + '"' + (testVote && voteCounts[ev.id] ? ' and its ' + voteCounts[ev.id] + ' test ballots' : '') +
+          '? This cannot be undone.\n\nTip: choose Deactivate instead to just hide it from members.')) {
         // Files uploaded just for this event go with it (linked library documents stay).
         sb.from('event_attachments').select('storage_path, document_id').eq('event_id', ev.id).then(function (a) {
-          return sb.from('events').delete().eq('id', ev.id).then(function (r) {
+          var del = testVote ? sb.rpc('delete_test_vote', { p_event: ev.id }) : sb.from('events').delete().eq('id', ev.id);
+          return del.then(function (r) {
             if (!r.error) {
               var own = (a.data || []).filter(function (x) { return !x.document_id; }).map(function (x) { return x.storage_path; });
               if (own.length) sb.storage.from('marina-docs').remove(own);
@@ -169,6 +178,7 @@
           '<td><a href="event.html?id=' + ev.id + '" target="_blank" rel="noopener"><strong>' + D.esc(ev.title) + '</strong></a>' +
             (ev.summary ? '<div class="note">' + D.esc(ev.summary) + '</div>' : '') + '</td>' +
           '<td><span class="badge badge-' + ev.event_type + '">' + D.eventTypeLabel(ev.event_type) + '</span>' +
+            (isVote && ev.vote_test ? ' <span class="badge badge-test">Test</span>' : '') +
             '<div class="note" style="margin-top:4px">' + (ev.audience || ['certificated']).map(function (a) { return CLASS_SHORT[a] || a; }).join(', ') + '</div></td>' +
           '<td>' + (ev.starts_at ? D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) : (isVote ? '' : '<span class="note">No date</span>')) + voteInfo + '</td>' +
           '<td>' + (ev.active ? 'Active' : '<span class="inactive">Inactive</span>') + '</td>' +
@@ -176,6 +186,7 @@
             (isVote ? '<button type="button" class="btn-sm btn-primary-sm" data-act="results" data-id="' + ev.id + '">Results</button>' : '') +
             (ev.event_type === 'game' ? '<a class="btn-sm btn-primary-sm" href="game.html?id=' + ev.id + '" target="_blank" rel="noopener">' + (ev.game_practice ? 'Practice' : 'Open game') + '</a>' : '') +
             (ev.signup_enabled ? '<button type="button" class="btn-sm btn-primary-sm" data-act="signups" data-id="' + ev.id + '">Sign-ups (' + (signupCounts[ev.id] || 0) + ')</button>' : '') +
+            (isVote && ev.vote_test && voteCounts[ev.id] ? '<button type="button" class="btn-sm" data-act="clear" data-id="' + ev.id + '">Clear test ballots</button>' : '') +
             '<button type="button" class="btn-sm" data-act="edit" data-id="' + ev.id + '">Edit</button>' +
             '<button type="button" class="btn-sm" data-act="toggle" data-id="' + ev.id + '">' + (ev.active ? 'Deactivate' : 'Activate') + '</button>' +
             '<button type="button" class="btn-sm btn-danger" data-act="delete" data-id="' + ev.id + '">Delete</button>' +
@@ -203,6 +214,7 @@
     $('evVoteOpen').value = ev ? D.toLocalInput(ev.vote_opens_at) : '';
     $('evVoteClose').value = ev ? D.toLocalInput(ev.vote_closes_at) : '';
     $('evNotifyEmail').value = ev ? (ev.vote_notify_email || '') : '';
+    $('evVoteTest').checked = !!(ev && ev.vote_test);
     $('evGameKind').value = ev && ev.game_kind ? ev.game_kind : D.GAMES[0].id;
     setGameDays(ev && ev.game_days && ev.game_days.length === 5 ? ev.game_days : nextWeekdays());
     $('evGameEndTime').value = ev && ev.event_type === 'game' && ev.ends_at ? D.toLocalInput(ev.ends_at).slice(11) : '20:00';
@@ -222,6 +234,7 @@
     $('evBallotKind').disabled = locked;
     $('evOptions').disabled = locked;
     $('evType').disabled = locked;
+    $('evVoteTest').disabled = locked;
     // Once votes are in, the groups on the ballot can be added to but not taken away.
     document.querySelectorAll('#evAudience input').forEach(function (c) { c.disabled = locked && c.checked; });
     updateBallotBox();
@@ -265,6 +278,7 @@
               .filter(function (s, i, a) { return a.indexOf(s) === i; })
           : [];
         if (row.ballot_kind === 'choice' && row.ballot_options.length < 2) return showErr($('evError'), 'Please enter at least two custom choices, one per line.');
+        row.vote_test = $('evVoteTest').checked;
       }
       if (!id && new Date(row.vote_closes_at) <= new Date() &&
           !confirm('The closing time is in the past, so this ballot will not accept any votes. Save anyway?')) return;
