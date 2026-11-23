@@ -123,6 +123,7 @@
   function ballotChoices(ev) {
     if (ev.ballot_kind === 'yes_no') return ['Yea', 'Nay'];
     if (ev.ballot_kind === 'yes_no_abstain') return ['Yea', 'Nay', 'Abstain'];
+    if (ev.ballot_kind === 'approve_disapprove') return ['Approve', 'Disapprove'];
     return ev.ballot_options || [];
   }
   // 'upcoming' | 'open' | 'closed'
