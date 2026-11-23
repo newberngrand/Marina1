@@ -1941,8 +1941,24 @@
   }
 
   function drawMembers() {
-    var f = $('memSearch').value.toLowerCase(), show = $('memShow').value;
-    $('memRows').innerHTML = memRows.filter(function (m) {
+    var f = $('memSearch').value.toLowerCase(), show = $('memShow').value, sortBy = $('memSort').value;
+    var bySlip = function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); };
+    var byText = function (x, y) {
+      x = (x || '').toLowerCase(); y = (y || '').toLowerCase();
+      if (!x !== !y) return x ? -1 : 1; // blanks last
+      return x.localeCompare(y);
+    };
+    var statusRank = function (m) { return m.is_admin ? 2 : (m.active ? 0 : 1); };
+    var typeRank = { certificated: 0, ltc: 1, stc: 2, employee: 3 };
+    var cmp = {
+      slip: bySlip,
+      owner: function (a, b) { return byText(a.owner_name, b.owner_name) || bySlip(a, b); },
+      'owner-desc': function (a, b) { return byText(b.owner_name, a.owner_name) || bySlip(a, b); },
+      email: function (a, b) { return byText(a.email, b.email) || bySlip(a, b); },
+      status: function (a, b) { return statusRank(a) - statusRank(b) || bySlip(a, b); },
+      type: function (a, b) { return (typeRank[a.member_class || 'certificated'] || 0) - (typeRank[b.member_class || 'certificated'] || 0) || bySlip(a, b); }
+    }[sortBy] || bySlip;
+    $('memRows').innerHTML = memRows.slice().sort(cmp).filter(function (m) {
       if (show === 'noemail' && (m.email || m.is_admin)) return false;
       if (show === 'nonvoting' && (m.can_vote || m.is_admin)) return false;
       if (show === 'inactive' && m.active) return false;
@@ -2049,6 +2065,7 @@
     $('memCancel').addEventListener('click', function () { $('memForm').hidden = true; memEditing = null; });
     $('memSearch').addEventListener('input', drawMembers);
     $('memShow').addEventListener('change', drawMembers);
+    $('memSort').addEventListener('change', drawMembers);
     $('memRows').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-slip]');
       if (!b) return;
