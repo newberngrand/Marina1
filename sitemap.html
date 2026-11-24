@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611232033">
+<link rel="stylesheet" href="style.css?v=202611232036">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -312,6 +312,8 @@
   }).join('');
 
   // The Board of Directors group only shows for a logged-in board member.
+  // Wait for the page to finish loading: the login script (member-login.js) loads after this one.
+  document.addEventListener('DOMContentLoaded', function () {
   if (window.MemberAuth) MemberAuth.getClient().then(function (sb) {
     return sb.auth.getSession().then(function (r) {
       if (!r.data.session) return;
@@ -320,6 +322,7 @@
       });
     });
   }).catch(function () {});
+  });
 
   function setOpen(btn, open) {
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -333,6 +336,6 @@
   document.getElementById('smNone').addEventListener('click', function () { grid.querySelectorAll('.sm-node, .sm-group-head').forEach(function (b) { setOpen(b, false); }); });
 })();
 </script>
-<script src="member-login.js?v=202611232033"></script>
+<script src="member-login.js?v=202611232036"></script>
 </body>
 </html>
