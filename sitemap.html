@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611232122">
+<link rel="stylesheet" href="style.css?v=202611232129">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -75,7 +75,7 @@
   .ch-world svg.ch-sea { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
   .ch-isle-name { position: absolute; transform: translate(-50%, -50%); font-family: Georgia, "Times New Roman", serif; font-size: 27px; letter-spacing: .32em; text-transform: uppercase; color: #2a2a22; white-space: nowrap; pointer-events: none; text-shadow: 0 0 4px #e7d8b5, 0 0 2px #e7d8b5; }
   .ch-isle-name small { display: block; font-size: 14px; letter-spacing: .08em; text-transform: none; font-style: italic; text-align: center; color: #4b4535; }
-  .ch-cartouche { position: absolute; left: 950px; top: 1720px; transform: translate(-50%, -50%); padding: 10px 26px 12px; background: #efe6cf; border: 3px solid #2a2a22; outline: 1px solid #2a2a22; outline-offset: 4px; font-family: Georgia, serif; color: #2a2a22; text-align: center; pointer-events: none; }
+  .ch-cartouche { position: absolute; left: 880px; top: 1730px; transform: translate(-50%, -50%); padding: 10px 26px 12px; background: #efe6cf; border: 3px solid #2a2a22; outline: 1px solid #2a2a22; outline-offset: 4px; font-family: Georgia, serif; color: #2a2a22; text-align: center; pointer-events: none; }
   .ch-cartouche svg { display: block; width: 70px; height: 40px; margin: -44px auto 4px; }
   .ch-cartouche b { display: block; font-size: 26px; letter-spacing: .14em; }
   .ch-cartouche span { display: block; font-size: 14px; font-style: italic; }
@@ -484,15 +484,77 @@
     var o = k === 'public:Walk the Docks in 3D' ? OFF.islet : OFF[k.split(':')[0]];
     SPOT[k][0] += o[0]; SPOT[k][1] += o[1];
   });
+  // Real island outlines (simplified), from OpenStreetMap data © OpenStreetMap contributors (ODbL).
+  var SHAPES = {
+    public: [-829,270,-819,283,-819,325,-792,342,-791,377,-803,391,-794,393,-776,438,-739,432,-733,420,-663,456,-632,443,-627,420,-620,430,-620,443,-681,472,-685,491,-707,489,-704,529,-755,526,-706,570,-692,615,-655,643,-670,677,-643,729,-630,725,-619,702,-606,638,-587,657,-575,641,-577,655,-552,684,-592,731,-588,748,-564,767,-560,790,-545,789,-518,750,-500,694,-476,697,-492,746,-481,771,-455,795,-439,796,-429,821,-411,821,-420,783,-414,782,-416,798,-408,790,-400,799,-406,824,-419,832,-404,852,-386,850,-385,870,-394,879,-414,874,-425,891,-416,930,-399,954,-379,947,-382,923,-368,872,-316,855,-324,849,-316,830,-342,794,-329,798,-324,778,-339,766,-339,756,-352,758,-362,746,-307,765,-319,747,-311,735,-314,714,-302,721,-284,755,-287,785,-278,797,-290,807,-268,831,-281,843,-289,838,-283,849,-296,855,-289,864,-294,889,-273,910,-237,991,-204,1000,-178,971,-124,973,-131,946,-156,949,-148,940,-150,918,-121,935,-128,943,-101,969,-84,948,-87,930,-53,943,-62,913,-37,911,-35,866,-24,857,8,866,22,806,75,773,75,738,59,713,56,673,41,634,29,625,19,587,9,590,-6,571,-33,581,-82,558,-139,564,-149,553,-139,526,-131,527,-137,518,-135,483,-72,505,-77,511,-68,520,-49,509,-75,468,-76,447,-88,443,-102,416,-135,414,-152,430,-167,374,-151,382,-144,402,-118,411,-101,340,-88,338,-77,357,-69,359,-75,331,-98,323,-95,307,-59,329,-45,313,-54,296,-49,285,-63,236,-95,228,-107,206,-88,174,-87,132,-59,96,-76,47,-95,29,-92,6,-100,-12,-95,-15,-139,-109,-133,-116,-163,-121,-150,-140,-145,-195,-158,-228,-214,-185,-219,-196,-191,-232,-202,-239,-197,-270,-192,-258,-175,-262,-170,-322,-176,-355,-171,-365,-178,-377,-183,-398,-160,-369,-169,-352,-167,-321,-170,-316,-150,-306,-143,-333,-126,-319,-133,-306,-129,-282,-139,-273,-133,-258,-146,-259,-136,-221,-114,-220,-113,-245,-94,-251,-62,-240,-61,-264,-46,-277,-47,-252,-16,-243,-30,-213,-30,-191,-10,-159,-20,-145,-9,-118,-12,-105,0,-88,-9,-84,-24,-104,-32,-137,-42,-100,-37,-77,-11,-57,-10,-33,-22,-7,-18,89,-25,140,-20,172,-11,179,-20,202,-6,202,-7,248,9,284,-14,301,-13,346,20,351,25,378,52,413,61,408,53,403,55,385,80,419,116,414,124,431,145,411,134,386,135,354,105,334,120,309,120,276,136,281,158,328,158,372,216,390,221,401,239,389,232,387,230,381,241,389,236,397,273,405,311,358,338,376,333,387,343,399,368,389,379,404,367,368,380,337,392,332,407,334,433,403,501,380,500,370,525,340,540,304,569,329,582,313,606,314,611,299,643,279,663,191,640,103,646,93,668,130,654,145,668,144,698,206,697,234,727,233,732,199,717,174,722,146,716,138,737,110,760,39,784,37,792,69,801,71,829,41,809,14,823,-34,799,-82,808,-85,807,-97,819,-91,823,-111,793,-130,770,-189,764,-221,774,-260,750,-291,761,-308,759,-322,726,-371,713,-374,710,-389,702,-381,694,-388,706,-421,681,-412,671,-420,663,-437,680,-433,688,-444,680,-477,650,-517,631,-531,618,-521,614,-535,560,-511,559,-527,531,-563,463,-608,468,-613,448,-645,350,-725,339,-729,334,-718,337,-764,383,-789,368,-835,369,-871,345,-899,214,-957,207,-947,180,-945,127,-904,115,-906,118,-879,84,-902,77,-894,71,-902,60,-884,22,-940,-1,-933,-16,-964,-65,-999,-107,-1000,-184,-921,-188,-890,-200,-882,-190,-865,-189,-841,-160,-832,-161,-827,-144,-814,-137,-799,-123,-798,-118,-787,-107,-790,-110,-787,-118,-784,-138,-796,-166,-831,-224,-842,-218,-830,-230,-798,-262,-799,-279,-787,-274,-803,-288,-803,-296,-798,-285,-783,-306,-795,-317,-784,-294,-821,-295,-853,-321,-847,-354,-821,-359,-837,-375,-835,-391,-817,-404,-831,-390,-838,-418,-868,-418,-837,-408,-834,-409,-810,-395,-797,-425,-784,-419,-759,-406,-750,-402,-727,-389,-713,-398,-687,-392,-674,-370,-648,-329,-635,-326,-645,-308,-650,-294,-630,-335,-607,-334,-575,-348,-555,-347,-538,-373,-501,-371,-473,-389,-502,-416,-521,-423,-542,-440,-542,-482,-511,-476,-468,-460,-475,-486,-449,-479,-442,-485,-434,-538,-424,-613,-385,-605,-381,-609,-353,-575,-332,-582,-324,-597,-335,-591,-302,-581,-300,-576,-245,-557,-245,-569,-233,-553,-219,-559,-192,-583,-157,-584,-199,-564,-219,-590,-210,-583,-233,-608,-247,-614,-278,-623,-258,-633,-256,-638,-229,-652,-220,-644,-206,-645,-182,-662,-170,-667,-134,-686,-115,-685,-137,-659,-188,-665,-205,-678,-187,-676,-202,-691,-210,-714,-160,-714,-139,-737,-114,-737,-92,-728,-87,-735,-52,-743,-56,-764,-32,-736,-1,-735,-51,-710,-67,-703,-90,-691,-67,-681,-76,-667,-70,-678,-57,-673,-48,-655,-52,-632,-76,-636,-61,-662,-43,-683,3,-684,44,-675,42,-685,86,-676,114,-705,88,-707,106,-727,108,-709,134,-756,126,-757,144,-776,155,-755,200,-772,200,-779,212,-784,188,-797,188,-803,175,-825,184,-824,213,-800,235,-825,244],
+    members: [-1000,311,-899,444,-862,481,-793,542,-677,624,-639,603,-626,571,-637,550,-623,528,-617,500,-582,469,-540,449,-528,418,-462,380,-324,340,-8,305,251,288,577,290,801,305,813,295,855,286,957,293,1000,273,946,287,867,278,789,290,700,291,750,273,757,253,723,232,709,213,708,157,720,137,713,132,707,82,694,72,675,38,683,22,719,5,720,-17,726,-5,719,5,729,19,738,11,713,-39,693,-51,695,-57,688,-36,699,-45,709,-40,713,-30,707,-38,675,-31,662,-47,666,-57,657,-65,663,-72,658,-81,614,-86,561,-111,530,-132,499,-166,496,-162,513,-134,536,-115,537,-103,547,-98,543,-105,550,-108,560,-100,553,-88,556,-84,560,-81,554,-81,553,-88,525,-76,504,-83,506,-93,498,-91,496,-101,502,-102,501,-114,463,-110,471,-113,467,-125,472,-131,434,-150,456,-173,446,-186,452,-194,438,-208,393,-179,394,-163,379,-166,372,-155,377,-166,382,-169,379,-190,414,-214,415,-240,399,-243,394,-254,414,-297,435,-299,451,-280,461,-282,463,-318,476,-329,466,-375,474,-384,474,-419,455,-472,443,-450,426,-453,435,-483,443,-470,453,-475,447,-476,420,-531,386,-544,361,-527,313,-470,291,-471,295,-461,314,-463,329,-451,328,-420,308,-402,311,-388,288,-352,274,-349,274,-337,237,-293,228,-274,231,-259,213,-268,227,-338,273,-382,277,-408,285,-416,276,-420,264,-405,263,-388,251,-382,235,-405,298,-455,257,-437,246,-420,225,-440,224,-453,234,-469,231,-483,252,-532,243,-605,214,-624,63,-518,76,-514,90,-534,109,-519,102,-499,121,-447,121,-421,109,-407,118,-383,91,-420,88,-432,97,-434,94,-464,78,-470,60,-490,50,-476,34,-489,44,-494,38,-488,44,-487,56,-504,68,-506,58,-520,34,-495,0,-480,-75,-473,-103,-447,-111,-408,-142,-349,-184,-335,-213,-344,-236,-307,-290,-287,-293,-252,-312,-223,-323,-189,-343,-162,-349,-117,-370,-93,-386,-88,-410,-47,-450,-40,-483,20,-496,73,-524,112,-561,135,-637,261,-621,267,-624,282,-599,308,-617,313,-609,332,-614,350,-610,373,-640,422,-632,430,-634,436,-627,437,-623,412,-618,418,-625,428,-621,432,-601,427,-594,435,-605,450,-601,456,-613,460,-625,450,-640,466,-648,464,-649,433,-664,427,-663,421,-643,421,-646,415,-687,419,-688,429,-729,416,-725,393,-731,385,-726,382,-720,333,-641,334,-644,324,-630,282,-642,281,-631,276,-640,263,-678,292,-715,300,-778,277,-810,250,-859,239,-906,265,-975,267],
+    admin: [-1000,296,-998,305,-973,326,-928,355,-488,582,-147,706,-18,731,52,700,121,687,330,696,612,740,772,706,906,657,943,627,987,523,1000,429,985,342,924,196,836,43,578,-471,471,-618,345,-740,356,-690,400,-637,466,-616,538,-514,542,-478,528,-388,485,-243,448,-164,396,-83,244,81,106,160,41,168,42,194,52,204,60,186,133,224,133,191,151,152,234,136,243,100,262,77,307,76,336,16,382,4,376,-28,387,-60,420,-85,458,-82,448,-118,452,-143,467,-157,492,-158,526,-257,567,-289,560,-302,586,-321,606,-368,620,-374,630,-357,621,-349,617,-321,585,-315,569,-297,626,-280,707,-193,725,-141,691,-74,621,-33,554,-4,474,-6,498,47,550,80,567,109,629,89,638,73,651,78,652,86,637,88,634,128,569,125,547,148,556,157,552,169,560,165,570,169,583,164,589,163,595,165,567,178,541,224,540,181,519,120,551,106,526,105,483,154,387,208,248,194,227,263,214,270,219,257,189,250,138,325,71,374,30,341,21,324,32,317,21,313,33,310,19,307,31,304,7,301,24,290,5,281,18,263,59,248,-13,223,-43,178,-116,204,-199,213,-607,212,-720,184,-755,201,-780,257,-755,259,-729,234,-705,241,-681,275,-678,325,-747,396,-699,375,-680,352,-672,357,-717,397,-764,422,-749,409,-761,404,-741,375,-788,399,-830,395,-896,354,-858,361,-858,352,-915,334,-886,330,-931,326],
+    board: [-1000,-780,-502,-166,345,428,612,780,654,757,684,682,588,678,438,471,761,465,1000,234,784,-17,781,-71,560,-93,571,-275,493,-413,713,-311,837,11,865,-37,791,-257,536,-469,-229,-758,-626,-726,-767,-679,-477,-701,-691,-555,-637,-501,-411,-703,-307,-633,-307,-552,-251,-569,-295,-407,-469,-403,-845,-602,-886,-667,-843,-725],
+    islet: [-815,-28,-749,228,-535,387,210,705,686,977,815,1000,798,332,630,355,579,262,515,220,570,258,610,322,634,379,619,377,569,262,498,236,506,167,560,163,531,54,364,-53,191,-48,192,-161,84,-160,194,-319,49,-476,-158,-521,-158,-580,1,-602,41,-656,-97,-856,-343,-1000]
+  };
+  // Where each island sits, how big it is (half its longest side), and where its name goes.
+  var PLACE = {
+    public: { x: 760, y: 800, size: 640, lab: 'above' }, members: { x: 2130, y: 460, size: 560, lab: 'above' },
+    admin: { x: 2120, y: 1430, size: 570, lab: 'above' }, board: { x: 400, y: 1660, size: 235, lab: 'above' }, islet: { x: 1235, y: 1650, size: 140 }
+  };
   ISLES.forEach(function (c) {
-    var o = c.name ? OFF[c.g] : OFF.islet;
-    c.x += o[0]; c.y += o[1];
-    if (c.lx != null) { c.lx += o[0]; c.ly += o[1]; }
+    var key = c.name ? c.g : 'islet', P = PLACE[key], raw = SHAPES[key], pts = [], minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (var q = 0; q < raw.length; q += 2) {
+      var x = P.x + raw[q] / 1000 * P.size, y = P.y + raw[q + 1] / 1000 * P.size;
+      pts.push([x, y]); minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+    }
+    c.pts = pts; c.x = P.x; c.y = P.y; c.rx = (maxX - minX) / 2; c.ry = (maxY - minY) / 2;
+    if (c.name) {   // the island's name sits in the water beside it
+      if (P.lab === 'right') { c.lx = maxX + 150; c.ly = (minY + maxY) / 2; } else { c.lx = (minX + maxX) / 2; c.ly = minY - 40; }
+    }
   });
-  function onLand(x, y, f) {   // inside (or close to) any island, following its coastline
+  function inPoly(pts, x, y) {
+    for (var i = 0, j = pts.length - 1, ins = false; i < pts.length; j = i++) {
+      var xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) ins = !ins;
+    }
+    return ins;
+  }
+  function distToShore(c, x, y) {   // distance from a point to an island's coastline
+    var best = 1e9, P = c.pts;
+    for (var i = 0, j = P.length - 1; i < P.length; j = i++) {
+      var ax = P[j][0], ay = P[j][1], bx = P[i][0], by = P[i][1], dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+      var u = L ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L)) : 0, ex = ax + u * dx - x, ey = ay + u * dy - y;
+      best = Math.min(best, ex * ex + ey * ey);
+    }
+    return Math.sqrt(best);
+  }
+  // Put every screen on dry land: if its spot is in the water (or too near the shore),
+  // move it to the nearest good spot that isn't on top of another screen.
+  (function () {
+    var placed = [];
+    Object.keys(SPOT).forEach(function (k) {
+      var s0 = SPOT[k], key = k === 'public:Walk the Docks in 3D' ? 'islet' : k.split(':')[0];
+      var c = ISLES.filter(function (i) { return (i.name ? i.g : 'islet') === key; })[0]; if (!c) return;
+      var margin = key === 'islet' || key === 'board' ? 25 : key === 'members' ? 30 : 50;
+      function ok(x, y) {
+        if (!inPoly(c.pts, x, y) || distToShore(c, x, y) < margin) return false;
+        return placed.every(function (q) { return Math.abs(q[0] - x) > 182 || Math.abs(q[1] - y) > 128; });
+      }
+      var bx = s0[0], by = s0[1];
+      if (!ok(bx, by)) {
+        var found = false;
+        for (var r = 15; r < 700 && !found; r += 15) for (var t = 0; t < 24 && !found; t++) {
+          var a = t / 24 * Math.PI * 2, x = s0[0] + Math.cos(a) * r, y = s0[1] + Math.sin(a) * r;
+          if (ok(x, y)) { bx = x; by = y; found = true; }
+        }
+        if (!found) {   // crowded island: just find dry land
+          for (r = 15; r < 700; r += 15) { for (t = 0; t < 24; t++) { a = t / 24 * Math.PI * 2; x = s0[0] + Math.cos(a) * r; y = s0[1] + Math.sin(a) * r; if (inPoly(c.pts, x, y)) { bx = x; by = y; r = 1e9; break; } } }
+        }
+      }
+      s0[0] = Math.round(bx); s0[1] = Math.round(by); placed.push([bx, by]);
+    });
+  })();
+  function onLand(x, y, f) {   // on an island, or within (f - 1) x its size of the shore
     return ISLES.some(function (c) {
-      var dx = (x - c.x) / c.rx, dy = (y - c.y) / c.ry;
-      return Math.sqrt(dx * dx + dy * dy) < rad(c, Math.atan2(dy, dx)) * f;
+      if (inPoly(c.pts, x, y)) return true;
+      if (f <= 1 || Math.abs(x - c.x) > c.rx * f + 10 || Math.abs(y - c.y) > c.ry * f + 10) return false;
+      return distToShore(c, x, y) < (f - 1) * Math.max(c.rx, c.ry);
     });
   }
   // Routes between pages that link to each other.
@@ -539,36 +601,27 @@
     }); })(g.pages, null);
   });
 
-  // Coastline: many points with headlands, bays and small jags, the same every time.
-  function jit(k, sd) { var x = Math.sin(k * 127.1 + sd * 311.7) * 43758.5453; return x - Math.floor(x); }
-  function rad(c, a) {
-    var sd = c.seed, r = c.rough == null ? 1 : c.rough;
-    var w = 0.07 * Math.sin(a * 3 + sd) + 0.05 * Math.sin(a * 5 + sd * 2) + 0.03 * Math.cos(a * 7 + sd) +
-            0.03 * Math.sin(a * 11 + sd * 3) + 0.02 * Math.sin(a * 17 + sd * 5) + 0.012 * Math.sin(a * 29 + sd * 7) +
-            0.08 * Math.pow(Math.max(0, Math.sin(a * 5 + sd * 3.1)), 10) -        // headlands
-            0.11 * Math.pow(Math.max(0, Math.sin(a * 6 + sd * 2.3)), 8);           // bays
-    return 1 + w * r;
-  }
-  function islePath(c) {
-    var pts = [], smooth = !!c.smooth, n = smooth ? 64 : (c.rx > 200 ? 220 : 90);
+  // Real coastline as an SVG path.
+  function coastPath(c) { return 'M' + c.pts.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' L') + 'Z'; }
+  // A small irregular blob (marsh patches).
+  function blobPath(x, y, rx, ry, sd) {
+    var pts = [], n = 14;
     for (var k = 0; k < n; k++) {
-      var a = k / n * Math.PI * 2, w = rad(c, a);
-      if (!smooth) w += (jit(k, c.seed) - 0.5) * 0.04 * (c.rough == null ? 1 : c.rough);
-      pts.push([c.x + Math.cos(a) * c.rx * w, c.y + Math.sin(a) * c.ry * w]);
+      var a = k / n * Math.PI * 2, w = 1 + 0.18 * Math.sin(a * 3 + sd) + 0.12 * Math.sin(a * 5 + sd * 2);
+      pts.push((x + Math.cos(a) * rx * w).toFixed(1) + ',' + (y + Math.sin(a) * ry * w).toFixed(1));
     }
-    if (!smooth) return 'M' + pts.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' L') + 'Z';
-    var d = 'M' + pts[0].join(',');
-    for (k = 0; k < n; k++) {   // smooth curve through the points
-      var p0 = pts[(k - 1 + n) % n], p1 = pts[k], p2 = pts[(k + 1) % n], p3 = pts[(k + 2) % n];
-      d += ' C' + (p1[0] + (p2[0] - p0[0]) / 6) + ',' + (p1[1] + (p2[1] - p0[1]) / 6) + ' ' + (p2[0] - (p3[0] - p1[0]) / 6) + ',' + (p2[1] - (p3[1] - p1[1]) / 6) + ' ' + p2[0] + ',' + p2[1];
-    }
-    return d + 'Z';
+    return 'M' + pts.join(' L') + 'Z';
   }
-  // A shape around the island at scale f. Depth bands get their own wobble, so the water
-  // drops off steeply in some places and shoals out gently in others.
-  function scaled(c, f, band) {
-    return band ? { x: c.x, y: c.y, rx: c.rx * f, ry: c.ry * f, seed: c.seed + f * 17, rough: 1.8, smooth: true }
-                : { x: c.x, y: c.y, rx: c.rx * f, ry: c.ry * f, seed: c.seed, rough: c.rough };
+  // The coastline scaled out from the island's centre and smoothed: rough outer depth lines.
+  function outerPath(c, f) {
+    var P = c.pts, n = P.length, out = [];
+    for (var i = 0; i < n; i++) {   // average neighbours to smooth away small detail
+      var sx = 0, sy = 0, m = Math.max(2, Math.round(n / 25));
+      for (var j = -m; j <= m; j++) { var q = P[(i + j + n) % n]; sx += q[0]; sy += q[1]; }
+      sx /= 2 * m + 1; sy /= 2 * m + 1;
+      out.push((c.x + (sx - c.x) * f).toFixed(1) + ',' + (c.y + (sy - c.y) * f).toFixed(1));
+    }
+    return 'M' + out.join(' L') + 'Z';
   }
   var board = function (g) { return g === 'board' ? ' data-board' : ''; };
 
@@ -584,42 +637,33 @@
   var sound = '', nSound = 0;
   for (var t = 0; t < 1400 && nSound < 340; t++) {
     var sx = 40 + rnd() * (W - 80), sy = 40 + rnd() * (H - 80);
-    if (onLand(sx, sy, 1.08) || (Math.abs(sx - ROSE[0]) < 120 && Math.abs(sy - ROSE[1]) < 130) || (sx > 720 && sx < 1180 && sy > 1640)) continue;
+    if (onLand(sx, sy, 1.08) || (Math.abs(sx - ROSE[0]) < 120 && Math.abs(sy - ROSE[1]) < 130) || (sx > 720 && sx < 1180 && sy > 1640) || (Math.abs(sx - 1455) < 30 && sy > 230 && sy < 880) || (Math.abs(sx - 1445) < 30 && sy > 1100 && sy < 1740)) continue;
     var near = onLand(sx, sy, 1.4), mid = onLand(sx, sy, 1.75);
     var deep = near ? 1 + Math.floor(rnd() * 8) : mid ? 8 + Math.floor(rnd() * 12) : 18 + Math.floor(rnd() * 40);
     sound += '<text x="' + sx.toFixed(0) + '" y="' + sy.toFixed(0) + '">' + deep + (rnd() < 0.18 ? '<tspan font-size="8" dy="3">' + Math.floor(rnd() * 9) + '</tspan>' : '') + '</text>'; nSound++;
   }
-  // Point on an island's (wobbly) shore at angle a, scaled by f.
-  function shore(c, a, f) {
-    var w = rad(c, a);
-    return [c.x + Math.cos(a) * c.rx * w * f, c.y + Math.sin(a) * c.ry * w * f];
-  }
-  // Creeks winding in from the shore, roads across the land, and marsh patches.
   function landDetail(c) {
-    var creeks = '', roads = '', marsh = '', n = c.rx > 300 ? 7 : c.rx > 200 ? 4 : 2;
-    for (var k = 0; k < n; k++) {
-      var a0 = (k + 0.3 + rnd() * 0.4) / n * Math.PI * 2, p = shore(c, a0, 1.02), d = 'M' + p[0].toFixed(0) + ',' + p[1].toFixed(0);
-      var steps = 5, depth = 0.35 + rnd() * 0.3, br = '';
-      for (var s2 = 1; s2 <= steps; s2++) {
-        var f = 1 - depth * s2 / steps, wob = (rnd() - 0.5) * 0.25;
-        var q = shore(c, a0 + wob * (s2 / steps), f);
-        d += ' L' + q[0].toFixed(0) + ',' + q[1].toFixed(0);
-        if (s2 === 2 || s2 === 4) {   // a side branch
-          var side = shore(c, a0 + (rnd() < 0.5 ? -1 : 1) * (0.12 + rnd() * 0.1), f - 0.08);
-          br += ' M' + q[0].toFixed(0) + ',' + q[1].toFixed(0) + ' Q' + ((q[0] + side[0]) / 2 + (rnd() - 0.5) * 30).toFixed(0) + ',' + ((q[1] + side[1]) / 2 + (rnd() - 0.5) * 30).toFixed(0) + ' ' + side[0].toFixed(0) + ',' + side[1].toFixed(0);
-        }
-      }
-      creeks += '<path d="' + d + '" stroke-width="9"/><path d="' + br + '" stroke-width="4"/>';
-      var m = shore(c, a0 + 0.25, 0.86);
-      marsh += '<path d="' + islePath({ x: m[0], y: m[1], rx: 28 + rnd() * 40, ry: 18 + rnd() * 26, seed: k + c.seed, rough: 2 }) + '"/>';
+    var roads = '', marsh = '', tries = 0, nM = 0, nR = 0, wantM = c.rx > 300 ? 7 : c.rx > 180 ? 3 : 1, wantR = c.rx > 300 ? 4 : c.rx > 180 ? 2 : 0;
+    while (nM < wantM && tries++ < 400) {   // marsh: near the shore, on land
+      var x = c.x + (rnd() - 0.5) * 2 * c.rx, y = c.y + (rnd() - 0.5) * 2 * c.ry;
+      if (!inPoly(c.pts, x, y)) continue;
+      var d = distToShore(c, x, y); if (d < 30 || d > 90) continue;
+      marsh += '<path d="' + blobPath(x, y, 22 + rnd() * 30, 14 + rnd() * 18, nM + 1) + '"/>'; nM++;
     }
-    for (var r = 0; r < Math.max(2, n - 2); r++) {   // roads: gentle curves across the island
-      var ra = rnd() * Math.PI * 2, A = shore(c, ra, 0.95), B = shore(c, ra + Math.PI * (0.7 + rnd() * 0.6), 0.95);
-      var C = [c.x + (rnd() - 0.5) * c.rx * 0.6, c.y + (rnd() - 0.5) * c.ry * 0.6];
-      roads += '<path d="M' + A[0].toFixed(0) + ',' + A[1].toFixed(0) + ' Q' + C[0].toFixed(0) + ',' + C[1].toFixed(0) + ' ' + B[0].toFixed(0) + ',' + B[1].toFixed(0) + '"/>';
+    tries = 0;
+    while (nR < wantR && tries++ < 400) {   // roads: curves whose ends and middle are all on land
+      var A = [c.x + (rnd() - 0.5) * 1.8 * c.rx, c.y + (rnd() - 0.5) * 1.8 * c.ry], B = [c.x + (rnd() - 0.5) * 1.8 * c.rx, c.y + (rnd() - 0.5) * 1.8 * c.ry];
+      var C = [(A[0] + B[0]) / 2 + (rnd() - 0.5) * 120, (A[1] + B[1]) / 2 + (rnd() - 0.5) * 120];
+      if (Math.hypot(B[0] - A[0], B[1] - A[1]) < c.rx * 0.6) continue;
+      var okR = true;
+      for (var u = 0; u <= 1.0001; u += 0.1) {
+        var px = (1 - u) * (1 - u) * A[0] + 2 * (1 - u) * u * C[0] + u * u * B[0], py = (1 - u) * (1 - u) * A[1] + 2 * (1 - u) * u * C[1] + u * u * B[1];
+        if (!inPoly(c.pts, px, py)) { okR = false; break; }
+      }
+      if (!okR) continue;
+      roads += '<path d="M' + A[0].toFixed(0) + ',' + A[1].toFixed(0) + ' Q' + C[0].toFixed(0) + ',' + C[1].toFixed(0) + ' ' + B[0].toFixed(0) + ',' + B[1].toFixed(0) + '"/>'; nR++;
     }
     return '<g fill="#5f9e9b" opacity=".75">' + marsh + '</g>' +
-      '<g fill="none" stroke="#7fb8b4" stroke-linecap="round" stroke-linejoin="round">' + creeks + '</g>' +
       '<g fill="none" stroke="#3d3a2e" stroke-width="1.6" opacity=".55">' + roads + '</g>';
   }
   // Channel buoys along a crossing: red on one side, green on the other.
@@ -643,7 +687,8 @@
   for (var fy = 22, on2 = 0; fy < H - 22; fy += 100, on2 ^= 1) if (on2) frame += '<rect x="10" y="' + fy + '" width="12" height="' + Math.min(100, H - 22 - fy) + '" fill="#2f2a20"/><rect x="' + (W - 22) + '" y="' + fy + '" width="12" height="' + Math.min(100, H - 22 - fy) + '" fill="#2f2a20"/>';
   for (var tk = 42; tk < W - 22; tk += 20) frame += '<line x1="' + tk + '" y1="22" x2="' + tk + '" y2="28" stroke="#2f2a20"/><line x1="' + tk + '" y1="' + (H - 22) + '" x2="' + tk + '" y2="' + (H - 28) + '" stroke="#2f2a20"/>';
   for (var tk2 = 42; tk2 < H - 22; tk2 += 20) frame += '<line y1="' + tk2 + '" x1="22" y2="' + tk2 + '" x2="28" stroke="#2f2a20"/><line y1="' + tk2 + '" x1="' + (W - 22) + '" y2="' + tk2 + '" x2="' + (W - 28) + '" stroke="#2f2a20"/>';
-  var LH = [ISLES[0].x - ISLES[0].rx * 0.9, ISLES[0].y - 40];   // lighthouse on the west point of Public Harbor
+  var LH = ISLES[0].pts.reduce(function (m, q) { return q[0] < m[0] ? q : m; }, [1e9, 0]);   // lighthouse on the west point of Public Harbor
+  LH = [LH[0] + 18, LH[1] + 6];
 
   var sea = '<svg class="ch-sea" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
     '<defs>' +
@@ -651,27 +696,28 @@
       '<filter id="chGrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 .35  0 0 0 0 .27  0 0 0 0 .15  0 0 0 .5 0"/></filter>' +
     '</defs>' +
     '<rect width="' + W + '" height="' + H + '" fill="#ebe8db"/>' +
-    // shallows: teal bands that deepen in colour toward each shore
+    // shallows: the coastline drawn with ever-thinner strokes gives bands that follow the
+    // real shore; rough, smoothed outer lines make the deeper water uneven
     ISLES.map(function (c) {
+      var cp = coastPath(c), sz = Math.max(c.rx, c.ry), k = sz / 500;
       return '<g' + board(c.g) + '>' +
-        [[1.9, '#dfe8de'], [1.62, '#cfe3dc'], [1.4, '#b7dad4'], [1.22, '#9dcdc8'], [1.1, '#82bfba']].map(function (b) {
-          return '<path d="' + islePath(scaled(c, b[0], true)) + '" fill="' + b[1] + '"/>'; }).join('') +
-        '<path d="' + islePath(scaled(c, 1.04)) + '" fill="#6fb1ad"/>' +
-        '<path d="' + islePath(scaled(c, 1.4, true)) + '" fill="none" stroke="#4c7f86" stroke-width="1.2" stroke-dasharray="7 5" opacity=".6"/>' +
-        '<path d="' + islePath(scaled(c, 1.62, true)) + '" fill="none" stroke="#4c7f86" stroke-width="1" stroke-dasharray="2 5" opacity=".55"/>' +
-        '<path d="' + islePath(scaled(c, 1.22, true)) + '" fill="none" stroke="#4c7f86" stroke-width="1" stroke-dasharray="1 4" opacity=".5"/></g>';
+        '<path d="' + outerPath(c, 1.55) + '" fill="#dfe8de"/>' +
+        '<path d="' + outerPath(c, 1.32) + '" fill="#cfe3dc"/>' +
+        [[150, '#cfe3dc'], [100, '#b7dad4'], [62, '#9dcdc8'], [34, '#82bfba'], [14, '#6fb1ad']].map(function (b) {
+          return '<path d="' + cp + '" fill="' + b[1] + '" stroke="' + b[1] + '" stroke-width="' + (b[0] * 2 * Math.max(0.45, k)).toFixed(0) + '" stroke-linejoin="round"/>'; }).join('') +
+        '<path d="' + outerPath(c, 1.32) + '" fill="none" stroke="#4c7f86" stroke-width="1.2" stroke-dasharray="7 5" opacity=".55"/>' +
+        '<path d="' + outerPath(c, 1.55) + '" fill="none" stroke="#4c7f86" stroke-width="1" stroke-dasharray="2 5" opacity=".5"/></g>';
     }).join('') +
     '<g stroke="#2f3a3a" stroke-width="1" opacity=".18">' + rhumb + '</g>' +
     '<g font-family="Georgia,serif" font-size="13" fill="#3e5658" opacity=".8">' + sound + '</g>' +
     // water names
     '<g font-family="Georgia,serif" font-style="italic" font-size="34" letter-spacing="18" fill="#3f6a70" opacity=".7" text-anchor="middle">' +
-      '<text x="1530" y="330" transform="rotate(-8 1530 330)">NEUSE RIVER</text><text x="1500" y="1580" transform="rotate(6 1500 1580)">TRENT RIVER</text></g>' +
-    // land: linen-textured, dark shoreline, creeks, roads and marsh
+      '<text x="1450" y="560" transform="rotate(-84 1450 560)">NEUSE RIVER</text><text x="1440" y="1420" transform="rotate(-84 1440 1420)">TRENT RIVER</text></g>' +
+    // land: linen-textured, dark shoreline, roads and marsh
     ISLES.map(function (c) {
       return '<g' + board(c.g) + '>' +
-        '<path d="' + islePath(c) + '" fill="url(#chLinen)" stroke="#2f3b3b" stroke-width="3"/>' +
-        landDetail(c) +
-        '<path d="' + islePath(scaled(c, 0.97)) + '" fill="none" stroke="#a88d5c" stroke-width="1" opacity=".5"/></g>';
+        '<path d="' + coastPath(c) + '" fill="url(#chLinen)" stroke="#2f3b3b" stroke-width="2.5" stroke-linejoin="round"/>' +
+        landDetail(c) + '</g>';
     }).join('') +
     // routes between pages
     ROUTES.map(function (r) {
@@ -698,11 +744,11 @@
       '<rect x="-8" y="-56" width="16" height="10" fill="#f2d675" stroke="#1e1e1a"/><path d="M-10,-56 L0,-66 L10,-56Z" fill="#1e1e1a"/>' +
       '<text y="22" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="13" fill="#1e1e1a">Fl W 4s 52ft</text></g>' +
     // anchorage
-    '<g transform="translate(1650,450)" fill="none" stroke="#7a2318" stroke-width="2.5" stroke-linecap="round"><circle cy="-22" r="7"/><path d="M0,-15 V22 M-14,-6 H14 M-24,6 Q-22,24 0,24 Q22,24 24,6"/>' +
+    '<g transform="translate(1770,975)" fill="none" stroke="#7a2318" stroke-width="2.5" stroke-linecap="round"><circle cy="-22" r="7"/><path d="M0,-15 V22 M-14,-6 H14 M-24,6 Q-22,24 0,24 Q22,24 24,6"/>' +
       '<text y="48" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="14" fill="#7a2318" stroke="none">ANCH</text></g>' +
     // a little wreck symbol and a sea serpent, for fun
-    '<g transform="translate(2470,760)" stroke="#1e1e1a" stroke-width="2" fill="none"><path d="M-16,0 H16 M-10,-7 V7 M0,-9 V9 M10,-7 V7"/><text y="26" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="12" fill="#1e1e1a" stroke="none">Wk (404)</text></g>' +
-    '<g transform="translate(1110,1430)" fill="none" stroke="#3f6a70" stroke-width="2.5" stroke-linecap="round" opacity=".85">' +
+    '<g transform="translate(1180,1180)" stroke="#1e1e1a" stroke-width="2" fill="none"><path d="M-16,0 H16 M-10,-7 V7 M0,-9 V9 M10,-7 V7"/><text y="26" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="12" fill="#1e1e1a" stroke="none">Wk (404)</text></g>' +
+    '<g transform="translate(2470,905)" fill="none" stroke="#3f6a70" stroke-width="2.5" stroke-linecap="round" opacity=".85">' +
       '<path d="M-60,10 q15,-40 30,0 q15,-40 30,0 q15,-40 30,0"/><path d="M30,10 q12,-38 30,-26 q8,6 2,14"/><circle cx="54" cy="-20" r="2.5" fill="#3f6a70"/>' +
       '<text x="0" y="44" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="16" fill="#2f2a20" stroke="none">Here be bugs</text></g>' +
     // paper grain over everything
@@ -710,7 +756,7 @@
     frame +
     '</svg>';
 
-  var html = sea + '<div class="ch-cartouche"><svg viewBox="0 0 70 40" aria-hidden="true"><g fill="none" stroke="#2a2a22" stroke-width="2.4" stroke-linecap="round"><g transform="rotate(-35 35 22)"><circle cx="35" cy="5" r="3"/><path d="M35,8 V36 M28,13 H42 M24,29 Q26,37 35,37 Q44,37 46,29"/></g><g transform="rotate(35 35 22)"><circle cx="35" cy="5" r="3"/><path d="M35,8 V36 M28,13 H42 M24,29 Q26,37 35,37 Q44,37 46,29"/></g></g></svg><b>NEW BERN GRAND MARINA</b><span>~ Chart of the Website ~</span><em>Soundings in clicks &middot; Scale 1 : 1 page</em></div>';
+  var html = sea + '<div class="ch-cartouche"><svg viewBox="0 0 70 40" aria-hidden="true"><g fill="none" stroke="#2a2a22" stroke-width="2.4" stroke-linecap="round"><g transform="rotate(-35 35 22)"><circle cx="35" cy="5" r="3"/><path d="M35,8 V36 M28,13 H42 M24,29 Q26,37 35,37 Q44,37 46,29"/></g><g transform="rotate(35 35 22)"><circle cx="35" cy="5" r="3"/><path d="M35,8 V36 M28,13 H42 M24,29 Q26,37 35,37 Q44,37 46,29"/></g></g></svg><b>NEW BERN GRAND MARINA</b><span>~ Chart of the Website ~</span><em>Soundings in clicks &middot; Scale 1 : 1 page</em><em>Coastlines &copy; OpenStreetMap contributors</em></div>';
   html += ISLES.filter(function (c) { return c.name; }).map(function (c) { return '<div class="ch-isle-name"' + board(c.g) + ' style="left:' + c.lx + 'px;top:' + c.ly + 'px">' + c.name + '<small>' + c.sub + '</small></div>'; }).join('');
   Object.keys(SPOT).forEach(function (k) {
     var s = SPOT[k], e = pages[k]; if (!e) return;
@@ -855,6 +901,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611232122"></script>
+<script src="member-login.js?v=202611232129"></script>
 </body>
 </html>
