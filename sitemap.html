@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611232027">
+<link rel="stylesheet" href="style.css?v=202611232033">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -15,14 +15,21 @@
   .sm-root-node { background: var(--navy); color: #fff; border-radius: var(--radius); padding: 10px 18px; font-weight: 700; display: flex; gap: 10px; align-items: center; }
   .sm-root-node svg { width: 22px; height: 22px; }
   .sm-trunk { width: 2px; height: 22px; background: var(--line); margin: 0 auto; }
-  .sm-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; border-top: 2px solid var(--line); padding-top: 22px; position: relative; }
+  .sm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; border-top: 2px solid var(--line); padding-top: 22px; position: relative; }
   .sm-group { --c: var(--teal); }
   .sm-group[data-g="members"] { --c: #1f6b4a; }
   .sm-group[data-g="board"] { --c: #7a5a1f; }
   .sm-group[data-g="admin"] { --c: #9a2c1a; }
-  .sm-group-head { border-left: 4px solid var(--c); padding: 4px 0 4px 10px; margin-bottom: 12px; }
-  .sm-group-head h2 { font-size: 1.05rem; margin: 0; color: var(--navy); }
-  .sm-group-head p { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+  .sm-group-head { width: 100%; display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; text-align: left; font: inherit; color: var(--ink);
+    background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; cursor: pointer; transition: box-shadow .15s; }
+  .sm-group-head:hover { box-shadow: 0 4px 14px rgba(11,37,64,.08); }
+  .sm-group-head:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  .sm-group-head .sm-chev { margin-top: 4px; }
+  .sm-group-head[aria-expanded="true"] .sm-chev { transform: rotate(180deg); }
+  .sm-count { display: inline-block; margin-top: 6px; font-size: 0.75rem; font-weight: 600; color: var(--c); }
+  .sm-group[hidden] { display: none; }
+  .sm-gt { display: block; font-size: 1.05rem; font-weight: 700; color: var(--navy); }
+  .sm-gn { display: block; margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
   .sm-list { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); }
   .sm-list .sm-list { margin-top: 8px; }
   .sm-item { position: relative; margin: 0 0 10px; }
@@ -42,7 +49,6 @@
   .sm-detail li { margin: 3px 0; }
   .sm-who { font-size: 0.8rem; color: var(--muted); margin: 0 0 4px; }
   .sm-open { display: inline-block; font-weight: 600; color: var(--c); text-decoration: underline; }
-  @media (max-width: 1000px) { .sm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 620px) { .sm-grid { grid-template-columns: 1fr; border-top: 0; padding-top: 0; } .sm-trunk { display: none; } .sm-root { margin-bottom: 16px; } }
 </style>
 </head>
@@ -86,7 +92,7 @@
   <div class="container">
     <div class="eyebrow">Help</div>
     <h1>Site Map</h1>
-    <p>Every page of the website, grouped by who can use it. Click a page to see what it does.</p>
+    <p>Every page of the website, grouped by who can use it. Click a group to see its pages, then click a page to see what it does.</p>
     <p><a href="admin.html#help" style="color:inherit;">&larr; Back to Help</a></p>
   </div>
 </div>
@@ -97,8 +103,8 @@
       <div class="sm-legend">
         <span style="--c:var(--teal)">Public</span>
         <span style="--c:#1f6b4a">Members</span>
-        <span style="--c:#7a5a1f">Board</span>
         <span style="--c:#9a2c1a">Admin</span>
+        <span style="--c:#7a5a1f" id="smLegendBoard" hidden>Board</span>
       </div>
       <div>
         <button type="button" class="btn-sm" id="smAll">Expand all</button>
@@ -238,15 +244,6 @@
         'Opened from a private review invitation email; no login needed.',
         'The reviewer reads the document, then approves it, asks for changes or leaves comments.'] }
     ] },
-    { id: 'board', title: 'Board of Directors', note: 'Board members only.', pages: [
-      { name: 'Board', url: 'board.html', icon: 'shield', points: [
-        'Upload or write meeting minutes and approve them.',
-        'Minutes stay hidden from members until every board member has opened and approved them; they publish automatically after the last approval.',
-        'Shows a count of minutes waiting for your approval (also on the Admin page’s Board tab).'], children: [
-        { name: 'Minutes Editor', url: 'minutes-edit.html', icon: 'pen', points: [
-          'Write a set of minutes, or create and edit minutes templates.',
-          'Saves automatically every few seconds; only one board member edits a draft at a time.'] }] }
-    ] },
     { id: 'admin', title: 'Admin', note: 'Board administrators. One page (admin.html) with these tabs.', pages: [
       { name: 'Current Events', url: 'admin.html', icon: 'star', points: [
         'Add and edit meetings, notices, social events, votes and games; Activate / Deactivate or Delete them.',
@@ -273,6 +270,15 @@
           'Steps through one slip’s activity on one day, showing the page they were on.'] }] },
       { name: 'Help', url: 'admin.html#help', icon: 'help', points: [
         'Help for admins, starting with this site map.'] }
+    ] },
+    { id: 'board', title: 'Board of Directors', note: 'Board members only. Shown here only when a board member is logged in.', boardOnly: true, pages: [
+      { name: 'Board', url: 'board.html', icon: 'shield', points: [
+        'Upload or write meeting minutes and approve them.',
+        'Minutes stay hidden from members until every board member has opened and approved them; they publish automatically after the last approval.',
+        'Shows a count of minutes waiting for your approval (also on the Admin page’s Board tab).'], children: [
+        { name: 'Minutes Editor', url: 'minutes-edit.html', icon: 'pen', points: [
+          'Write a set of minutes, or create and edit minutes templates.',
+          'Saves automatically every few seconds; only one board member edits a draft at a time.'] }] }
     ] }
   ];
 
@@ -293,23 +299,40 @@
       '</li>';
   }
   var grid = document.getElementById('smGrid');
+  function count(ps) { return ps.reduce(function (t, p) { return t + 1 + (p.children ? count(p.children) : 0); }, 0); }
+  // Each group starts collapsed: click its heading to show its pages.
   grid.innerHTML = GROUPS.map(function (g) {
-    return '<div class="sm-group" data-g="' + g.id + '"><div class="sm-group-head"><h2>' + esc(g.title) + '</h2><p>' + esc(g.note) + '</p></div>' +
-      '<ul class="sm-list">' + g.pages.map(item).join('') + '</ul></div>';
+    var id = 'smg-' + g.id, c = count(g.pages);
+    return '<div class="sm-group" data-g="' + g.id + '"' + (g.boardOnly ? ' hidden' : '') + '>' +
+      '<button type="button" class="sm-group-head" aria-expanded="false" aria-controls="' + id + '">' +
+        '<span><span class="sm-gt">' + esc(g.title) + '</span><span class="sm-gn">' + esc(g.note) + '</span><span class="sm-count">' + c + ' page' + (c === 1 ? '' : 's') + '</span></span>' +
+        '<svg class="sm-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' +
+      '</button>' +
+      '<ul class="sm-list" id="' + id + '" hidden>' + g.pages.map(item).join('') + '</ul></div>';
   }).join('');
+
+  // The Board of Directors group only shows for a logged-in board member.
+  if (window.MemberAuth) MemberAuth.getClient().then(function (sb) {
+    return sb.auth.getSession().then(function (r) {
+      if (!r.data.session) return;
+      return sb.rpc('board_status').then(function (b) {
+        if (b && b.data && b.data.is_board) { grid.querySelector('[data-g="board"]').hidden = false; document.getElementById('smLegendBoard').hidden = false; }
+      });
+    });
+  }).catch(function () {});
 
   function setOpen(btn, open) {
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     document.getElementById(btn.getAttribute('aria-controls')).hidden = !open;
   }
   grid.addEventListener('click', function (e) {
-    var b = e.target.closest('.sm-node');
+    var b = e.target.closest('.sm-node, .sm-group-head');
     if (b) setOpen(b, b.getAttribute('aria-expanded') !== 'true');
   });
-  document.getElementById('smAll').addEventListener('click', function () { grid.querySelectorAll('.sm-node').forEach(function (b) { setOpen(b, true); }); });
-  document.getElementById('smNone').addEventListener('click', function () { grid.querySelectorAll('.sm-node').forEach(function (b) { setOpen(b, false); }); });
+  document.getElementById('smAll').addEventListener('click', function () { grid.querySelectorAll('.sm-node, .sm-group-head').forEach(function (b) { setOpen(b, true); }); });
+  document.getElementById('smNone').addEventListener('click', function () { grid.querySelectorAll('.sm-node, .sm-group-head').forEach(function (b) { setOpen(b, false); }); });
 })();
 </script>
-<script src="member-login.js?v=202611232027"></script>
+<script src="member-login.js?v=202611232033"></script>
 </body>
 </html>
