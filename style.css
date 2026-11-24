@@ -485,6 +485,11 @@ nav.main-nav a.active {
 .an-preview-subject { font-weight: 700; color: var(--navy); padding: 8px 10px; background: #f2f6fa; border-radius: 6px; margin-bottom: 10px; }
 .an-preview { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-size: 0.92rem; line-height: 1.55; max-height: 520px; overflow-y: auto; }
 .an-btn { display: inline-block; padding: 10px 16px; background: var(--navy); color: #fff; border-radius: 6px; font-weight: 700; }
+.an-vote-box { margin: 16px 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: #f7f9fa; }
+.an-vote-box p { margin: 6px 0; }
+.an-vote-box .an-btn { margin: 0 6px 6px 0; }
+.an-vote-0 { background: #1f6b4a; } .an-vote-1 { background: #9a2c1a; } .an-vote-2 { background: #5c6b7a; }
+.an-vote-3 { background: #1c5d6e; } .an-vote-4 { background: #7a5a1f; } .an-vote-5 { background: #5b2d82; }
 .an-foot { border-top: 1px solid var(--line); padding-top: 8px; font-size: 0.78rem !important; }
 .an-test-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #f3e3b3; color: #6b4e00; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; }
 .an-chart { max-width: 560px; margin: 6px 0 14px; }

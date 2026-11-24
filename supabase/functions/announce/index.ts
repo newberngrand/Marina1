@@ -3,7 +3,8 @@
 // audience: "all" | "voting" | "docks" (docks: ["A","C"]) | "slips" (slips: "A12, B7") | "ltc" | "stc" | "employee"
 // all / voting / docks mean slip owners (certificated); ltc / stc / employee are those logins.
 //   { action: "test", subject, body, event_id?, to }                 -> one test email
-//   { action: "send", subject, body, audience, event_id? }           -> create + start sending
+//   { action: "send", subject, body, audience, event_id?, email_vote? } -> create + start sending
+// email_vote: on a vote, add one button per ballot choice so owners can vote from the email.
 //   { action: "resume", announcement_id }                            -> keep sending a paused one
 // event_id may be "portal" for a button to the Member Portal instead of an event.
 // Each recipient's button is a personal link (go.html?t=<token>) so the Admin page
@@ -39,6 +40,7 @@ function ballotChoices(ev: Ev): string[] {
   if (ev.ballot_kind === "approve_disapprove") return ["Approve", "Disapprove"];
   return ev.ballot_options ?? [];
 }
+const btn_choices = (ev: Ev | null) => buttonFor(ev, false)?.choices;
 // What the email's button points to: an event, the Member Portal, or nothing.
 function buttonFor(ev: Ev | null, portal: boolean): Btn {
   if (ev) {
@@ -159,8 +161,8 @@ Deno.serve(async (req) => {
     const { data: a } = await db.from("announcements").select("*").eq("id", id).maybeSingle();
     if (!a) return { error: "Announcement not found" };
     const btn = buttonFor(await eventInfo(a.event_id), a.portal_button);
-    // Only slip owners vote from the email (shared cruiser logins vote on the website by name).
-    const ownerMail = ["all", "voting", "docks", "slips"].includes(a.audience);
+    // Only when the admin ticked it, and only for slip owners (shared cruiser logins vote on the website by name).
+    const ownerMail = !!a.email_vote && ["all", "voting", "docks", "slips"].includes(a.audience);
     let note = "";
     while (true) {
       const { data: batch } = await db.from("announcement_recipients").select("email, name, slips, token")
@@ -212,13 +214,13 @@ Deno.serve(async (req) => {
     // so the admin can click it and see the click recorded.
     const { data: a, error } = await db.from("announcements").insert({
       subject: "[TEST] " + t.subject, body: t.body, audience: "slips", target: to, event_id: ev?.id ?? null,
-      portal_button: !ev, tracked: true, is_test: true, sent_by: me.slip, total: 1,
+      portal_button: !ev, tracked: true, is_test: true, email_vote: !!b.email_vote, sent_by: me.slip, total: 1,
     }).select("id").single();
     if (error || !a) return reply(500, { error: error?.message ?? "Could not record the test." });
     const { data: rec } = await db.from("announcement_recipients")
       .insert({ announcement_id: a.id, email: to, name: "", slips: [] }).select("token").single();
     const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject,
-      html: buildHtml(t.body, sample, btn, `${SITE}/go.html?t=${rec?.token}`, `${SITE}/vote.html?t=${rec?.token}`) }]);
+      html: buildHtml(t.body, sample, btn, `${SITE}/go.html?t=${rec?.token}`, b.email_vote ? `${SITE}/vote.html?t=${rec?.token}` : "") }]);
     const ok = res.status < 300;
     await db.from("announcement_recipients").update(ok ? { status: "sent", sent_at: new Date().toISOString() } : { status: "failed", error: `${res.status} ${res.text}`.slice(0, 500) })
       .eq("announcement_id", a.id);
@@ -241,7 +243,8 @@ Deno.serve(async (req) => {
     const ev = await eventInfo(b.event_id);
     const { data: a, error } = await db.from("announcements").insert({
       subject: t.subject, body: t.body, audience, target: targetText, event_id: ev?.id ?? null,
-      portal_button: !ev && b.event_id === "portal", tracked: !!ev || b.event_id === "portal", sent_by: me.slip, total: list.length,
+      portal_button: !ev && b.event_id === "portal", tracked: !!ev || b.event_id === "portal", email_vote: !!b.email_vote && !!btn_choices(ev),
+      sent_by: me.slip, total: list.length,
     }).select("id").single();
     if (error || !a) return reply(500, { error: error?.message ?? "Could not create the announcement." });
     await db.from("announcement_recipients").insert(list.map((r) => ({ announcement_id: a.id, email: r.email, name: r.name, slips: r.slips })));

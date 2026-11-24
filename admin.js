@@ -1558,6 +1558,8 @@
     });
     $('anDocks').addEventListener('change', recount);
     $('anSlips').addEventListener('input', recount);
+    $('anEmailVote').addEventListener('change', previewAnnouncement);
+    $('anAudience').addEventListener('change', previewAnnouncement);
     ['anSubject', 'anBody', 'anEvent'].forEach(function (id) { $(id).addEventListener('input', previewAnnouncement); $(id).addEventListener('change', previewAnnouncement); });
     $('anAudience').addEventListener('change', updateAnCount);
     $('anTest').addEventListener('click', function () {
@@ -1565,7 +1567,7 @@
       var to = $('anTestTo').value.trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return showErr(err, 'Type the email address to send the test to.');
       var btn = $('anTest'); btn.disabled = true; btn.textContent = 'Sending\u2026';
-      callAnnounce({ action: 'test', subject: $('anSubject').value, body: $('anBody').value, event_id: $('anEvent').value || null, to: to })
+      callAnnounce({ action: 'test', subject: $('anSubject').value, body: $('anBody').value, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn(), to: to })
         .then(function (r) { done.textContent = r.message + ' Check that inbox (and spam) before sending to everyone.'; done.hidden = false; if (r.tracked) loadAnnouncements(); })
         .catch(function (ex) { showErr(err, ex.message); })
         .then(function () { btn.disabled = false; btn.textContent = 'Send test'; });
@@ -1579,7 +1581,7 @@
       if (n === 0) return showErr(err, 'Nobody to send to: pick docks or type slips that have an email on file.');
       if (!confirm('Send "' + subject + '" to ' + (n != null ? n + ' email addresses' : 'all members') + ' now?\n\nThis can\'t be undone. (Tip: send yourself a test first.)')) return;
       var btn = $('anSend'); btn.disabled = true; btn.textContent = 'Sending\u2026 please wait';
-      callAnnounce(Object.assign({ action: 'send', subject: subject, body: body, event_id: $('anEvent').value || null }, anTarget()))
+      callAnnounce(Object.assign({ action: 'send', subject: subject, body: body, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn() }, anTarget()))
         .then(function (r) {
           done.textContent = 'Sent to ' + r.sent + ' of ' + (r.sent + r.failed + r.pending) + ' addresses.' +
             (r.pending ? ' ' + r.pending + ' still waiting: ' + r.note : '') + (r.failed ? ' ' + r.failed + ' failed.' : '');
@@ -1608,7 +1610,9 @@
       b.closest('tr').insertAdjacentHTML('afterend', '<tr class="an-clicks-row" id="anClicks-' + id + '"><td colspan="7"><p class="note">Loading&hellip;</p></td></tr>');
       showClickList(id);
     });
-    sb.from('events').select('id, title, event_type, active').eq('active', true).order('created_at', { ascending: false }).then(function (r) {
+    sb.from('events').select('id, title, event_type, active, ballot_kind, ballot_options, audience').eq('active', true).order('created_at', { ascending: false }).then(function (r) {
+      anEvents = {};
+      (r.data || []).forEach(function (ev) { anEvents[ev.id] = ev; });
       $('anEvent').innerHTML = '<option value="">No button</option><option value="portal">Member Portal (login page)</option>' + (r.data || []).map(function (ev) {
         return '<option value="' + ev.id + '">' + D.esc(ev.title) + ' (' + D.eventTypeLabel(ev.event_type) + ')</option>';
       }).join('');
@@ -1635,12 +1639,31 @@
     }).catch(function (ex) { $('anCount').textContent = ex.message; });
   }
 
+  // Vote-by-email buttons: offered when the button goes to a vote that slip owners vote on.
+  var anEvents = {};
+  var OWNER_AUD = ['all', 'voting', 'docks', 'slips'];
+  function anVoteChoices() {
+    var ev = anEvents[$('anEvent').value];
+    if (!ev || ev.event_type !== 'vote' || (ev.audience || []).indexOf('certificated') < 0) return [];
+    return D.ballotChoices(ev);
+  }
+  function anEmailVoteOn() {
+    return anVoteChoices().length > 0 && OWNER_AUD.indexOf($('anAudience').value) >= 0 && $('anEmailVote').checked;
+  }
   function previewAnnouncement() {
+    var choices = anVoteChoices();
+    $('anEmailVoteWrap').hidden = !choices.length || OWNER_AUD.indexOf($('anAudience').value) < 0;
+    $('anEmailVoteChoices').textContent = choices.join(' / ');
+    var voteBox = anEmailVoteOn()
+      ? '<div class="an-vote-box"><p><strong>Or vote right from this email:</strong></p><p>' + choices.map(function (c, i) {
+          return '<span class="an-btn an-vote-' + (i % 6) + '">' + D.esc(c) + '</span>'; }).join(' ') + '</p>' +
+        '<p class="note">No login needed. You&rsquo;ll be asked to confirm before your vote is recorded. One vote per slip; votes are final and can&rsquo;t be changed. Please don&rsquo;t forward this email: its buttons vote for your slip.</p></div>'
+      : '';
     var ev = $('anEvent').selectedOptions[0];
     var btnLabel = !ev || !ev.value ? '' : ev.value === 'portal' ? 'Go to the Member Portal' : ev.textContent.replace(/ \([^)]*\)$/, '');
     $('anPrevSubject').textContent = $('anSubject').value.trim() || '(no subject)';
     $('anPreview').innerHTML = '<p>Dear [Owner name],</p><div>' + (D.richText($('anBody').value) || '<span class="note">Your message appears here.</span>') + '</div>' +
-      (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') +
+      (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') + voteBox +
       '<p style="margin-top:18px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br>newberngrand.com</p>' +
       '<p class="note an-foot">You\'re receiving this as the owner of record for slip [slips] at New Bern Grand Marina.</p>';
   }
