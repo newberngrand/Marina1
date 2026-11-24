@@ -33,7 +33,7 @@ as $$
   left join lateral (select vv.slip from public.votes vv where vv.event_id = a.event_id and vv.slip = m.slip limit 1) v on true
   where r.token = p_token and a.event_id is not null
 $$;
-revoke all on function public.email_vote_slips(uuid) from public;
+revoke all on function public.email_vote_slips(uuid) from public, anon, authenticated;
 
 -- What vote.html shows before the owner confirms.
 create or replace function public.email_vote_info(p_token uuid)
