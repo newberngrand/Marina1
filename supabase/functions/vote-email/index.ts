@@ -1,6 +1,6 @@
 // Sends the emails for one recorded vote: a receipt to the voter (slip's email
 // on file) and a notice to the vote-counting committee (event's vote_notify_email).
-// Called by the database right after a vote is inserted, with { event_id, slip }.
+// Called by the database right after a vote is inserted, with { event_id, slip, vote_id }.
 // Each email is sent at most once per vote, so repeat calls do nothing.
 //
 // Secrets: RESEND_API_KEY (required); MAIL_FROM or RESET_FROM for the sender.
@@ -62,12 +62,13 @@ Deno.serve(async (req) => {
   const [{ data: ev }, { data: member }, { data: caster }] = await Promise.all([
     db.from("events").select("title, vote_closes_at, vote_notify_email, ballot_kind, ballot_options, audience").eq("id", eventId).maybeSingle(),
     db.from("members").select("owner_name, email").eq("slip", slip).maybeSingle(),
-    db.from("members").select("slip, owner_name").eq("user_id", vote.cast_by).maybeSingle(),
+    vote.cast_by ? db.from("members").select("slip, owner_name").eq("user_id", vote.cast_by).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   if (!ev) return json(404, { error: "No such event" });
 
   const receipt = await receiptNo(eventId, slip, vote.cast_at);
-  const castBy = caster && caster.slip !== slip ? `${caster.slip} (${caster.owner_name})` : "";
+  const castBy = vote.cast_via === "email" ? "" : caster && caster.slip !== slip ? `${caster.slip} (${caster.owner_name})` : "";
+  const via = vote.cast_via === "email" ? row("Voted by", "Email ballot button") : "";
   const result: Record<string, unknown> = { receipt };
   // On a cruiser poll the voter is a named person on a shared login, and there is no fixed list of voters.
   const named = vote.voter_name ? esc(vote.voter_name) + " &middot; " + esc(slip) + " login" : "";
@@ -88,7 +89,7 @@ Deno.serve(async (req) => {
           ${row(named ? "Voter" : "Slip", voterLabel)}
           ${row("Your vote", esc(vote.choice))}
           ${row("Recorded", esc(when(vote.cast_at)))}
-          ${castBy ? row("Cast from login", esc(castBy)) : ""}
+          ${castBy ? row("Cast from login", esc(castBy)) : ""}${via}
           ${row("Receipt no.", esc(receipt))}
         </table>
         <p style="color:#5c6b7a;font-size:13px">Votes are final and can't be changed. If you did not cast this vote, please contact the marina office right away.</p>`);
@@ -123,7 +124,7 @@ Deno.serve(async (req) => {
           ${row(named ? "Voter" : "Slip", voterLabel)}
           ${row("Vote", esc(vote.choice))}
           ${row("Recorded", esc(when(vote.cast_at)))}
-          ${castBy ? row("Cast from login", esc(castBy)) : ""}
+          ${castBy ? row("Cast from login", esc(castBy)) : ""}${via}
           ${row("Receipt no.", esc(receipt))}
           ${row("Voter receipt", voterEmail ? "emailed to " + esc(voterEmail) : "<span style='color:#b3392f'>no email on file</span>")}
         </table>

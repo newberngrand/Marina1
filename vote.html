@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cast Your Vote | New Bern Grand Marina</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<style>
+  :root { --ink: #1c2733; --muted: #5c6b7a; --bg: #f4f6f8; --card: #fff; --line: #e2e6ea; --navy: #0b2540;
+          --link: #1c5d6e; --ok: #1f6b4a; --okbg: #e6f3ee; --bad: #9a2c1a; --badbg: #fde8e4; --pick: #e3edf7; }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #e6ebf0; --muted: #9aa7b4; --bg: #10171e; --card: #18222c; --line: #2b3946; --navy: #7cc3d4;
+            --link: #7cc3d4; --ok: #6fd1a2; --okbg: #15302a; --bad: #f19a8a; --badbg: #3a1d18; --pick: #1d3346; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Arial, sans-serif; line-height: 1.5; padding: 24px 16px; }
+  .card { max-width: 520px; margin: 0 auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 22px; }
+  .brand { font-weight: bold; color: var(--navy); margin: 0 0 14px; }
+  h1 { font-size: 22px; margin: 0 0 6px; color: var(--navy); }
+  .note { color: var(--muted); font-size: 14px; }
+  .choices { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+  .choices label { flex: 1 1 140px; border: 2px solid var(--line); border-radius: 8px; padding: 12px; cursor: pointer; font-weight: bold; display: flex; gap: 8px; align-items: center; }
+  .choices label.on { border-color: var(--navy); background: var(--pick); }
+  .slips { margin: 10px 0 16px; padding: 0; list-style: none; }
+  .slips li { padding: 6px 0; border-top: 1px solid var(--line); }
+  .slips li:first-child { border-top: 0; }
+  button { width: 100%; padding: 14px; font-size: 17px; font-weight: bold; border: 0; border-radius: 8px; background: var(--navy); color: var(--card); cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .msg { padding: 12px 14px; border-radius: 8px; margin: 12px 0; }
+  .msg.ok { background: var(--okbg); color: var(--ok); }
+  .msg.bad { background: var(--badbg); color: var(--bad); }
+  a { color: var(--link); }
+  .test { display: inline-block; background: var(--badbg); color: var(--bad); font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="card">
+  <p class="brand">New Bern Grand Marina</p>
+  <div id="app"><p class="note">Loading your ballot&hellip;</p></div>
+  <noscript><p>This page needs JavaScript. You can also <a href="member-portal.html">vote in the Member Portal</a>.</p></noscript>
+</div>
+<script>
+/* Vote from the announcement email: vote.html?t=<personal token>&c=<choice>.
+   Nothing is recorded until the owner presses Confirm (email security scanners
+   open links on their own, so opening this page must never cast a vote). */
+(function () {
+  var API = 'https://afejychfqezorwyqfcsh.supabase.co/rest/v1/rpc/';
+  var KEY = 'sb_publishable_feYqbTeGauYt9xQaQk0mtw_7ZZsFbmM';
+  var q = new URLSearchParams(location.search);
+  var t = q.get('t') || '', pick = q.get('c') || '';
+  var app = document.getElementById('app');
+  var portal = '<p class="note">You can also <a href="member-portal.html">vote in the Member Portal</a> with your slip number and password.</p>';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function when(iso) { return new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }); }
+  function rpc(name, body) {
+    return fetch(API + name, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error((j && j.message) || 'Something went wrong. Please try again.'); return j; }); });
+  }
+  function fail(text) { app.innerHTML = '<div class="msg bad">' + esc(text) + '</div>' + portal; }
+
+  if (!/^[0-9a-f-]{36}$/i.test(t)) return fail('This voting link is incomplete. Please use the buttons in your email again.');
+
+  rpc('email_vote_info', { p_token: t }).then(function (info) {
+    if (!info || !info.ok) return fail((info && info.error) || 'This voting link is not valid.');
+    var head = '<h1>' + esc(info.title) + (info.test ? '<span class="test">TEST</span>' : '') + '</h1>' +
+      (info.summary ? '<p class="note">' + esc(info.summary) + '</p>' : '');
+    if (info.state === 'upcoming') return (app.innerHTML = head + '<div class="msg bad">Voting opens ' + esc(when(info.opens_at)) + '. Please use the button in your email again then.</div>');
+    if (info.state === 'closed') return (app.innerHTML = head + '<div class="msg bad">Voting has closed. No more votes are being accepted.</div>');
+    var slips = info.slips || [];
+    var open = slips.filter(function (s) { return s.eligible; });
+    if (!slips.length) return (app.innerHTML = head + '<div class="msg bad">This email has no slip that can vote with it (test emails never do).</div>' + portal);
+    if (!open.length) {
+      return (app.innerHTML = head + '<ul class="slips">' + slips.map(function (s) {
+        return '<li><strong>Slip ' + esc(s.slip) + '</strong> &middot; ' + esc(s.why) + '</li>'; }).join('') + '</ul>' +
+        '<div class="msg ok">There is nothing left to vote on with this email.</div>');
+    }
+    var choices = info.choices || [];
+    if (choices.indexOf(pick) < 0) pick = '';
+    app.innerHTML = head +
+      '<p class="note">Voting closes ' + esc(when(info.closes_at)) + '.</p>' +
+      '<p><strong>Your vote</strong></p><div class="choices" id="choices">' + choices.map(function (c, i) {
+        return '<label' + (c === pick ? ' class="on"' : '') + '><input type="radio" name="c" value="' + i + '"' + (c === pick ? ' checked' : '') + '> ' + esc(c) + '</label>'; }).join('') + '</div>' +
+      '<p><strong>' + (slips.length > 1 ? 'Slips' : 'Slip') + '</strong></p><ul class="slips">' + slips.map(function (s, i) {
+        return '<li><label><input type="checkbox" data-i="' + i + '"' + (s.eligible ? ' checked' : ' disabled') + '> <strong>Slip ' + esc(s.slip) + '</strong>' +
+          (s.owner ? ' &middot; ' + esc(s.owner) : '') + (s.eligible ? '' : ' <span class="note">(' + esc(s.why) + ')</span>') + '</label></li>'; }).join('') + '</ul>' +
+      '<div id="err"></div>' +
+      '<button type="button" id="go">Confirm my vote</button>' +
+      '<p class="note" style="margin-top:12px">Votes are final and can\'t be changed. A receipt will be emailed to you.</p>';
+    var go = document.getElementById('go');
+    function label() {
+      var c = app.querySelector('input[name=c]:checked');
+      go.textContent = c ? 'Confirm my vote: ' + choices[+c.value] : 'Pick your vote above';
+      go.disabled = !c;
+      app.querySelectorAll('#choices label').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); });
+    }
+    app.addEventListener('change', label);
+    label();
+    go.addEventListener('click', function () {
+      var c = app.querySelector('input[name=c]:checked');
+      var picked = Array.prototype.map.call(app.querySelectorAll('.slips input:checked'), function (b) { return slips[+b.getAttribute('data-i')].slip; });
+      var err = document.getElementById('err');
+      if (!c) return;
+      if (!picked.length) { err.innerHTML = '<div class="msg bad">Please tick at least one slip.</div>'; return; }
+      go.disabled = true; go.textContent = 'Recording your vote…';
+      rpc('email_cast_vote', { p_token: t, p_choice: choices[+c.value], p_slips: picked }).then(function (r) {
+        app.innerHTML = head + '<div class="msg ok"><strong>Thank you. Your vote has been recorded.</strong><br>' +
+          esc(r.choice) + ' for slip' + (r.slips.length > 1 ? 's ' : ' ') + esc(r.slips.join(', ')) + '.</div>' +
+          '<p class="note">A receipt is on its way to your email. You can close this page.</p>';
+      }, function (e) {
+        err.innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>';
+        label();
+      });
+    });
+  }, function (e) { fail(e.message); });
+})();
+</script>
+</body>
+</html>

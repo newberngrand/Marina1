@@ -30,20 +30,44 @@ const linkify = (s: string) => esc(s)
 
 type Recip = { email: string; name: string; slips: string[] };
 
-type Btn = { label: string; page: string } | null;
+type Ev = { id: string; title: string; event_type: string; ballot_kind: string; ballot_options: string[]; audience: string[] };
+// choices: on a vote that slip owners can vote on, one email button per ballot choice.
+type Btn = { label: string; page: string; choices?: string[] } | null;
+function ballotChoices(ev: Ev): string[] {
+  if (ev.ballot_kind === "yes_no") return ["Yea", "Nay"];
+  if (ev.ballot_kind === "yes_no_abstain") return ["Yea", "Nay", "Abstain"];
+  if (ev.ballot_kind === "approve_disapprove") return ["Approve", "Disapprove"];
+  return ev.ballot_options ?? [];
+}
 // What the email's button points to: an event, the Member Portal, or nothing.
-function buttonFor(ev: { id: string; title: string } | null, portal: boolean): Btn {
-  if (ev) return { label: ev.title, page: `event.html?id=${ev.id}` };
+function buttonFor(ev: Ev | null, portal: boolean): Btn {
+  if (ev) {
+    const choices = ev.event_type === "vote" && (ev.audience ?? []).includes("certificated") ? ballotChoices(ev) : [];
+    return { label: ev.title, page: `event.html?id=${ev.id}`, choices: choices.length ? choices : undefined };
+  }
   if (portal) return { label: "Go to the Member Portal", page: "member-portal.html" };
   return null;
 }
 
-function buildHtml(body: string, r: Recip, btn: Btn, link: string) {
+// Vote-by-email buttons. Each opens vote.html, where the owner confirms before
+// anything is recorded (so a security scanner opening the link can't vote).
+function voteButtons(choices: string[], voteLink: string) {
+  const colors = ["#1f6b4a", "#9a2c1a", "#5c6b7a", "#1c5d6e", "#7a5a1f", "#5b2d82"];
+  const btns = choices.map((c, i) => `<a href="${esc(voteLink + "&c=" + encodeURIComponent(c))}" style="display:inline-block;margin:0 8px 8px 0;padding:12px 22px;background:${colors[i % colors.length]};color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">${esc(c)}</a>`).join("");
+  return `<div style="margin:22px 0;padding:14px 16px;border:1px solid #e2e6ea;border-radius:8px;background:#f7f9fa">
+      <p style="margin:0 0 10px;font-weight:bold">Or vote right from this email:</p>
+      <div>${btns}</div>
+      <p style="color:#5c6b7a;font-size:13px;margin:4px 0 0">No login needed. You'll be asked to confirm before your vote is recorded. One vote per slip; votes are final and can't be changed. Please don't forward this email: its buttons vote for your slip.</p>
+    </div>`;
+}
+
+function buildHtml(body: string, r: Recip, btn: Btn, link: string, voteLink = "") {
   const greet = r.name ? `Dear ${esc(r.name)},` : "Dear Member,";
   const button = btn
     ? `<p style="margin:22px 0"><a href="${esc(link)}" style="display:inline-block;padding:12px 20px;background:#0b2540;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">${esc(btn.label)} &rarr;</a></p>
        <p style="color:#5c6b7a;font-size:13px;margin-top:-10px">You'll be asked to log in with your slip number and password.</p>`
     : "";
+  const votes = btn?.choices && voteLink ? voteButtons(btn.choices, voteLink) : "";
   const slipLine = r.slips.length
     ? `You're receiving this as the owner of record for slip${r.slips.length > 1 ? "s" : ""} ${esc(r.slips.join(", "))} at New Bern Grand Marina.`
     : "You're receiving this as a New Bern Grand Marina member.";
@@ -51,6 +75,7 @@ function buildHtml(body: string, r: Recip, btn: Btn, link: string) {
     <p>${greet}</p>
     <div>${linkify(body)}</div>
     ${button}
+    ${votes}
     <p style="margin-top:24px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br><a href="${SITE}" style="color:#1c5d6e">newberngrand.com</a></p>
     <p style="color:#8a96a3;font-size:12px;border-top:1px solid #e2e6ea;padding-top:10px">${slipLine}</p>
   </div>`;
@@ -119,8 +144,8 @@ Deno.serve(async (req) => {
   }
   async function eventInfo(id: unknown) {
     if (!id || !/^[0-9a-f-]{36}$/i.test(String(id))) return null;
-    const { data } = await db.from("events").select("id, title").eq("id", String(id)).maybeSingle();
-    return data;
+    const { data } = await db.from("events").select("id, title, event_type, ballot_kind, ballot_options, audience").eq("id", String(id)).maybeSingle();
+    return data as Ev | null;
   }
   function checkText() {
     const subject = String(b.subject ?? "").trim(), body = String(b.body ?? "").trim();
@@ -134,12 +159,14 @@ Deno.serve(async (req) => {
     const { data: a } = await db.from("announcements").select("*").eq("id", id).maybeSingle();
     if (!a) return { error: "Announcement not found" };
     const btn = buttonFor(await eventInfo(a.event_id), a.portal_button);
+    // Only slip owners vote from the email (shared cruiser logins vote on the website by name).
+    const ownerMail = ["all", "voting", "docks", "slips"].includes(a.audience);
     let note = "";
     while (true) {
       const { data: batch } = await db.from("announcement_recipients").select("email, name, slips, token")
         .eq("announcement_id", id).eq("status", "pending").limit(100);
       if (!batch?.length) break;
-      const res = await resendBatch(batch.map((r) => ({ from, to: [r.email], subject: a.subject, html: buildHtml(a.body, r as Recip, btn, `${SITE}/go.html?t=${r.token}`) })));
+      const res = await resendBatch(batch.map((r) => ({ from, to: [r.email], subject: a.subject, html: buildHtml(a.body, r as Recip, btn, `${SITE}/go.html?t=${r.token}`, ownerMail ? `${SITE}/vote.html?t=${r.token}` : "") })));
       if (res.status === 429 || /quota|limit/i.test(res.text)) {
         note = "Paused: the email service's sending limit was reached. Use Resume later (the free plan allows 100 emails per day).";
         break;
@@ -191,7 +218,7 @@ Deno.serve(async (req) => {
     const { data: rec } = await db.from("announcement_recipients")
       .insert({ announcement_id: a.id, email: to, name: "", slips: [] }).select("token").single();
     const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject,
-      html: buildHtml(t.body, sample, btn, `${SITE}/go.html?t=${rec?.token}`) }]);
+      html: buildHtml(t.body, sample, btn, `${SITE}/go.html?t=${rec?.token}`, `${SITE}/vote.html?t=${rec?.token}`) }]);
     const ok = res.status < 300;
     await db.from("announcement_recipients").update(ok ? { status: "sent", sent_at: new Date().toISOString() } : { status: "failed", error: `${res.status} ${res.text}`.slice(0, 500) })
       .eq("announcement_id", a.id);
