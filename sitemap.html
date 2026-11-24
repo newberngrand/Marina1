@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611232036">
+<link rel="stylesheet" href="style.css?v=202611232048">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -49,6 +49,64 @@
   .sm-detail li { margin: 3px 0; }
   .sm-who { font-size: 0.8rem; color: var(--muted); margin: 0 0 4px; }
   .sm-open { display: inline-block; font-weight: 600; color: var(--c); text-decoration: underline; }
+  /* ---------- Chart of the Website ---------- */
+  .ch-section { padding-top: 0; }
+  .ch-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; border-top: 1px solid var(--line); padding-top: 36px; }
+  .ch-head h2 { margin: 2px 0 4px; color: var(--navy); }
+  .ch-head .note { max-width: 680px; margin: 0; color: var(--muted); }
+  .ch-zoom { display: flex; gap: 6px; }
+  .ch-zoom .btn-sm { min-width: 40px; }
+  .ch-viewport { position: relative; height: min(78vh, 760px); min-height: 420px; overflow: hidden; border-radius: var(--radius); border: 6px solid #e9dcc0; box-shadow: inset 0 0 0 1px #c9b48a, var(--shadow);
+    background: radial-gradient(ellipse at 30% 20%, #e6f1f3 0%, #cfe3e8 45%, #b9d5dd 100%); cursor: grab; touch-action: none; user-select: none; }
+  .ch-viewport.dragging { cursor: grabbing; }
+  .ch-world { position: absolute; left: 0; top: 0; width: 2000px; height: 1300px; transform-origin: 0 0; }
+  .ch-world svg.ch-sea { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .ch-isle-name { position: absolute; transform: translate(-50%, -50%); font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 30px; letter-spacing: .06em; color: #6b5a3a; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 0 rgba(255,255,255,.6); }
+  .ch-isle-name small { display: block; font-size: 15px; letter-spacing: .02em; text-align: center; color: #8a7655; }
+  .ch-cartouche { position: absolute; left: 40px; top: 34px; padding: 14px 22px; background: #fbf5e6; border: 2px solid #b79b63; outline: 1px solid #b79b63; outline-offset: 4px; font-family: Georgia, serif; color: #4b3d22; text-align: center; pointer-events: none; }
+  .ch-cartouche b { display: block; font-size: 24px; letter-spacing: .08em; }
+  .ch-cartouche span { font-size: 14px; font-style: italic; }
+  .ch-scr { position: absolute; transform: translate(-50%, -50%) rotate(var(--r, 0deg)); width: var(--w, 180px); background: #fff; border-radius: 7px; box-shadow: 0 6px 16px rgba(11,37,64,.25), 0 1px 0 rgba(0,0,0,.05);
+    border: 0; padding: 0; cursor: pointer; font: inherit; text-align: left; transition: transform .18s, box-shadow .18s; --c: var(--teal); }
+  .ch-scr:hover, .ch-scr:focus-visible, .ch-scr.on { transform: translate(-50%, -50%) rotate(0deg) scale(1.08); box-shadow: 0 14px 30px rgba(11,37,64,.35); z-index: 5; outline: none; }
+  .ch-scr.on { box-shadow: 0 0 0 4px var(--c), 0 14px 30px rgba(11,37,64,.35); }
+  .ch-scr[data-g="members"] { --c: #1f6b4a; } .ch-scr[data-g="admin"] { --c: #9a2c1a; } .ch-scr[data-g="board"] { --c: #7a5a1f; }
+  .ch-bar { display: flex; align-items: center; gap: 4px; padding: 5px 7px; background: #eef1f4; border-radius: 7px 7px 0 0; border-bottom: 1px solid #dde2e7; }
+  .ch-bar i { width: 7px; height: 7px; border-radius: 50%; background: #e0a39a; flex: none; } .ch-bar i + i { background: #e6cc8d; } .ch-bar i + i + i { background: #9fcfa8; }
+  .ch-bar em { flex: 1; margin-left: 4px; height: 11px; border-radius: 6px; background: #fff; font-style: normal; font-size: 8px; line-height: 11px; padding: 0 5px; color: #7b8794; overflow: hidden; white-space: nowrap; }
+  .ch-pg { height: var(--h, 100px); padding: 7px; overflow: hidden; position: relative; border-radius: 0 0 7px 7px; }
+  .ch-lbl { position: absolute; left: 50%; top: 100%; transform: translate(-50%, 6px); white-space: nowrap; font-size: 13px; font-weight: 700; color: var(--navy); background: rgba(251,245,230,.92); border: 1px solid #d6c39b; border-radius: 10px; padding: 1px 9px; pointer-events: none; }
+  /* little wireframe pieces */
+  .w-hero { height: 34%; border-radius: 4px; background: linear-gradient(135deg, var(--c), #0b2540); margin-bottom: 6px; position: relative; }
+  .w-hero::after { content: ""; position: absolute; left: 8px; top: 40%; width: 45%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.75); }
+  .w-row { display: flex; gap: 5px; margin-bottom: 5px; } .w-row > * { flex: 1; }
+  .w-card { height: 26px; border-radius: 4px; background: color-mix(in srgb, var(--c) 15%, #fff); border: 1px solid color-mix(in srgb, var(--c) 30%, #fff); }
+  .w-ln { height: 5px; border-radius: 3px; background: #dfe4e9; margin: 0 0 5px; } .w-ln.s { width: 60%; } .w-ln.m { width: 80%; }
+  .w-btn { display: inline-block; width: 42px; height: 11px; border-radius: 4px; background: var(--gold); margin-right: 4px; }
+  .w-btn.g { background: #1f6b4a; } .w-btn.r { background: #9a2c1a; }
+  .w-field { height: 11px; border: 1px solid #d3d9df; border-radius: 3px; margin-bottom: 5px; }
+  .w-doc { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; } .w-doc b { width: 9px; height: 11px; border-radius: 2px; background: var(--c); opacity: .7; flex: none; } .w-doc .w-ln { flex: 1; margin: 0; }
+  .w-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; } .w-tiles span { height: 26px; border-radius: 3px; background: linear-gradient(160deg, #8fbccb, #2f6f84); } .w-tiles span:nth-child(3n+2) { background: linear-gradient(160deg, #e9d3a6, #b98d4b); }
+  .w-map { position: absolute; inset: 7px; border-radius: 4px; background: #d7ebf0; overflow: hidden; }
+  .w-map i { position: absolute; background: #fff; border: 1px solid #a9c4cc; }
+  .w-3d { position: absolute; inset: 0; background: linear-gradient(#5b8fb3 0 42%, #2f6f84 42%); }
+  .w-3d i { position: absolute; bottom: 0; left: 50%; width: 10px; height: 60%; background: #c9a15a; transform-origin: bottom; }
+  .w-tabs { display: flex; gap: 3px; margin-bottom: 6px; } .w-tabs span { flex: 1; height: 8px; border-radius: 3px 3px 0 0; background: #dfe4e9; } .w-tabs span.a { background: var(--c); }
+  .w-tile { height: 22px; border-radius: 4px; background: color-mix(in srgb, var(--c) 18%, #fff); display: grid; place-items: center; font-size: 10px; font-weight: 800; color: var(--c); }
+  .w-cards { position: absolute; left: 50%; top: 55%; } .w-cards span { position: absolute; width: 30px; height: 42px; border-radius: 4px; background: #fff; border: 1px solid #c9ced4; box-shadow: 0 2px 4px rgba(0,0,0,.15); transform-origin: 50% 120%; left: -15px; top: -30px; font-size: 12px; font-weight: 800; padding: 2px 4px; color: #9a2c1a; }
+  .w-center { display: grid; place-items: center; height: 100%; text-align: center; }
+  .w-spin { width: 22px; height: 22px; border-radius: 50%; border: 3px solid #dfe4e9; border-top-color: var(--c); }
+  .w-banner { height: 12px; border-radius: 3px; background: #f6ecd9; border: 1px solid #e6cc8d; margin-bottom: 6px; }
+  .w-tool { height: 10px; border-radius: 3px; background: #eef1f4; margin-bottom: 6px; display: flex; gap: 3px; padding: 2px; } .w-tool i { width: 10px; background: #c9ced4; border-radius: 2px; }
+  /* the info card */
+  .ch-info { position: absolute; right: 14px; top: 14px; width: min(340px, calc(100% - 28px)); max-height: calc(100% - 28px); overflow: auto; background: #fff; border-radius: var(--radius); box-shadow: 0 12px 34px rgba(11,37,64,.3); padding: 14px 16px; border-top: 5px solid var(--c, var(--teal)); cursor: auto; font-size: .9rem; }
+  .ch-info h3 { margin: 0 30px 2px 0; color: var(--navy); font-size: 1.1rem; }
+  .ch-info .ch-where { font-size: .8rem; color: var(--muted); margin: 0 0 6px; }
+  .ch-info ul { margin: 6px 0 10px; padding-left: 18px; } .ch-info li { margin: 3px 0; line-height: 1.45; }
+  .ch-info .ch-x { position: absolute; right: 8px; top: 8px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: #eef1f4; cursor: pointer; font-size: 18px; line-height: 1; color: var(--muted); }
+  .ch-info a { font-weight: 600; color: var(--c, var(--teal)); text-decoration: underline; }
+  body:not(.sm-board) [data-board] { display: none !important; }
+  @media (max-width: 620px) { .ch-viewport { height: 70vh; } .ch-info { top: auto; bottom: 10px; right: 10px; left: 10px; width: auto; max-height: 55%; } }
   @media (max-width: 620px) { .sm-grid { grid-template-columns: 1fr; border-top: 0; padding-top: 0; } .sm-trunk { display: none; } .sm-root { margin-bottom: 16px; } }
 </style>
 </head>
@@ -118,6 +176,27 @@
     </div></div>
     <div class="sm-trunk"></div>
     <div class="sm-grid" id="smGrid"></div>
+  </div>
+</section>
+
+<section class="ch-section">
+  <div class="container">
+    <div class="ch-head">
+      <div>
+        <div class="eyebrow" style="color:var(--gold-dark)">Just for fun</div>
+        <h2>Chart of the Website</h2>
+        <p class="note">Every page as a little screen, charted like the harbor. Drag to sail around, use + and &minus; to zoom, and click a screen to see what it does. Dotted lines are the routes between pages.</p>
+      </div>
+      <div class="ch-zoom">
+        <button type="button" class="btn-sm" id="chOut" aria-label="Zoom out">&minus;</button>
+        <button type="button" class="btn-sm" id="chFit">Fit</button>
+        <button type="button" class="btn-sm" id="chIn" aria-label="Zoom in">+</button>
+      </div>
+    </div>
+    <div class="ch-viewport" id="chView">
+      <div class="ch-world" id="chWorld"></div>
+      <div class="ch-info" id="chInfo" hidden></div>
+    </div>
   </div>
 </section>
 
@@ -318,7 +397,7 @@
     return sb.auth.getSession().then(function (r) {
       if (!r.data.session) return;
       return sb.rpc('board_status').then(function (b) {
-        if (b && b.data && b.data.is_board) { grid.querySelector('[data-g="board"]').hidden = false; document.getElementById('smLegendBoard').hidden = false; }
+        if (b && b.data && b.data.is_board) { grid.querySelector('[data-g="board"]').hidden = false; document.getElementById('smLegendBoard').hidden = false; document.body.classList.add('sm-board'); }
       });
     });
   }).catch(function () {});
@@ -334,8 +413,220 @@
   });
   document.getElementById('smAll').addEventListener('click', function () { grid.querySelectorAll('.sm-node, .sm-group-head').forEach(function (b) { setOpen(b, true); }); });
   document.getElementById('smNone').addEventListener('click', function () { grid.querySelectorAll('.sm-node, .sm-group-head').forEach(function (b) { setOpen(b, false); }); });
+
+  /* ---------- Chart of the Website: each page as a little screen on a harbor chart ---------- */
+  // [x, y, tilt, wireframe, big?] in a 2000 x 1300 world, keyed by group:page name.
+  var SPOT = {
+    'public:Home': [640, 520, -2, 'home', 1], 'public:About': [370, 330, 4, 'text'], 'public:Documents': [650, 245, -3, 'docs'],
+    'public:Gallery': [915, 330, 3, 'gallery'], 'public:Reservations': [285, 575, -5, 'form'], 'public:Contact': [355, 815, 3, 'contact'],
+    'public:Rates & Amenities': [630, 840, -2, 'table'], 'public:Docks & Amenities': [880, 990, 4, 'text'], 'public:Marina Map': [930, 705, 2, 'map'],
+    'public:Walk the Docks in 3D': [1010, 1185, -6, '3d'],
+    'members:Member Portal': [1300, 430, -2, 'portal'], 'members:Event page': [1505, 250, 3, 'event'], 'members:Poker Run': [1715, 345, -4, 'cards'],
+    'members:Cast Your Vote': [1640, 545, 5, 'vote'], 'members:Reset Password': [1190, 190, -6, 'form'], 'members:Email link opener': [1435, 620, 2, 'link'],
+    'members:Document Review': [1840, 170, 4, 'docs'],
+    'admin:Current Events': [1345, 885, -1, 'dash'], 'admin:Documents': [1545, 825, 4, 'docs'], 'admin:Gallery': [1735, 885, -3, 'gallery'],
+    'admin:Members': [1300, 1095, 3, 'table'], 'admin:Email Members': [1515, 1075, -2, 'email'], 'admin:Activity Log': [1725, 1120, 2, 'log'],
+    'admin:Visit Replay': [1885, 1010, -5, 'replay'], 'admin:Help': [1150, 965, 4, 'help'],
+    'board:Board': [330, 1125, -3, 'board'], 'board:Minutes Editor': [560, 1180, 4, 'editor']
+  };
+  var ISLES = [
+    { g: 'public', x: 640, y: 610, rx: 470, ry: 425, seed: 3, name: 'Public Harbor', sub: 'open to all visitors', lx: 640, ly: 395 },
+    { g: 'members', x: 1520, y: 395, rx: 390, ry: 265, seed: 7, name: 'Members’ Cove', sub: 'log in to land', lx: 1500, ly: 120 },
+    { g: 'admin', x: 1510, y: 1010, rx: 450, ry: 195, seed: 11, name: 'Admin Point', sub: 'board administrators', lx: 1330, ly: 770 },
+    { g: 'public', x: 1010, y: 1190, rx: 125, ry: 85, seed: 2, name: '' },
+    { g: 'board', x: 445, y: 1150, rx: 250, ry: 120, seed: 5, name: 'Board Isle', sub: 'directors only', lx: 445, ly: 1040 }
+  ];
+  // Routes between pages that link to each other.
+  var ROUTES = [
+    ['public:Home', 'public:About'], ['public:Home', 'public:Documents'], ['public:Home', 'public:Gallery'], ['public:Home', 'public:Reservations'],
+    ['public:Home', 'public:Contact'], ['public:Home', 'public:Rates & Amenities'], ['public:Home', 'public:Marina Map'], ['public:Rates & Amenities', 'public:Docks & Amenities'],
+    ['public:Marina Map', 'public:Walk the Docks in 3D'], ['public:Home', 'members:Member Portal'], ['members:Member Portal', 'members:Event page'],
+    ['members:Event page', 'members:Poker Run'], ['members:Reset Password', 'members:Member Portal'], ['members:Email link opener', 'members:Event page'],
+    ['admin:Email Members', 'members:Email link opener'], ['admin:Email Members', 'members:Cast Your Vote'], ['members:Cast Your Vote', 'members:Event page'],
+    ['admin:Documents', 'members:Document Review'], ['members:Member Portal', 'admin:Current Events'], ['admin:Activity Log', 'admin:Visit Replay'],
+    ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
+    ['admin:Email Members', 'admin:Activity Log'], ['admin:Members', 'admin:Help'], ['members:Member Portal', 'board:Board'], ['board:Board', 'board:Minutes Editor']
+  ];
+  var L = function (cls) { return '<div class="w-ln' + (cls ? ' ' + cls : '') + '"></div>'; };
+  var WIRE = {
+    home: '<div class="w-hero" style="height:42%"></div><div class="w-row"><div class="w-card"></div><div class="w-card"></div><div class="w-card"></div></div>' + L('m') + L('s') + '<span class="w-btn"></span>',
+    text: '<div class="w-hero" style="height:26%"></div>' + L() + L('m') + L() + L('s') + L('m'),
+    contact: '<div class="w-row"><div>' + L() + L('m') + L('s') + '</div><div><div class="w-field"></div><div class="w-field"></div><span class="w-btn"></span></div></div>',
+    docs: L('s') + '<div class="w-doc"><b></b>' + L() + '</div><div class="w-doc"><b></b>' + L() + '</div><div class="w-doc"><b></b>' + L('m') + '</div><div class="w-doc"><b></b>' + L() + '</div>',
+    gallery: '<div class="w-tiles"><span></span><span></span><span></span><span></span><span></span><span></span></div>',
+    form: '<div class="w-center"><div style="width:75%">' + L('s') + '<div class="w-field"></div><div class="w-field"></div><span class="w-btn"></span></div></div>',
+    table: L('s') + '<div class="w-row"><div class="w-card" style="height:12px"></div><div class="w-card" style="height:12px"></div></div>' + L() + L() + L() + L('m'),
+    map: '<div class="w-map"><i style="left:12%;top:18%;width:70%;height:5px"></i><i style="left:20%;top:18%;width:5px;height:60%"></i><i style="left:45%;top:18%;width:5px;height:55%"></i><i style="left:70%;top:18%;width:5px;height:65%"></i><i style="left:12%;top:82%;width:40%;height:5px"></i></div>',
+    '3d': '<div class="w-3d"><i style="transform:translateX(-50%) perspective(60px) rotateX(55deg)"></i><i style="left:30%;transform:perspective(60px) rotateX(55deg) rotateZ(25deg)"></i><i style="left:66%;transform:perspective(60px) rotateX(55deg) rotateZ(-25deg)"></i></div>',
+    portal: L('s') + '<div class="w-row"><div class="w-card" style="height:34px"></div><div class="w-card" style="height:34px"></div></div><div class="w-card" style="height:22px"></div>',
+    event: '<div class="w-hero" style="height:22%"></div><div class="w-field"></div><div class="w-field"></div><span class="w-btn"></span>',
+    vote: '<div class="w-center"><div>' + L() + '<span class="w-btn g"></span><span class="w-btn r"></span><div style="height:6px"></div><span class="w-btn" style="width:90px;background:#0b2540"></span></div></div>',
+    cards: '<div class="w-cards"><span style="transform:rotate(-24deg)">A</span><span style="transform:rotate(-8deg);color:#1c2733">K</span><span style="transform:rotate(8deg)">Q</span><span style="transform:rotate(24deg);color:#1c2733">J</span></div>',
+    link: '<div class="w-center"><div><div class="w-spin" style="margin:0 auto 6px"></div>' + L() + '</div></div>',
+    dash: '<div class="w-tabs"><span class="a"></span><span></span><span></span><span></span><span></span></div>' + L('s') + L() + L() + L('m') + L(),
+    email: '<div class="w-row"><div><div class="w-field"></div><div class="w-field" style="height:34px"></div><span class="w-btn"></span></div><div class="w-card" style="height:60px"></div></div>',
+    log: '<div class="w-row"><div class="w-tile">42</div><div class="w-tile">7</div><div class="w-tile">3</div></div>' + L() + L() + L('m') + L(),
+    replay: '<div class="w-banner"></div><div class="w-hero" style="height:24%"></div>' + L() + L('m') + '<div class="w-row"><div class="w-card" style="height:6px"></div><div class="w-card" style="height:6px;opacity:.4"></div><div class="w-card" style="height:6px;opacity:.4"></div></div>',
+    help: '<div class="w-card" style="height:22px;margin-bottom:5px"></div><div class="w-card" style="height:22px;margin-bottom:5px;opacity:.6"></div><div class="w-card" style="height:22px;opacity:.35"></div>',
+    board: L('s') + '<div class="w-doc"><b></b>' + L() + '<span class="w-btn g" style="width:24px"></span></div><div class="w-doc"><b></b>' + L() + '<span class="w-btn g" style="width:24px"></span></div><div class="w-doc"><b></b>' + L('m') + '</div>',
+    editor: '<div class="w-tool"><i></i><i></i><i></i><i></i></div>' + L() + L('m') + L() + L('s') + L() + L('m')
+  };
+
+  var pages = {};   // key -> page entry, for the info card
+  GROUPS.forEach(function (g) {
+    (function walk(list, parent) { list.forEach(function (p) {
+      pages[g.id + ':' + p.name] = { p: p, g: g, parent: parent };
+      if (p.children) walk(p.children, p);
+    }); })(g.pages, null);
+  });
+
+  // An island outline: a wobbly ellipse that is the same every time.
+  function islePath(c) {
+    var pts = [], n = 28;
+    for (var k = 0; k < n; k++) {
+      var a = k / n * Math.PI * 2;
+      var w = 1 + 0.07 * Math.sin(a * 3 + c.seed) + 0.05 * Math.sin(a * 5 + c.seed * 2) + 0.03 * Math.cos(a * 7 + c.seed);
+      pts.push([c.x + Math.cos(a) * c.rx * w, c.y + Math.sin(a) * c.ry * w]);
+    }
+    var d = 'M' + pts[0].join(',');
+    for (k = 0; k < n; k++) {   // smooth curve through the points
+      var p0 = pts[(k - 1 + n) % n], p1 = pts[k], p2 = pts[(k + 1) % n], p3 = pts[(k + 2) % n];
+      d += ' C' + (p1[0] + (p2[0] - p0[0]) / 6) + ',' + (p1[1] + (p2[1] - p0[1]) / 6) + ' ' + (p2[0] - (p3[0] - p1[0]) / 6) + ',' + (p2[1] - (p3[1] - p1[1]) / 6) + ' ' + p2[0] + ',' + p2[1];
+    }
+    return d + 'Z';
+  }
+  function scaled(c, f) { return { x: c.x, y: c.y, rx: c.rx * f, ry: c.ry * f, seed: c.seed }; }
+  var board = function (g) { return g === 'board' ? ' data-board' : ''; };
+
+  var sea = '<svg class="ch-sea" viewBox="0 0 2000 1300" aria-hidden="true">' +
+    '<defs><pattern id="chGrid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M100 0H0V100" fill="none" stroke="#9fc2cc" stroke-width="1" opacity=".5"/></pattern></defs>' +
+    '<rect width="2000" height="1300" fill="url(#chGrid)"/>' +
+    ISLES.map(function (c) {
+      return '<g' + board(c.g) + '>' +
+        [1.55, 1.35, 1.17].map(function (f) { return '<path d="' + islePath(scaled(c, f)) + '" fill="none" stroke="#7fa9b6" stroke-width="1.2" stroke-dasharray="' + (f > 1.4 ? '2 6' : '6 6') + '" opacity=".7"/>'; }).join('') +
+        '<path d="' + islePath(c) + '" fill="#efe3c6" stroke="#c4a86f" stroke-width="3"/>' +
+        '<path d="' + islePath(scaled(c, 0.9)) + '" fill="#e3edd2" opacity=".55"/></g>';
+    }).join('') +
+    ROUTES.map(function (r) {
+      var a = SPOT[r[0]], b = SPOT[r[1]]; if (!a || !b) return '';
+      var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1];
+      var bend = 0.18 * (r[0].length % 2 ? 1 : -1);   // alternate the curve direction
+      var hidden = r[0].indexOf('board:') === 0 || r[1].indexOf('board:') === 0;
+      return '<path' + (hidden ? ' data-board' : '') + ' d="M' + a[0] + ',' + a[1] + ' Q' + (mx - dy * bend) + ',' + (my + dx * bend) + ' ' + b[0] + ',' + b[1] + '" fill="none" stroke="#1c5d6e" stroke-width="3.5" stroke-dasharray="1 10" stroke-linecap="round" opacity=".9"/>';
+    }).join('') +
+    // compass rose
+    '<g transform="translate(1860,1180)" opacity=".85"><circle r="70" fill="#fbf5e6" stroke="#b79b63" stroke-width="2"/><circle r="58" fill="none" stroke="#b79b63" stroke-dasharray="2 4"/>' +
+    '<path d="M0,-64 L12,0 L0,64 L-12,0Z" fill="#0b2540"/><path d="M-64,0 L0,12 L64,0 L0,-12Z" fill="#c9a15a"/><path d="M0,-64 L12,0 L-12,0Z" fill="#9a2c1a"/>' +
+    '<text y="-74" text-anchor="middle" font-family="Georgia,serif" font-size="20" fill="#4b3d22">N</text></g>' +
+    // a few waves and a sailboat
+    '<g fill="none" stroke="#5f93a3" stroke-width="2" opacity=".6"><path d="M1080 120 q15 -12 30 0 t30 0"/><path d="M90 980 q15 -12 30 0 t30 0"/><path d="M1180 640 q15 -12 30 0 t30 0"/><path d="M1000 1240 q15 -12 30 0 t30 0"/><path d="M80 120 q15 -12 30 0 t30 0"/></g>' +
+    '<g transform="translate(1110,560)"><path d="M0,0 L44,0 L36,12 L8,12Z" fill="#7a5a1f"/><path d="M22,-4 L22,-58 L46,-6Z" fill="#fff" stroke="#9fb3bd"/><path d="M20,-4 L20,-46 L2,-6Z" fill="#fbf5e6" stroke="#9fb3bd"/></g>' +
+    '</svg>';
+
+  var html = sea + '<div class="ch-cartouche"><b>NEW BERN GRAND MARINA</b><span>A Chart of the Website &middot; soundings in clicks</span></div>';
+  html += ISLES.filter(function (c) { return c.name; }).map(function (c) { return '<div class="ch-isle-name"' + board(c.g) + ' style="left:' + c.lx + 'px;top:' + c.ly + 'px">' + c.name + '<small>' + c.sub + '</small></div>'; }).join('');
+  Object.keys(SPOT).forEach(function (k) {
+    var s = SPOT[k], e = pages[k]; if (!e) return;
+    var w = s[4] ? 230 : 172, h = s[4] ? 130 : 96;
+    html += '<button type="button" class="ch-scr" data-k="' + esc(k) + '" data-g="' + e.g.id + '"' + board(e.g.id) +
+      ' style="left:' + s[0] + 'px;top:' + s[1] + 'px;--r:' + s[2] + 'deg;--w:' + w + 'px;--h:' + h + 'px" aria-label="' + esc(e.p.name) + '">' +
+      '<span class="ch-bar"><i></i><i></i><i></i><em>' + esc(e.p.url) + '</em></span>' +
+      '<span class="ch-pg" style="display:block">' + WIRE[s[3]] + '</span>' +
+      '<span class="ch-lbl">' + esc(e.p.name) + '</span></button>';
+  });
+  var world = document.getElementById('chWorld'), view = document.getElementById('chView'), info = document.getElementById('chInfo');
+  world.innerHTML = html;
+
+  // Info card for the clicked screen.
+  function showInfo(k) {
+    var e = pages[k]; if (!e) return;
+    world.querySelectorAll('.ch-scr.on').forEach(function (b) { b.classList.remove('on'); });
+    var btn = world.querySelector('.ch-scr[data-k="' + k.replace(/"/g, '\\"') + '"]'); if (btn) btn.classList.add('on');
+    var color = { public: 'var(--teal)', members: '#1f6b4a', admin: '#9a2c1a', board: '#7a5a1f' }[e.g.id];
+    info.style.setProperty('--c', color);
+    info.innerHTML = '<button type="button" class="ch-x" aria-label="Close">&times;</button><h3>' + esc(e.p.name) + '</h3>' +
+      '<p class="ch-where">' + esc(e.g.title) + (e.parent ? ' &middot; from ' + esc(e.parent.name) : '') + ' &middot; ' + esc(e.p.url) + '</p>' +
+      '<ul>' + e.p.points.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+      (/^(vote|go|review|reset-password)\.html/.test(e.p.url) ? '<p class="ch-where">Opened from an email link.</p>' : '<a href="' + esc(e.p.url) + '">Open this page &rarr;</a>');
+    info.hidden = false;
+  }
+  info.addEventListener('click', function (e) {
+    if (e.target.closest('.ch-x')) { info.hidden = true; world.querySelectorAll('.ch-scr.on').forEach(function (b) { b.classList.remove('on'); }); }
+  });
+  info.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+
+  // Pan (drag) and zoom (buttons, or Ctrl + mouse wheel).
+  var z = 1, tx = 0, ty = 0, minZ = 0.2;
+  function clamp() {
+    var vw = view.clientWidth, vh = view.clientHeight, ww = 2000 * z, wh = 1300 * z;
+    tx = ww <= vw ? (vw - ww) / 2 : Math.min(0, Math.max(vw - ww, tx));
+    ty = wh <= vh ? (vh - wh) / 2 : Math.min(0, Math.max(vh - wh, ty));
+  }
+  function apply() { clamp(); world.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + z + ')'; }
+  function fit() { z = minZ = Math.min(view.clientWidth / 2000, view.clientHeight / 1300); tx = ty = 0; apply(); }
+  // Phones: start zoomed in on Public Harbor rather than showing a tiny whole chart.
+  function start() {
+    fit();
+    if (view.clientWidth >= 700) return;
+    z = Math.min(1, view.clientHeight / 1300 * 1.6);
+    tx = view.clientWidth / 2 - 640 * z; ty = view.clientHeight / 2 - 560 * z; apply();
+  }
+  function zoomAt(f, cx, cy) {
+    var nz = Math.max(minZ, Math.min(1.6, z * f));
+    tx = cx - (cx - tx) * nz / z; ty = cy - (cy - ty) * nz / z; z = nz; apply();
+  }
+  document.getElementById('chIn').addEventListener('click', function () { zoomAt(1.35, view.clientWidth / 2, view.clientHeight / 2); });
+  document.getElementById('chOut').addEventListener('click', function () { zoomAt(1 / 1.35, view.clientWidth / 2, view.clientHeight / 2); });
+  document.getElementById('chFit').addEventListener('click', fit);
+  view.addEventListener('wheel', function (e) {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    var r = view.getBoundingClientRect();
+    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+  var drag = null, ptrs = {};
+  view.addEventListener('pointerdown', function (e) {
+    ptrs[e.pointerId] = [e.clientX, e.clientY];
+    drag = { x: e.clientX, y: e.clientY, tx: tx, ty: ty, moved: false, pinch: null };
+    var ids = Object.keys(ptrs);
+    if (ids.length === 2) { var a = ptrs[ids[0]], b = ptrs[ids[1]]; drag.pinch = Math.hypot(a[0] - b[0], a[1] - b[1]); drag.moved = true; }
+    try { view.setPointerCapture(e.pointerId); } catch (x) {}
+  });
+  view.addEventListener('pointermove', function (e) {
+    if (!drag || !ptrs[e.pointerId]) return;
+    ptrs[e.pointerId] = [e.clientX, e.clientY];
+    var ids = Object.keys(ptrs);
+    if (ids.length === 2 && drag.pinch) {   // two-finger pinch zoom
+      var a = ptrs[ids[0]], b = ptrs[ids[1]], d = Math.hypot(a[0] - b[0], a[1] - b[1]), r = view.getBoundingClientRect();
+      zoomAt(d / drag.pinch, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); drag.pinch = d; return;
+    }
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+    drag.moved = true; view.classList.add('dragging');
+    tx = drag.tx + dx; ty = drag.ty + dy; apply();
+  });
+  function end(e) {
+    delete ptrs[e.pointerId];
+    if (!drag) return;
+    view.classList.remove('dragging');
+    if (!drag.moved && e.type === 'pointerup') {
+      var s = document.elementFromPoint(e.clientX, e.clientY);
+      s = s && s.closest('.ch-scr');
+      if (s) showInfo(s.getAttribute('data-k'));
+    }
+    if (!Object.keys(ptrs).length) drag = null;
+  }
+  view.addEventListener('pointerup', end);
+  view.addEventListener('pointercancel', end);
+  world.addEventListener('keydown', function (e) {   // keyboard: Enter / Space on a screen
+    var s = e.target.closest('.ch-scr');
+    if (s && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); showInfo(s.getAttribute('data-k')); }
+  });
+  world.addEventListener('click', function (e) { if (e.detail === 0) { var s = e.target.closest('.ch-scr'); if (s) showInfo(s.getAttribute('data-k')); } });
+  window.addEventListener('resize', function () { var wasFit = z <= minZ + 1e-6; minZ = Math.min(view.clientWidth / 2000, view.clientHeight / 1300); if (wasFit) fit(); else apply(); });
+  start();
 })();
 </script>
-<script src="member-login.js?v=202611232036"></script>
+<script src="member-login.js?v=202611232048"></script>
 </body>
 </html>
