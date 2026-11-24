@@ -1447,6 +1447,12 @@ footer.site-footer {
 .board-alert a { font-weight: 700; }
 .admin-tab-link { text-decoration: none; display: inline-block; }
 .admin-tab-link:hover { color: var(--navy); }
+.help-list { display: grid; gap: 12px; max-width: 640px; }
+.help-item { display: flex; gap: 14px; align-items: center; color: var(--ink); text-decoration: none; transition: box-shadow .15s, border-color .15s; }
+.help-item:hover { box-shadow: var(--shadow); }
+.help-item .note { display: block; margin-top: 2px; }
+.help-icon { flex: none; width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; background: #e3edf7; color: var(--navy); }
+.help-icon svg { width: 24px; height: 24px; }
 
 /* Minutes editor */
 .editor-section { padding-top: 28px; }

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site Map | New Bern Grand Marina</title>
+<meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="style.css?v=202611232027">
+<style>
+  .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
+  .sm-legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; background: var(--c); vertical-align: -1px; }
+  .sm-root { display: flex; justify-content: center; margin-bottom: 0; }
+  .sm-root-node { background: var(--navy); color: #fff; border-radius: var(--radius); padding: 10px 18px; font-weight: 700; display: flex; gap: 10px; align-items: center; }
+  .sm-root-node svg { width: 22px; height: 22px; }
+  .sm-trunk { width: 2px; height: 22px; background: var(--line); margin: 0 auto; }
+  .sm-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; border-top: 2px solid var(--line); padding-top: 22px; position: relative; }
+  .sm-group { --c: var(--teal); }
+  .sm-group[data-g="members"] { --c: #1f6b4a; }
+  .sm-group[data-g="board"] { --c: #7a5a1f; }
+  .sm-group[data-g="admin"] { --c: #9a2c1a; }
+  .sm-group-head { border-left: 4px solid var(--c); padding: 4px 0 4px 10px; margin-bottom: 12px; }
+  .sm-group-head h2 { font-size: 1.05rem; margin: 0; color: var(--navy); }
+  .sm-group-head p { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+  .sm-list { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); }
+  .sm-list .sm-list { margin-top: 8px; }
+  .sm-item { position: relative; margin: 0 0 10px; }
+  .sm-item::before { content: ""; position: absolute; left: -14px; top: 22px; width: 12px; border-top: 2px solid var(--line); }
+  .sm-node { width: 100%; display: flex; gap: 10px; align-items: center; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 9px 10px; cursor: pointer; font: inherit; color: var(--ink); transition: box-shadow .15s, border-color .15s; }
+  .sm-node:hover { border-color: var(--c); box-shadow: 0 4px 14px rgba(11,37,64,.08); }
+  .sm-node:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  .sm-icon { flex: none; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 14%, #fff); color: var(--c); }
+  .sm-icon svg { width: 19px; height: 19px; }
+  .sm-name { font-weight: 600; line-height: 1.25; flex: 1; min-width: 0; }
+  .sm-name small { display: block; font-weight: 400; color: var(--muted); font-size: 0.78rem; overflow-wrap: anywhere; }
+  .sm-chev { flex: none; width: 16px; height: 16px; color: var(--muted); transition: transform .2s; }
+  .sm-node[aria-expanded="true"] { border-color: var(--c); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .sm-node[aria-expanded="true"] .sm-chev { transform: rotate(180deg); }
+  .sm-detail { border: 1px solid var(--c); border-top: 0; border-radius: 0 0 var(--radius) var(--radius); padding: 10px 12px 12px; background: color-mix(in srgb, var(--c) 5%, #fff); font-size: 0.88rem; line-height: 1.5; }
+  .sm-detail ul { margin: 6px 0 8px; padding-left: 18px; }
+  .sm-detail li { margin: 3px 0; }
+  .sm-who { font-size: 0.8rem; color: var(--muted); margin: 0 0 4px; }
+  .sm-open { display: inline-block; font-weight: 600; color: var(--c); text-decoration: underline; }
+  @media (max-width: 1000px) { .sm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 620px) { .sm-grid { grid-template-columns: 1fr; border-top: 0; padding-top: 0; } .sm-trunk { display: none; } .sm-root { margin-bottom: 16px; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container">
+    <div>134 Craven St, New Bern, NC 28560 &nbsp;<span class="sep">|</span>&nbsp; Open Daily 8:30 AM &ndash; 5:00 PM</div>
+    <div><a href="tel:+12526380318">(252) 638-0318</a> <span class="sep">|</span> <a href="mailto:newberngrand@f3marina.com">newberngrand@f3marina.com</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a href="index.html" class="brand">
+      <img src="images/logo.png" alt="New Bern Grand Marina logo">
+      <span class="brand-text">
+        <span class="name">New Bern Grand Marina</span>
+        <span class="tag">Downtown New Bern, NC</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.main-nav').classList.toggle('open')">&#9776;</button>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="rates.html">Rates &amp; Amenities</a>
+      <a href="marina-map.html">Marina Map</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="documents.html">Documents</a>
+      <a href="contact.html">Contact</a>
+      <a href="member-portal.html" id="memberLoginTrigger" class="member-login-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Marina Login
+      </a>
+      <a href="https://customer.marinago.com/fss2zz08/public" class="btn btn-gold nav-cta" target="_blank" rel="noopener">Reserve a Slip</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="container">
+    <div class="eyebrow">Help</div>
+    <h1>Site Map</h1>
+    <p>Every page of the website, grouped by who can use it. Click a page to see what it does.</p>
+    <p><a href="admin.html#help" style="color:inherit;">&larr; Back to Help</a></p>
+  </div>
+</div>
+
+<section>
+  <div class="container">
+    <div class="sm-tools">
+      <div class="sm-legend">
+        <span style="--c:var(--teal)">Public</span>
+        <span style="--c:#1f6b4a">Members</span>
+        <span style="--c:#7a5a1f">Board</span>
+        <span style="--c:#9a2c1a">Admin</span>
+      </div>
+      <div>
+        <button type="button" class="btn-sm" id="smAll">Expand all</button>
+        <button type="button" class="btn-sm" id="smNone">Collapse all</button>
+      </div>
+    </div>
+
+    <div class="sm-root"><div class="sm-root-node">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+      newberngrand.com
+    </div></div>
+    <div class="sm-trunk"></div>
+    <div class="sm-grid" id="smGrid"></div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <h4>New Bern Grand Marina</h4>
+      <p>134 Craven St, New Bern, NC 28560<br>Marina location: 134 Craven St</p>
+      <p>Open Daily 8:30 AM &ndash; 5:00 PM</p>
+    </div>
+    <div>
+      <h4>Quick Links</h4>
+      <a class="flink" href="about.html">About</a>
+      <a class="flink" href="rates.html">Rates &amp; Amenities</a>
+      <a class="flink" href="amenities.html">Docks &amp; Amenities</a>
+      <a class="flink" href="marina-map.html">Marina Map</a>
+      <a class="flink" href="gallery.html">Gallery</a>
+      <a class="flink" href="documents.html">Documents</a>
+      <a class="flink" href="reservations.html">Reservations</a>
+      <a class="flink" href="contact.html">Contact Us</a>
+    </div>
+    <div>
+      <h4>Get In Touch</h4>
+      <a class="flink" href="tel:+12526380318">(252) 638-0318</a>
+      <a class="flink" href="mailto:newberngrand@f3marina.com">newberngrand@f3marina.com</a>
+      <a class="flink" href="https://visitnewbern.com/" target="_blank" rel="noopener">Explore New Bern</a>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <div>&copy; <span id="year"></span> New Bern Grand Marina. All rights reserved.</div>
+    <div>Site content last updated 2026.</div>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script>
+/* Site map: one card per page. Click a card to show what the page does. */
+(function () {
+  var I = {
+    home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+    tag: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+    anchor: '<circle cx="12" cy="5" r="3"/><path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/>',
+    map: '<path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/>',
+    cube: '<path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/>',
+    image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+    doc: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/>',
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    star: '<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
+    check: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+    cards: '<rect x="2" y="6" width="12" height="16" rx="2"/><path d="M7 2h13a2 2 0 0 1 2 2v14"/>',
+    key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="M11.5 11.5L22 1M18 5l3 3M15 8l3 3"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+    pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+    mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    play: '<circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z"/>',
+    shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+    help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>'
+  };
+  var GROUPS = [
+    { id: 'public', title: 'Public website', note: 'Anyone can visit. Shown in the top menu and footer.', pages: [
+      { name: 'Home', url: 'index.html', icon: 'home', points: [
+        'The front page: welcome, photos and what makes the marina special.',
+        'Drawbridge information (Alfred A. Cunningham bridge clearance and schedule) under "Know Before You Go".',
+        'Buttons to reserve a slip and get in touch.'] },
+      { name: 'About', url: 'about.html', icon: 'info', points: [
+        'The marina’s history and setting where the Neuse and Trent Rivers meet.',
+        'Nearby Union Point Park and downtown New Bern within walking distance.'] },
+      { name: 'Rates & Amenities', url: 'rates.html', icon: 'tag', points: [
+        'Dockage pricing for transient and long-term stays.',
+        'Pedestal and metered electric rates, and the other services offered.'] },
+      { name: 'Docks & Amenities', url: 'amenities.html', icon: 'anchor', points: [
+        'The six named docks and 223 slips (30’ to 65’), side-tie dockage and the dockside office.',
+        'What’s included with a stay.'] },
+      { name: 'Marina Map', url: 'marina-map.html', icon: 'map', points: [
+        'The slip map of the whole marina.',
+        'Slip finder: type a dock and slip (for example B23) to highlight it on the map.',
+        'Link to the 3D walk of the docks.'], children: [
+        { name: 'Walk the Docks in 3D', url: 'dock-walk.html', icon: 'cube', points: [
+          'A walkable 3D model of the marina built from the slip map.',
+          'Drag (or swipe) to look around and walk the docks to find a slip.',
+          'Has ambient sound, which stops when you leave the page; HD mode on desktops.'] }] },
+      { name: 'Gallery', url: 'gallery.html', icon: 'image', points: [
+        'Photos and videos of the marina and downtown.',
+        'Click a photo to see it full size; arrows or swipe move between photos.',
+        'The pictures are managed on the Admin page (Gallery tab).'] },
+      { name: 'Documents', url: 'documents.html', icon: 'doc', points: [
+        'Documents the board has marked Public: permits, licenses, marina rules and forms.',
+        'Members-only and board documents never appear here.'] },
+      { name: 'Reservations', url: 'reservations.html', icon: 'cal', points: [
+        'Reserve a slip through the MarinaGo customer portal.',
+        'Or reach the harbormaster directly.'] },
+      { name: 'Contact', url: 'contact.html', icon: 'phone', points: [
+        'Phone, email, address and office hours.'] }
+    ] },
+    { id: 'members', title: 'Members', note: 'Slip owners, cruisers and employees log in with their slip number and password.', pages: [
+      { name: 'Member Portal', url: 'member-portal.html', icon: 'lock', points: [
+        'Where members land after logging in ("Marina Login" in the menu).',
+        'Current events and votes, the marina documents members can see, and My Account (change password).',
+        'Board members also get a Board button; admins get the Admin page.'], children: [
+        { name: 'Event page', url: 'event.html', icon: 'star', points: [
+          'The details of one event, meeting or vote, with any attached files.',
+          'For a vote: the ballot with a final confirmation, then the results (when the vote allows it).',
+          'Owners with several slips vote each slip from one login; cruiser and employee logins vote by name.',
+          'Social events can have a sign-up sheet.'] },
+        { name: 'Poker Run', url: 'game.html', icon: 'cards', points: [
+          'The Poker Run game: join, pick a slip on the marina map each day to flip a card.',
+          'Trade cards on the last day; the leaderboard shows when the game is over.',
+          'Opened from the game’s event; admins can run a practice game first.'] }] },
+      { name: 'Cast Your Vote', url: 'vote.html', icon: 'check', points: [
+        'Opened from the Approve / Disapprove (or Yea / Nay, etc.) buttons in a vote announcement email.',
+        'No login needed: the owner picks the choice and slips, then presses Confirm.',
+        'Same rules as the website: one vote per slip, final once cast, only while voting is open.'] },
+      { name: 'Reset Password', url: 'reset-password.html', icon: 'key', points: [
+        'Opened from the password-reset email to choose a new password.'] },
+      { name: 'Email link opener', url: 'go.html', icon: 'link', points: [
+        'Behind the scenes: the main button in announcement emails goes through this page.',
+        'It records who clicked (for "Who clicked" on the Admin page) and forwards to the event or portal.'] },
+      { name: 'Document Review', url: 'review.html', icon: 'doc', points: [
+        'Opened from a private review invitation email; no login needed.',
+        'The reviewer reads the document, then approves it, asks for changes or leaves comments.'] }
+    ] },
+    { id: 'board', title: 'Board of Directors', note: 'Board members only.', pages: [
+      { name: 'Board', url: 'board.html', icon: 'shield', points: [
+        'Upload or write meeting minutes and approve them.',
+        'Minutes stay hidden from members until every board member has opened and approved them; they publish automatically after the last approval.',
+        'Shows a count of minutes waiting for your approval (also on the Admin page’s Board tab).'], children: [
+        { name: 'Minutes Editor', url: 'minutes-edit.html', icon: 'pen', points: [
+          'Write a set of minutes, or create and edit minutes templates.',
+          'Saves automatically every few seconds; only one board member edits a draft at a time.'] }] }
+    ] },
+    { id: 'admin', title: 'Admin', note: 'Board administrators. One page (admin.html) with these tabs.', pages: [
+      { name: 'Current Events', url: 'admin.html', icon: 'star', points: [
+        'Add and edit meetings, notices, social events, votes and games; Activate / Deactivate or Delete them.',
+        'Votes: ballot type (Yea / Nay, Yea / Nay / Abstain, Approve / Disapprove or custom), open and close times, who sees results, the counting committee email.',
+        'Test vote: its ballots can be cleared or it can be deleted with its ballots. Real votes can’t be deleted once anyone has voted.',
+        'Mark slips ineligible, attach documents, run sign-up sheets, and see Results.'] },
+      { name: 'Documents', url: 'admin.html', icon: 'doc', points: [
+        'Upload marina documents into sections (bylaws, rules, minutes, financials, board and more).',
+        'Choose Public or members-only; Board documents are only for the board.',
+        'Send a document out for review and track the reviewers.'] },
+      { name: 'Gallery', url: 'admin.html', icon: 'image', points: [
+        'Add and remove the photos and videos shown on the Gallery page.'] },
+      { name: 'Members', url: 'admin.html', icon: 'users', points: [
+        'Every slip: owner, email, member type, voting or non-voting, active, board and admin rights.',
+        'Search, filter and sort; edit a slip, add notes, or set a new password.'] },
+      { name: 'Email Members', url: 'admin.html', icon: 'mail', points: [
+        'Write an announcement with a live preview, and send it to all owners, voting slips, chosen docks or slips, cruisers or employees.',
+        'Add a button to an event or the Member Portal; for a vote, tick "Let owners vote right from the email".',
+        'Send a test first; see who clicked; Resume if the daily email limit paused sending.'] },
+      { name: 'Activity Log', url: 'admin.html', icon: 'list', points: [
+        'Who did what and when: logins, votes, changes to events, documents and members.',
+        'Search the log and see totals.'], children: [
+        { name: 'Visit Replay', url: 'replay.html', icon: 'play', points: [
+          'Steps through one slip’s activity on one day, showing the page they were on.'] }] },
+      { name: 'Help', url: 'admin.html#help', icon: 'help', points: [
+        'Help for admins, starting with this site map.'] }
+    ] }
+  ];
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var n = 0;
+  function item(p) {
+    var id = 'sm' + (n++);
+    return '<li class="sm-item">' +
+      '<button type="button" class="sm-node" aria-expanded="false" aria-controls="' + id + '">' +
+        '<span class="sm-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + I[p.icon] + '</svg></span>' +
+        '<span class="sm-name">' + esc(p.name) + '<small>' + esc(p.url) + '</small></span>' +
+        '<svg class="sm-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' +
+      '</button>' +
+      '<div class="sm-detail" id="' + id + '" hidden><ul>' + p.points.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+        (/^(vote|go|review|reset-password)\.html/.test(p.url) ? '<p class="sm-who">Opened from an email link, so there is no page to open from here.</p>'
+          : '<a class="sm-open" href="' + esc(p.url) + '">Open this page &rarr;</a>') + '</div>' +
+      (p.children ? '<ul class="sm-list">' + p.children.map(item).join('') + '</ul>' : '') +
+      '</li>';
+  }
+  var grid = document.getElementById('smGrid');
+  grid.innerHTML = GROUPS.map(function (g) {
+    return '<div class="sm-group" data-g="' + g.id + '"><div class="sm-group-head"><h2>' + esc(g.title) + '</h2><p>' + esc(g.note) + '</p></div>' +
+      '<ul class="sm-list">' + g.pages.map(item).join('') + '</ul></div>';
+  }).join('');
+
+  function setOpen(btn, open) {
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.getElementById(btn.getAttribute('aria-controls')).hidden = !open;
+  }
+  grid.addEventListener('click', function (e) {
+    var b = e.target.closest('.sm-node');
+    if (b) setOpen(b, b.getAttribute('aria-expanded') !== 'true');
+  });
+  document.getElementById('smAll').addEventListener('click', function () { grid.querySelectorAll('.sm-node').forEach(function (b) { setOpen(b, true); }); });
+  document.getElementById('smNone').addEventListener('click', function () { grid.querySelectorAll('.sm-node').forEach(function (b) { setOpen(b, false); }); });
+})();
+</script>
+<script src="member-login.js?v=202611232027"></script>
+</body>
+</html>

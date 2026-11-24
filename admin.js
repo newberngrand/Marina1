@@ -60,6 +60,7 @@
     tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute('data-tab')); }); });
     var saved = null;
     try { saved = sessionStorage.getItem('adminTab'); } catch (e) {}
+    if (location.hash === '#help') saved = 'help';   // "Back to Help" from the site map
     if (saved) show(saved);
   }
 
