@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611232048">
+<link rel="stylesheet" href="style.css?v=202611232108">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -56,16 +56,17 @@
   .ch-head .note { max-width: 680px; margin: 0; color: var(--muted); }
   .ch-zoom { display: flex; gap: 6px; }
   .ch-zoom .btn-sm { min-width: 40px; }
-  .ch-viewport { position: relative; height: min(78vh, 760px); min-height: 420px; overflow: hidden; border-radius: var(--radius); border: 6px solid #e9dcc0; box-shadow: inset 0 0 0 1px #c9b48a, var(--shadow);
-    background: radial-gradient(ellipse at 30% 20%, #e6f1f3 0%, #cfe3e8 45%, #b9d5dd 100%); cursor: grab; touch-action: none; user-select: none; }
+  .ch-viewport { position: relative; height: min(78vh, 760px); min-height: 420px; overflow: hidden; border-radius: var(--radius); border: 8px double #b79b63; box-shadow: 0 0 0 4px #efe3c6, 0 0 0 5px #c9b48a, var(--shadow);
+    background: radial-gradient(ellipse at 45% 50%, #d9eaee 0%, #c3dce3 50%, #a9cbd5 100%); cursor: grab; touch-action: none; user-select: none; }
   .ch-viewport.dragging { cursor: grabbing; }
-  .ch-world { position: absolute; left: 0; top: 0; width: 2000px; height: 1300px; transform-origin: 0 0; }
+  .ch-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
   .ch-world svg.ch-sea { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
   .ch-isle-name { position: absolute; transform: translate(-50%, -50%); font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 30px; letter-spacing: .06em; color: #6b5a3a; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 0 rgba(255,255,255,.6); }
   .ch-isle-name small { display: block; font-size: 15px; letter-spacing: .02em; text-align: center; color: #8a7655; }
-  .ch-cartouche { position: absolute; left: 40px; top: 34px; padding: 14px 22px; background: #fbf5e6; border: 2px solid #b79b63; outline: 1px solid #b79b63; outline-offset: 4px; font-family: Georgia, serif; color: #4b3d22; text-align: center; pointer-events: none; }
+  .ch-cartouche { position: absolute; left: 50px; top: 46px; padding: 14px 22px; background: #fbf5e6; border: 2px solid #b79b63; outline: 1px solid #b79b63; outline-offset: 4px; font-family: Georgia, serif; color: #4b3d22; text-align: center; pointer-events: none; }
   .ch-cartouche b { display: block; font-size: 24px; letter-spacing: .08em; }
-  .ch-cartouche span { font-size: 14px; font-style: italic; }
+  .ch-cartouche span { display: block; font-size: 14px; font-style: italic; }
+  .ch-cartouche em { display: block; margin-top: 4px; font-size: 12px; color: #7a6a4a; }
   .ch-scr { position: absolute; transform: translate(-50%, -50%) rotate(var(--r, 0deg)); width: var(--w, 180px); background: #fff; border-radius: 7px; box-shadow: 0 6px 16px rgba(11,37,64,.25), 0 1px 0 rgba(0,0,0,.05);
     border: 0; padding: 0; cursor: pointer; font: inherit; text-align: left; transition: transform .18s, box-shadow .18s; --c: var(--teal); }
   .ch-scr:hover, .ch-scr:focus-visible, .ch-scr.on { transform: translate(-50%, -50%) rotate(0deg) scale(1.08); box-shadow: 0 14px 30px rgba(11,37,64,.35); z-index: 5; outline: none; }
@@ -99,14 +100,29 @@
   .w-banner { height: 12px; border-radius: 3px; background: #f6ecd9; border: 1px solid #e6cc8d; margin-bottom: 6px; }
   .w-tool { height: 10px; border-radius: 3px; background: #eef1f4; margin-bottom: 6px; display: flex; gap: 3px; padding: 2px; } .w-tool i { width: 10px; background: #c9ced4; border-radius: 2px; }
   /* the info card */
-  .ch-info { position: absolute; right: 14px; top: 14px; width: min(340px, calc(100% - 28px)); max-height: calc(100% - 28px); overflow: auto; background: #fff; border-radius: var(--radius); box-shadow: 0 12px 34px rgba(11,37,64,.3); padding: 14px 16px; border-top: 5px solid var(--c, var(--teal)); cursor: auto; font-size: .9rem; }
-  .ch-info h3 { margin: 0 30px 2px 0; color: var(--navy); font-size: 1.1rem; }
-  .ch-info .ch-where { font-size: .8rem; color: var(--muted); margin: 0 0 6px; }
-  .ch-info ul { margin: 6px 0 10px; padding-left: 18px; } .ch-info li { margin: 3px 0; line-height: 1.45; }
-  .ch-info .ch-x { position: absolute; right: 8px; top: 8px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: #eef1f4; cursor: pointer; font-size: 18px; line-height: 1; color: var(--muted); }
-  .ch-info a { font-weight: 600; color: var(--c, var(--teal)); text-decoration: underline; }
+  .ch-info { position: absolute; left: 0; top: 0; width: 380px; max-width: calc(100% - 20px); max-height: calc(100% - 20px); overflow: auto; background: #fff; border-radius: 12px;
+    box-shadow: 0 18px 44px rgba(11,37,64,.38); border: 1px solid #d6dde3; cursor: auto; font-size: .9rem; z-index: 20;
+    transform-origin: var(--ox, 0) var(--oy, 0); animation: chPop .22s ease-out; }
+  @keyframes chPop { from { opacity: 0; transform: scale(.35); } to { opacity: 1; transform: scale(1); } }
+  .ch-info .ch-bar { border-radius: 12px 12px 0 0; padding: 7px 10px; }
+  .ch-info .ch-bar i { width: 10px; height: 10px; }
+  .ch-info .ch-bar em { height: 18px; line-height: 18px; font-size: 11px; border-radius: 9px; padding: 0 9px; }
+  .ch-big { padding: 12px; background: #fff; }
+  .ch-big-hero { border-radius: 8px; background: linear-gradient(135deg, var(--c), #0b2540); color: #fff; padding: 14px 14px 12px; margin-bottom: 10px; }
+  .ch-big-hero small { display: block; text-transform: uppercase; letter-spacing: .12em; font-size: .68rem; color: #e8cf98; margin-bottom: 2px; }
+  .ch-big-hero b { display: block; font-size: 1.25rem; line-height: 1.2; }
+  .ch-big-wire { position: relative; height: 120px; border: 1px solid #e2e6ea; border-radius: 8px; padding: 10px; overflow: hidden; margin-bottom: 10px; background: #fff; }
+  .ch-big ul { margin: 0 0 10px; padding-left: 18px; } .ch-big li { margin: 4px 0; line-height: 1.45; }
+  .ch-big .ch-where { font-size: .8rem; color: var(--muted); margin: 0 0 8px; }
+  .ch-big a { font-weight: 600; color: var(--c, var(--teal)); text-decoration: underline; }
+  .ch-info .ch-x { position: absolute; right: 8px; top: 4px; width: 26px; height: 26px; border: 0; border-radius: 50%; background: #dfe4e9; cursor: pointer; font-size: 17px; line-height: 1; color: #4a5866; z-index: 1; }
+  .ch-info::before { content: ""; position: absolute; width: 16px; height: 16px; background: #eef1f4; border: 1px solid #d6dde3; transform: rotate(45deg); top: var(--ay, 30px); }
+  .ch-info.side-r::before { left: -9px; border-right: 0; border-top: 0; }
+  .ch-info.side-l::before { right: -9px; border-left: 0; border-bottom: 0; }
+  .ch-info.side-b::before, .ch-info.side-t::before { display: none; }
+  .ch-info { overflow: visible; } .ch-info-in { max-height: inherit; overflow: auto; border-radius: 12px; }
   body:not(.sm-board) [data-board] { display: none !important; }
-  @media (max-width: 620px) { .ch-viewport { height: 70vh; } .ch-info { top: auto; bottom: 10px; right: 10px; left: 10px; width: auto; max-height: 55%; } }
+  @media (max-width: 620px) { .ch-viewport { height: 70vh; } .ch-info { width: calc(100% - 20px); } }
   @media (max-width: 620px) { .sm-grid { grid-template-columns: 1fr; border-top: 0; padding-top: 0; } .sm-trunk { display: none; } .sm-root { margin-bottom: 16px; } }
 </style>
 </head>
@@ -415,7 +431,8 @@
   document.getElementById('smNone').addEventListener('click', function () { grid.querySelectorAll('.sm-node, .sm-group-head').forEach(function (b) { setOpen(b, false); }); });
 
   /* ---------- Chart of the Website: each page as a little screen on a harbor chart ---------- */
-  // [x, y, tilt, wireframe, big?] in a 2000 x 1300 world, keyed by group:page name.
+  // [x, y, tilt, wireframe, big?] keyed by group:page name (each island is then moved by OFF below).
+  var W = 2700, H = 1850;
   var SPOT = {
     'public:Home': [640, 520, -2, 'home', 1], 'public:About': [370, 330, 4, 'text'], 'public:Documents': [650, 245, -3, 'docs'],
     'public:Gallery': [915, 330, 3, 'gallery'], 'public:Reservations': [285, 575, -5, 'form'], 'public:Contact': [355, 815, 3, 'contact'],
@@ -436,6 +453,20 @@
     { g: 'public', x: 1010, y: 1190, rx: 125, ry: 85, seed: 2, name: '' },
     { g: 'board', x: 445, y: 1150, rx: 250, ry: 120, seed: 5, name: 'Board Isle', sub: 'directors only', lx: 445, ly: 1040 }
   ];
+  // Spread the islands out across the open water.
+  var OFF = { public: [120, 180], members: [720, 40], admin: [700, 520], board: [-20, 560], islet: [330, 430] };
+  Object.keys(SPOT).forEach(function (k) {
+    var o = k === 'public:Walk the Docks in 3D' ? OFF.islet : OFF[k.split(':')[0]];
+    SPOT[k][0] += o[0]; SPOT[k][1] += o[1];
+  });
+  ISLES.forEach(function (c) {
+    var o = c.name ? OFF[c.g] : OFF.islet;
+    c.x += o[0]; c.y += o[1];
+    if (c.lx != null) { c.lx += o[0]; c.ly += o[1]; }
+  });
+  function onLand(x, y, f) {   // inside (or close to) any island
+    return ISLES.some(function (c) { var dx = (x - c.x) / (c.rx * f), dy = (y - c.y) / (c.ry * f); return dx * dx + dy * dy < 1; });
+  }
   // Routes between pages that link to each other.
   var ROUTES = [
     ['public:Home', 'public:About'], ['public:Home', 'public:Documents'], ['public:Home', 'public:Gallery'], ['public:Home', 'public:Reservations'],
@@ -498,14 +529,64 @@
   function scaled(c, f) { return { x: c.x, y: c.y, rx: c.rx * f, ry: c.ry * f, seed: c.seed }; }
   var board = function (g) { return g === 'board' ? ' data-board' : ''; };
 
-  var sea = '<svg class="ch-sea" viewBox="0 0 2000 1300" aria-hidden="true">' +
-    '<defs><pattern id="chGrid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M100 0H0V100" fill="none" stroke="#9fc2cc" stroke-width="1" opacity=".5"/></pattern></defs>' +
-    '<rect width="2000" height="1300" fill="url(#chGrid)"/>' +
+  var ROSE = [1545, 1010];   // compass rose in the open water between the islands
+  // Rhumb lines: the long bearing lines that cross old charts from the compass rose.
+  var rhumb = '';
+  for (var a = 0; a < 32; a++) {
+    var ang = a / 32 * Math.PI * 2, len = 2400;
+    rhumb += '<line x1="' + ROSE[0] + '" y1="' + ROSE[1] + '" x2="' + (ROSE[0] + Math.cos(ang) * len).toFixed(0) + '" y2="' + (ROSE[1] + Math.sin(ang) * len).toFixed(0) +
+      '" stroke="' + (a % 4 === 0 ? '#8a6d3b' : a % 2 === 0 ? '#2f6f84' : '#9a2c1a') + '" stroke-width="' + (a % 4 === 0 ? 1.4 : 0.9) + '" opacity="' + (a % 4 === 0 ? 0.35 : 0.22) + '"/>';
+  }
+  // Depth soundings: little numbers in the water, shallower near land. Same every time.
+  var seed = 7, rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  var sound = '', nSound = 0;
+  for (var t = 0; t < 400 && nSound < 95; t++) {
+    var sx = 60 + rnd() * (W - 120), sy = 60 + rnd() * (H - 120);
+    if (onLand(sx, sy, 1.12) || (Math.abs(sx - ROSE[0]) < 190 && Math.abs(sy - ROSE[1]) < 210) || (sx < 520 && sy < 170)) continue;
+    var deep = onLand(sx, sy, 1.6) ? 2 + Math.floor(rnd() * 9) : 12 + Math.floor(rnd() * 30);
+    sound += '<text x="' + sx.toFixed(0) + '" y="' + sy.toFixed(0) + '">' + deep + '</text>'; nSound++;
+  }
+  // Channel buoys along a crossing: red on one side, green on the other.
+  function buoys(k1, k2, flip) {
+    var A = SPOT[k1], B = SPOT[k2], out = '';
+    var mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2, dx = B[0] - A[0], dy = B[1] - A[1];
+    var bend = 0.18 * (k1.length % 2 ? 1 : -1), qx = mx - dy * bend, qy = my + dx * bend;
+    [0.35, 0.5, 0.65].forEach(function (u, n) {
+      var x = (1 - u) * (1 - u) * A[0] + 2 * (1 - u) * u * qx + u * u * B[0], y = (1 - u) * (1 - u) * A[1] + 2 * (1 - u) * u * qy + u * u * B[1];
+      var gx = 2 * (1 - u) * (qx - A[0]) + 2 * u * (B[0] - qx), gy = 2 * (1 - u) * (qy - A[1]) + 2 * u * (B[1] - qy), l = Math.hypot(gx, gy);
+      var nx = -gy / l * 26 * (flip ? -1 : 1), ny = gx / l * 26 * (flip ? -1 : 1);
+      out += '<g transform="translate(' + (x + nx).toFixed(0) + ',' + (y + ny).toFixed(0) + ')"><path d="M-7,6 L7,6 L0,-9Z" fill="#c0392b" stroke="#6b1d14"/><text y="22">R' + (2 * n + 2) + '</text></g>' +
+             '<g transform="translate(' + (x - nx).toFixed(0) + ',' + (y - ny).toFixed(0) + ')"><rect x="-6" y="-7" width="12" height="13" fill="#2e8b57" stroke="#14462b"/><text y="22">G' + (2 * n + 1) + '</text></g>';
+    });
+    return out;
+  }
+  // Chart border: the black-and-white latitude / longitude bars.
+  var frame = '<rect x="10" y="10" width="' + (W - 20) + '" height="' + (H - 20) + '" fill="none" stroke="#4b3d22" stroke-width="2"/>' +
+    '<rect x="22" y="22" width="' + (W - 44) + '" height="' + (H - 44) + '" fill="none" stroke="#4b3d22" stroke-width="1"/>';
+  for (var fx = 22, on = 0; fx < W - 22; fx += 100, on ^= 1) if (on) frame += '<rect x="' + fx + '" y="10" width="' + Math.min(100, W - 22 - fx) + '" height="12" fill="#4b3d22"/><rect x="' + fx + '" y="' + (H - 22) + '" width="' + Math.min(100, W - 22 - fx) + '" height="12" fill="#4b3d22"/>';
+  for (var fy = 22, on2 = 0; fy < H - 22; fy += 100, on2 ^= 1) if (on2) frame += '<rect x="10" y="' + fy + '" width="12" height="' + Math.min(100, H - 22 - fy) + '" fill="#4b3d22"/><rect x="' + (W - 22) + '" y="' + fy + '" width="12" height="' + Math.min(100, H - 22 - fy) + '" fill="#4b3d22"/>';
+  // Compass rose ticks
+  var ticks = '';
+  for (var d = 0; d < 360; d += 5) {
+    var r1 = d % 45 === 0 ? 104 : d % 15 === 0 ? 110 : 115, ra = (d - 90) * Math.PI / 180;
+    ticks += '<line x1="' + (Math.cos(ra) * r1).toFixed(1) + '" y1="' + (Math.sin(ra) * r1).toFixed(1) + '" x2="' + (Math.cos(ra) * 120).toFixed(1) + '" y2="' + (Math.sin(ra) * 120).toFixed(1) + '" stroke="#8a6d3b" stroke-width="1"/>';
+  }
+  var LH = [ISLES[0].x - ISLES[0].rx * 0.9, ISLES[0].y - 40];   // lighthouse on the west point of Public Harbor
+
+  var sea = '<svg class="ch-sea" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+    '<defs><pattern id="chGrid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M100 0H0V100" fill="none" stroke="#9fc2cc" stroke-width="1" opacity=".35"/></pattern>' +
+    '<radialGradient id="chShoal"><stop offset="0" stop-color="#e9f3f2"/><stop offset="1" stop-color="#e9f3f2" stop-opacity="0"/></radialGradient></defs>' +
+    '<rect width="' + W + '" height="' + H + '" fill="url(#chGrid)"/>' +
+    '<g>' + rhumb + '</g>' +
+    '<g font-family="Georgia,serif" font-style="italic" font-size="15" fill="#4f7d8b" opacity=".75">' + sound + '</g>' +
     ISLES.map(function (c) {
       return '<g' + board(c.g) + '>' +
+        '<ellipse cx="' + c.x + '" cy="' + c.y + '" rx="' + (c.rx * 1.45) + '" ry="' + (c.ry * 1.45) + '" fill="url(#chShoal)"/>' +
         [1.55, 1.35, 1.17].map(function (f) { return '<path d="' + islePath(scaled(c, f)) + '" fill="none" stroke="#7fa9b6" stroke-width="1.2" stroke-dasharray="' + (f > 1.4 ? '2 6' : '6 6') + '" opacity=".7"/>'; }).join('') +
-        '<path d="' + islePath(c) + '" fill="#efe3c6" stroke="#c4a86f" stroke-width="3"/>' +
-        '<path d="' + islePath(scaled(c, 0.9)) + '" fill="#e3edd2" opacity=".55"/></g>';
+        '<path d="' + islePath(scaled(c, 1.04)) + '" fill="none" stroke="#6f9aa6" stroke-width="7" stroke-dasharray="1 6" opacity=".5"/>' +
+        '<path d="' + islePath(c) + '" fill="#efe3c6" stroke="#9c7f45" stroke-width="3"/>' +
+        '<path d="' + islePath(scaled(c, 0.9)) + '" fill="#e3edd2" opacity=".55"/>' +
+        '<path d="' + islePath(scaled(c, 0.75)) + '" fill="none" stroke="#c9b48a" stroke-width="1.2" stroke-dasharray="3 5" opacity=".7"/></g>';
     }).join('') +
     ROUTES.map(function (r) {
       var a = SPOT[r[0]], b = SPOT[r[1]]; if (!a || !b) return '';
@@ -514,16 +595,39 @@
       var hidden = r[0].indexOf('board:') === 0 || r[1].indexOf('board:') === 0;
       return '<path' + (hidden ? ' data-board' : '') + ' d="M' + a[0] + ',' + a[1] + ' Q' + (mx - dy * bend) + ',' + (my + dx * bend) + ' ' + b[0] + ',' + b[1] + '" fill="none" stroke="#1c5d6e" stroke-width="3.5" stroke-dasharray="1 10" stroke-linecap="round" opacity=".9"/>';
     }).join('') +
+    '<g font-family="Georgia,serif" font-size="12" fill="#4b3d22" text-anchor="middle">' + buoys('public:Home', 'members:Member Portal') + buoys('admin:Email Members', 'members:Cast Your Vote', true) + '</g>' +
+    '<g data-board font-family="Georgia,serif" font-size="12" fill="#4b3d22" text-anchor="middle">' + buoys('members:Member Portal', 'board:Board') + '</g>' +
     // compass rose
-    '<g transform="translate(1860,1180)" opacity=".85"><circle r="70" fill="#fbf5e6" stroke="#b79b63" stroke-width="2"/><circle r="58" fill="none" stroke="#b79b63" stroke-dasharray="2 4"/>' +
-    '<path d="M0,-64 L12,0 L0,64 L-12,0Z" fill="#0b2540"/><path d="M-64,0 L0,12 L64,0 L0,-12Z" fill="#c9a15a"/><path d="M0,-64 L12,0 L-12,0Z" fill="#9a2c1a"/>' +
-    '<text y="-74" text-anchor="middle" font-family="Georgia,serif" font-size="20" fill="#4b3d22">N</text></g>' +
-    // a few waves and a sailboat
-    '<g fill="none" stroke="#5f93a3" stroke-width="2" opacity=".6"><path d="M1080 120 q15 -12 30 0 t30 0"/><path d="M90 980 q15 -12 30 0 t30 0"/><path d="M1180 640 q15 -12 30 0 t30 0"/><path d="M1000 1240 q15 -12 30 0 t30 0"/><path d="M80 120 q15 -12 30 0 t30 0"/></g>' +
-    '<g transform="translate(1110,560)"><path d="M0,0 L44,0 L36,12 L8,12Z" fill="#7a5a1f"/><path d="M22,-4 L22,-58 L46,-6Z" fill="#fff" stroke="#9fb3bd"/><path d="M20,-4 L20,-46 L2,-6Z" fill="#fbf5e6" stroke="#9fb3bd"/></g>' +
+    '<g transform="translate(' + ROSE[0] + ',' + ROSE[1] + ')">' +
+      '<circle r="132" fill="#fbf5e6" stroke="#8a6d3b" stroke-width="2.5" opacity=".95"/><circle r="120" fill="none" stroke="#8a6d3b" stroke-width="1"/>' + ticks +
+      '<g fill="#c9a15a" stroke="#6b5a3a" stroke-width="1"><path d="M0,0 L60,-60 L14,0Z"/><path d="M0,0 L60,-60 L14,0Z" transform="rotate(90)"/><path d="M0,0 L60,-60 L14,0Z" transform="rotate(180)"/><path d="M0,0 L60,-60 L14,0Z" transform="rotate(270)"/></g>' +
+      '<g stroke="#0b2540" stroke-width="1"><path d="M0,-100 L16,0 L0,0Z" fill="#0b2540"/><path d="M0,-100 L-16,0 L0,0Z" fill="#fbf5e6"/><path d="M100,0 L0,16 L0,0Z" fill="#0b2540"/><path d="M100,0 L0,-16 L0,0Z" fill="#fbf5e6"/>' +
+      '<path d="M0,100 L-16,0 L0,0Z" fill="#0b2540"/><path d="M0,100 L16,0 L0,0Z" fill="#fbf5e6"/><path d="M-100,0 L0,-16 L0,0Z" fill="#0b2540"/><path d="M-100,0 L0,16 L0,0Z" fill="#fbf5e6"/></g>' +
+      '<circle r="9" fill="#9a2c1a" stroke="#fbf5e6" stroke-width="2"/><path d="M0,-150 l-9,14 h18z" fill="#9a2c1a"/>' +
+      '<g font-family="Georgia,serif" font-size="26" font-weight="bold" fill="#4b3d22" text-anchor="middle"><text y="-158">N</text><text y="182">S</text><text x="160" y="9">E</text><text x="-160" y="9">W</text></g></g>' +
+    // lighthouse
+    '<g transform="translate(' + LH[0].toFixed(0) + ',' + LH[1].toFixed(0) + ')">' +
+      '<path d="M-90,-62 L-14,-52 L-14,-44 L-90,-30Z M90,-62 L14,-52 L14,-44 L90,-30Z" fill="#f6d77a" opacity=".55"/>' +
+      '<path d="M-11,0 L-7,-46 L7,-46 L11,0Z" fill="#fff" stroke="#4b3d22" stroke-width="1.5"/><path d="M-9.5,-16 L9.5,-16 L9,-26 L-9,-26Z M-8,-34 L8,-34 L7.5,-42 L-7.5,-42Z" fill="#c0392b"/>' +
+      '<rect x="-8" y="-56" width="16" height="10" fill="#f6d77a" stroke="#4b3d22"/><path d="M-10,-56 L0,-66 L10,-56Z" fill="#4b3d22"/>' +
+      '<text y="22" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="13" fill="#4b3d22">Fl W 4s</text></g>' +
+    // anchorage off Members' Cove
+    '<g transform="translate(1650,420)" fill="none" stroke="#4b3d22" stroke-width="3" stroke-linecap="round"><circle cy="-22" r="7"/><path d="M0,-15 V22 M-14,-6 H14 M-24,6 Q-22,24 0,24 Q22,24 24,6"/>' +
+      '<text y="50" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="14" fill="#4b3d22" stroke="none">Anchorage</text></g>' +
+    // a sea serpent
+    '<g transform="translate(1020,1660)" fill="none" stroke="#2f6f84" stroke-width="2.5" stroke-linecap="round" opacity=".8">' +
+      '<path d="M-60,10 q15,-40 30,0 q15,-40 30,0 q15,-40 30,0"/><path d="M30,10 q12,-38 30,-26 q8,6 2,14"/><circle cx="54" cy="-20" r="2.5" fill="#2f6f84"/>' +
+      '<text x="0" y="44" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="16" fill="#4b3d22" stroke="none">Here be bugs</text></g>' +
+    // waves and a sailboat
+    '<g fill="none" stroke="#5f93a3" stroke-width="2" opacity=".6">' +
+      [[1420, 160], [600, 120], [2080, 860], [1240, 1360], [80, 1240], [2500, 1180], [1880, 1790], [640, 1500], [1500, 640], [2300, 120]].map(function (q) {
+        return '<path d="M' + q[0] + ' ' + q[1] + ' q15 -12 30 0 t30 0 t30 0"/>'; }).join('') + '</g>' +
+    '<g transform="translate(1360,520)"><path d="M0,0 L44,0 L36,12 L8,12Z" fill="#7a5a1f"/><path d="M22,-4 L22,-58 L46,-6Z" fill="#fff" stroke="#9fb3bd"/><path d="M20,-4 L20,-46 L2,-6Z" fill="#fbf5e6" stroke="#9fb3bd"/>' +
+      '<path d="M-10,8 q-30,4 -60,-2" fill="none" stroke="#fff" stroke-width="2" opacity=".8"/></g>' +
+    frame +
     '</svg>';
 
-  var html = sea + '<div class="ch-cartouche"><b>NEW BERN GRAND MARINA</b><span>A Chart of the Website &middot; soundings in clicks</span></div>';
+  var html = sea + '<div class="ch-cartouche"><b>NEW BERN GRAND MARINA</b><span>A Chart of the Website &middot; Neuse &amp; Trent Approaches</span><em>Soundings in clicks &middot; Scale 1 : 1 page</em></div>';
   html += ISLES.filter(function (c) { return c.name; }).map(function (c) { return '<div class="ch-isle-name"' + board(c.g) + ' style="left:' + c.lx + 'px;top:' + c.ly + 'px">' + c.name + '<small>' + c.sub + '</small></div>'; }).join('');
   Object.keys(SPOT).forEach(function (k) {
     var s = SPOT[k], e = pages[k]; if (!e) return;
@@ -535,41 +639,71 @@
       '<span class="ch-lbl">' + esc(e.p.name) + '</span></button>';
   });
   var world = document.getElementById('chWorld'), view = document.getElementById('chView'), info = document.getElementById('chInfo');
+  world.style.width = W + 'px'; world.style.height = H + 'px';
   world.innerHTML = html;
 
-  // Info card for the clicked screen.
+  // Clicking a screen opens a larger, more detailed copy of it right beside the screen.
+  var openKey = null;
   function showInfo(k) {
     var e = pages[k]; if (!e) return;
     world.querySelectorAll('.ch-scr.on').forEach(function (b) { b.classList.remove('on'); });
     var btn = world.querySelector('.ch-scr[data-k="' + k.replace(/"/g, '\\"') + '"]'); if (btn) btn.classList.add('on');
     var color = { public: 'var(--teal)', members: '#1f6b4a', admin: '#9a2c1a', board: '#7a5a1f' }[e.g.id];
     info.style.setProperty('--c', color);
-    info.innerHTML = '<button type="button" class="ch-x" aria-label="Close">&times;</button><h3>' + esc(e.p.name) + '</h3>' +
-      '<p class="ch-where">' + esc(e.g.title) + (e.parent ? ' &middot; from ' + esc(e.parent.name) : '') + ' &middot; ' + esc(e.p.url) + '</p>' +
-      '<ul>' + e.p.points.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
-      (/^(vote|go|review|reset-password)\.html/.test(e.p.url) ? '<p class="ch-where">Opened from an email link.</p>' : '<a href="' + esc(e.p.url) + '">Open this page &rarr;</a>');
+    info.innerHTML = '<div class="ch-info-in"><button type="button" class="ch-x" aria-label="Close">&times;</button>' +
+      '<span class="ch-bar"><i></i><i></i><i></i><em>newberngrand.com/' + esc(e.p.url) + '</em></span>' +
+      '<div class="ch-big">' +
+        '<div class="ch-big-hero"><small>' + esc(e.g.title) + (e.parent ? ' &middot; ' + esc(e.parent.name) : '') + '</small><b>' + esc(e.p.name) + '</b></div>' +
+        '<div class="ch-big-wire">' + WIRE[SPOT[k][3]] + '</div>' +
+        '<ul>' + e.p.points.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+        (/^(vote|go|review|reset-password)\.html/.test(e.p.url) ? '<p class="ch-where">Opened from an email link, so there is no page to open from here.</p>' : '<a href="' + esc(e.p.url) + '">Open this page &rarr;</a>') +
+      '</div></div>';
+    openKey = k;
     info.hidden = false;
+    info.style.animation = 'none'; void info.offsetWidth; info.style.animation = '';   // replay the pop
+    placeInfo();
   }
-  info.addEventListener('click', function (e) {
-    if (e.target.closest('.ch-x')) { info.hidden = true; world.querySelectorAll('.ch-scr.on').forEach(function (b) { b.classList.remove('on'); }); }
-  });
+  // Put the popup next to its screen (right if there is room, else left, else below / above),
+  // and keep it there while the chart is dragged or zoomed.
+  function placeInfo() {
+    if (!openKey || info.hidden) return;
+    var btn = world.querySelector('.ch-scr[data-k="' + openKey.replace(/"/g, '\\"') + '"]'); if (!btn) return;
+    var vr = view.getBoundingClientRect(), br = btn.getBoundingClientRect();
+    var b = { l: br.left - vr.left, t: br.top - vr.top, r: br.right - vr.left, btm: br.bottom - vr.top };
+    var vw = view.clientWidth, vh = view.clientHeight, pw = info.offsetWidth, ph = info.offsetHeight, gap = 14, side, x, y;
+    if (b.r + gap + pw <= vw - 8) { side = 'r'; x = b.r + gap; }
+    else if (b.l - gap - pw >= 8) { side = 'l'; x = b.l - gap - pw; }
+    else { side = (vh - b.btm > b.t) ? 'b' : 't'; x = Math.max(8, Math.min(vw - pw - 8, (b.l + b.r) / 2 - pw / 2)); }
+    if (side === 'r' || side === 'l') y = Math.max(8, Math.min(vh - ph - 8, (b.t + b.btm) / 2 - 40));
+    else y = side === 'b' ? Math.min(vh - ph - 8, b.btm + gap) : Math.max(8, b.t - gap - ph);
+    info.className = 'ch-info side-' + side;
+    info.style.left = x + 'px'; info.style.top = y + 'px';
+    var cy = Math.max(16, Math.min(ph - 30, (b.t + b.btm) / 2 - y - 8));
+    info.style.setProperty('--ay', cy + 'px');
+    info.style.setProperty('--ox', (side === 'r' ? 0 : side === 'l' ? pw : (b.l + b.r) / 2 - x) + 'px');
+    info.style.setProperty('--oy', (side === 'b' ? 0 : side === 't' ? ph : cy) + 'px');
+  }
+  function closeInfo() { info.hidden = true; openKey = null; world.querySelectorAll('.ch-scr.on').forEach(function (b) { b.classList.remove('on'); }); }
+  info.addEventListener('click', function (e) { if (e.target.closest('.ch-x')) closeInfo(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !info.hidden) closeInfo(); });
   info.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
 
   // Pan (drag) and zoom (buttons, or Ctrl + mouse wheel).
   var z = 1, tx = 0, ty = 0, minZ = 0.2;
   function clamp() {
-    var vw = view.clientWidth, vh = view.clientHeight, ww = 2000 * z, wh = 1300 * z;
+    var vw = view.clientWidth, vh = view.clientHeight, ww = W * z, wh = H * z;
     tx = ww <= vw ? (vw - ww) / 2 : Math.min(0, Math.max(vw - ww, tx));
     ty = wh <= vh ? (vh - wh) / 2 : Math.min(0, Math.max(vh - wh, ty));
   }
-  function apply() { clamp(); world.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + z + ')'; }
-  function fit() { z = minZ = Math.min(view.clientWidth / 2000, view.clientHeight / 1300); tx = ty = 0; apply(); }
+  function apply() { clamp(); world.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + z + ')'; placeInfo(); }
+  function fit() { z = minZ = Math.min(view.clientWidth / W, view.clientHeight / H); tx = ty = 0; apply(); }
   // Phones: start zoomed in on Public Harbor rather than showing a tiny whole chart.
   function start() {
     fit();
     if (view.clientWidth >= 700) return;
-    z = Math.min(1, view.clientHeight / 1300 * 1.6);
-    tx = view.clientWidth / 2 - 640 * z; ty = view.clientHeight / 2 - 560 * z; apply();
+    z = Math.min(1, view.clientHeight / H * 2.2);
+    var h0 = SPOT['public:Home'];
+    tx = view.clientWidth / 2 - h0[0] * z; ty = view.clientHeight / 2 - (h0[1] + 40) * z; apply();
   }
   function zoomAt(f, cx, cy) {
     var nz = Math.max(minZ, Math.min(1.6, z * f));
@@ -623,10 +757,10 @@
     if (s && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); showInfo(s.getAttribute('data-k')); }
   });
   world.addEventListener('click', function (e) { if (e.detail === 0) { var s = e.target.closest('.ch-scr'); if (s) showInfo(s.getAttribute('data-k')); } });
-  window.addEventListener('resize', function () { var wasFit = z <= minZ + 1e-6; minZ = Math.min(view.clientWidth / 2000, view.clientHeight / 1300); if (wasFit) fit(); else apply(); });
+  window.addEventListener('resize', function () { var wasFit = z <= minZ + 1e-6; minZ = Math.min(view.clientWidth / W, view.clientHeight / H); if (wasFit) fit(); else apply(); });
   start();
 })();
 </script>
-<script src="member-login.js?v=202611232048"></script>
+<script src="member-login.js?v=202611232108"></script>
 </body>
 </html>
