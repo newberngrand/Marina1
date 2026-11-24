@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611232116">
+<link rel="stylesheet" href="style.css?v=202611232122">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -113,18 +113,25 @@
   .w-banner { height: 12px; border-radius: 3px; background: #f6ecd9; border: 1px solid #e6cc8d; margin-bottom: 6px; }
   .w-tool { height: 10px; border-radius: 3px; background: #eef1f4; margin-bottom: 6px; display: flex; gap: 3px; padding: 2px; } .w-tool i { width: 10px; background: #c9ced4; border-radius: 2px; }
   /* the info card */
-  .ch-info { position: absolute; left: 0; top: 0; width: 380px; max-width: calc(100% - 20px); max-height: calc(100% - 20px); overflow: auto; background: #fff; border-radius: 12px;
+  .ch-info { position: absolute; left: 0; top: 0; width: 460px; max-width: calc(100% - 20px); max-height: calc(100% - 20px); overflow: auto; background: #fff; border-radius: 12px;
     box-shadow: 0 18px 44px rgba(11,37,64,.38); border: 1px solid #d6dde3; cursor: auto; font-size: .9rem; z-index: 20;
     transform-origin: var(--ox, 0) var(--oy, 0); animation: chPop .22s ease-out; }
   @keyframes chPop { from { opacity: 0; transform: scale(.35); } to { opacity: 1; transform: scale(1); } }
   .ch-info .ch-bar { border-radius: 12px 12px 0 0; padding: 7px 10px; }
   .ch-info .ch-bar i { width: 10px; height: 10px; }
   .ch-info .ch-bar em { height: 18px; line-height: 18px; font-size: 11px; border-radius: 9px; padding: 0 9px; }
-  .ch-big { padding: 12px; background: #fff; }
+  .ch-big { padding: 12px 14px 14px; background: #fff; }
   .ch-big-hero { border-radius: 8px; background: linear-gradient(135deg, var(--c), #0b2540); color: #fff; padding: 14px 14px 12px; margin-bottom: 10px; }
   .ch-big-hero small { display: block; text-transform: uppercase; letter-spacing: .12em; font-size: .68rem; color: #e8cf98; margin-bottom: 2px; }
   .ch-big-hero b { display: block; font-size: 1.25rem; line-height: 1.2; }
-  .ch-big-wire { position: relative; height: 120px; border: 1px solid #e2e6ea; border-radius: 8px; padding: 10px; overflow: hidden; margin-bottom: 10px; background: #fff; }
+  .ch-shot { position: relative; overflow: hidden; background: #fff; border: 1px solid #dde2e7; border-radius: 6px; margin-bottom: 10px; }
+  .ch-shot iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; border: 0; transform-origin: 0 0; pointer-events: none; opacity: 0; transition: opacity .25s; background: #fff; }
+  .ch-shot.ready iframe { opacity: 1; }
+  .ch-shot-wait { position: absolute; inset: 0; padding: 12px; }
+  .ch-shot-wait span { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font-size: .78rem; color: var(--muted); }
+  .ch-shot.ready .ch-shot-wait { display: none; }
+  .ch-big-title { margin: 0 0 6px; } .ch-big-title small { display: block; text-transform: uppercase; letter-spacing: .1em; font-size: .68rem; color: var(--c); font-weight: 700; }
+  .ch-big-title b { display: block; font-size: 1.15rem; color: var(--navy); }
   .ch-big ul { margin: 0 0 10px; padding-left: 18px; } .ch-big li { margin: 4px 0; line-height: 1.45; }
   .ch-big .ch-where { font-size: .8rem; color: var(--muted); margin: 0 0 8px; }
   .ch-big a { font-weight: 600; color: var(--c, var(--teal)); text-decoration: underline; }
@@ -482,8 +489,11 @@
     c.x += o[0]; c.y += o[1];
     if (c.lx != null) { c.lx += o[0]; c.ly += o[1]; }
   });
-  function onLand(x, y, f) {   // inside (or close to) any island
-    return ISLES.some(function (c) { var dx = (x - c.x) / (c.rx * f), dy = (y - c.y) / (c.ry * f); return dx * dx + dy * dy < 1; });
+  function onLand(x, y, f) {   // inside (or close to) any island, following its coastline
+    return ISLES.some(function (c) {
+      var dx = (x - c.x) / c.rx, dy = (y - c.y) / c.ry;
+      return Math.sqrt(dx * dx + dy * dy) < rad(c, Math.atan2(dy, dx)) * f;
+    });
   }
   // Routes between pages that link to each other.
   var ROUTES = [
@@ -529,14 +539,24 @@
     }); })(g.pages, null);
   });
 
-  // An island outline: a wobbly ellipse that is the same every time.
+  // Coastline: many points with headlands, bays and small jags, the same every time.
+  function jit(k, sd) { var x = Math.sin(k * 127.1 + sd * 311.7) * 43758.5453; return x - Math.floor(x); }
+  function rad(c, a) {
+    var sd = c.seed, r = c.rough == null ? 1 : c.rough;
+    var w = 0.07 * Math.sin(a * 3 + sd) + 0.05 * Math.sin(a * 5 + sd * 2) + 0.03 * Math.cos(a * 7 + sd) +
+            0.03 * Math.sin(a * 11 + sd * 3) + 0.02 * Math.sin(a * 17 + sd * 5) + 0.012 * Math.sin(a * 29 + sd * 7) +
+            0.08 * Math.pow(Math.max(0, Math.sin(a * 5 + sd * 3.1)), 10) -        // headlands
+            0.11 * Math.pow(Math.max(0, Math.sin(a * 6 + sd * 2.3)), 8);           // bays
+    return 1 + w * r;
+  }
   function islePath(c) {
-    var pts = [], n = 28;
+    var pts = [], smooth = !!c.smooth, n = smooth ? 64 : (c.rx > 200 ? 220 : 90);
     for (var k = 0; k < n; k++) {
-      var a = k / n * Math.PI * 2;
-      var w = 1 + 0.07 * Math.sin(a * 3 + c.seed) + 0.05 * Math.sin(a * 5 + c.seed * 2) + 0.03 * Math.cos(a * 7 + c.seed);
+      var a = k / n * Math.PI * 2, w = rad(c, a);
+      if (!smooth) w += (jit(k, c.seed) - 0.5) * 0.04 * (c.rough == null ? 1 : c.rough);
       pts.push([c.x + Math.cos(a) * c.rx * w, c.y + Math.sin(a) * c.ry * w]);
     }
+    if (!smooth) return 'M' + pts.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' L') + 'Z';
     var d = 'M' + pts[0].join(',');
     for (k = 0; k < n; k++) {   // smooth curve through the points
       var p0 = pts[(k - 1 + n) % n], p1 = pts[k], p2 = pts[(k + 1) % n], p3 = pts[(k + 2) % n];
@@ -544,7 +564,12 @@
     }
     return d + 'Z';
   }
-  function scaled(c, f) { return { x: c.x, y: c.y, rx: c.rx * f, ry: c.ry * f, seed: c.seed }; }
+  // A shape around the island at scale f. Depth bands get their own wobble, so the water
+  // drops off steeply in some places and shoals out gently in others.
+  function scaled(c, f, band) {
+    return band ? { x: c.x, y: c.y, rx: c.rx * f, ry: c.ry * f, seed: c.seed + f * 17, rough: 1.8, smooth: true }
+                : { x: c.x, y: c.y, rx: c.rx * f, ry: c.ry * f, seed: c.seed, rough: c.rough };
+  }
   var board = function (g) { return g === 'board' ? ' data-board' : ''; };
 
   var ROSE = [1545, 1010];   // compass rose in the open water between the islands
@@ -566,7 +591,7 @@
   }
   // Point on an island's (wobbly) shore at angle a, scaled by f.
   function shore(c, a, f) {
-    var w = 1 + 0.07 * Math.sin(a * 3 + c.seed) + 0.05 * Math.sin(a * 5 + c.seed * 2) + 0.03 * Math.cos(a * 7 + c.seed);
+    var w = rad(c, a);
     return [c.x + Math.cos(a) * c.rx * w * f, c.y + Math.sin(a) * c.ry * w * f];
   }
   // Creeks winding in from the shore, roads across the land, and marsh patches.
@@ -586,7 +611,7 @@
       }
       creeks += '<path d="' + d + '" stroke-width="9"/><path d="' + br + '" stroke-width="4"/>';
       var m = shore(c, a0 + 0.25, 0.86);
-      marsh += '<path d="' + islePath({ x: m[0], y: m[1], rx: 28 + rnd() * 40, ry: 18 + rnd() * 26, seed: k + c.seed }) + '"/>';
+      marsh += '<path d="' + islePath({ x: m[0], y: m[1], rx: 28 + rnd() * 40, ry: 18 + rnd() * 26, seed: k + c.seed, rough: 2 }) + '"/>';
     }
     for (var r = 0; r < Math.max(2, n - 2); r++) {   // roads: gentle curves across the island
       var ra = rnd() * Math.PI * 2, A = shore(c, ra, 0.95), B = shore(c, ra + Math.PI * (0.7 + rnd() * 0.6), 0.95);
@@ -629,10 +654,12 @@
     // shallows: teal bands that deepen in colour toward each shore
     ISLES.map(function (c) {
       return '<g' + board(c.g) + '>' +
-        [[1.9, '#dfe8de'], [1.62, '#cfe3dc'], [1.4, '#b7dad4'], [1.22, '#9dcdc8'], [1.08, '#82bfba']].map(function (b) {
-          return '<path d="' + islePath(scaled(c, b[0])) + '" fill="' + b[1] + '"/>'; }).join('') +
-        '<path d="' + islePath(scaled(c, 1.4)) + '" fill="none" stroke="#4c7f86" stroke-width="1.2" stroke-dasharray="7 5" opacity=".6"/>' +
-        '<path d="' + islePath(scaled(c, 1.62)) + '" fill="none" stroke="#4c7f86" stroke-width="1" stroke-dasharray="2 5" opacity=".55"/></g>';
+        [[1.9, '#dfe8de'], [1.62, '#cfe3dc'], [1.4, '#b7dad4'], [1.22, '#9dcdc8'], [1.1, '#82bfba']].map(function (b) {
+          return '<path d="' + islePath(scaled(c, b[0], true)) + '" fill="' + b[1] + '"/>'; }).join('') +
+        '<path d="' + islePath(scaled(c, 1.04)) + '" fill="#6fb1ad"/>' +
+        '<path d="' + islePath(scaled(c, 1.4, true)) + '" fill="none" stroke="#4c7f86" stroke-width="1.2" stroke-dasharray="7 5" opacity=".6"/>' +
+        '<path d="' + islePath(scaled(c, 1.62, true)) + '" fill="none" stroke="#4c7f86" stroke-width="1" stroke-dasharray="2 5" opacity=".55"/>' +
+        '<path d="' + islePath(scaled(c, 1.22, true)) + '" fill="none" stroke="#4c7f86" stroke-width="1" stroke-dasharray="1 4" opacity=".5"/></g>';
     }).join('') +
     '<g stroke="#2f3a3a" stroke-width="1" opacity=".18">' + rhumb + '</g>' +
     '<g font-family="Georgia,serif" font-size="13" fill="#3e5658" opacity=".8">' + sound + '</g>' +
@@ -698,8 +725,13 @@
   world.style.width = W + 'px'; world.style.height = H + 'px';
   world.innerHTML = html;
 
-  // Clicking a screen opens a larger, more detailed copy of it right beside the screen.
+  // Clicking a screen opens a larger copy of it, showing the real page, right beside the screen.
   var openKey = null;
+  var ADMIN_TAB = { 'Current Events': 'events', Documents: 'docs', Gallery: 'gallery', Members: 'members', 'Email Members': 'email', 'Activity Log': 'log', Help: 'help' };
+  function shotUrl(e) {
+    if (e.g.id === 'admin' && e.p.url.indexOf('admin.html') === 0) return 'admin.html#' + (ADMIN_TAB[e.p.name] || 'events');
+    return e.p.url;
+  }
   function showInfo(k) {
     var e = pages[k]; if (!e) return;
     world.querySelectorAll('.ch-scr.on').forEach(function (b) { b.classList.remove('on'); });
@@ -707,15 +739,20 @@
     var color = { public: 'var(--teal)', members: '#1f6b4a', admin: '#9a2c1a', board: '#7a5a1f' }[e.g.id];
     info.style.setProperty('--c', color);
     info.innerHTML = '<div class="ch-info-in"><button type="button" class="ch-x" aria-label="Close">&times;</button>' +
-      '<span class="ch-bar"><i></i><i></i><i></i><em>newberngrand.com/' + esc(e.p.url) + '</em></span>' +
+      '<span class="ch-bar"><i></i><i></i><i></i><em>newberngrand.com/' + esc(shotUrl(e)) + '</em></span>' +
       '<div class="ch-big">' +
-        '<div class="ch-big-hero"><small>' + esc(e.g.title) + (e.parent ? ' &middot; ' + esc(e.parent.name) : '') + '</small><b>' + esc(e.p.name) + '</b></div>' +
-        '<div class="ch-big-wire">' + WIRE[SPOT[k][3]] + '</div>' +
+        '<div class="ch-shot"><div class="ch-shot-wait">' + WIRE[SPOT[k][3]] + '<span>Loading the page&hellip;</span></div>' +
+          '<iframe src="' + esc(shotUrl(e)) + '" tabindex="-1" aria-hidden="true" title=""></iframe></div>' +
+        '<div class="ch-big-title"><small>' + esc(e.g.title) + (e.parent ? ' &middot; ' + esc(e.parent.name) : '') + '</small><b>' + esc(e.p.name) + '</b></div>' +
         '<ul>' + e.p.points.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
         (/^(vote|go|review|reset-password)\.html/.test(e.p.url) ? '<p class="ch-where">Opened from an email link, so there is no page to open from here.</p>' : '<a href="' + esc(e.p.url) + '">Open this page &rarr;</a>') +
       '</div></div>';
     openKey = k;
     info.hidden = false;
+    // The live page, shrunk to fit: it loads as you would see it (logged in or not).
+    var shot = info.querySelector('.ch-shot'), fr = shot.querySelector('iframe'), sc = shot.clientWidth / 1280;
+    shot.style.height = Math.round(800 * sc) + 'px'; fr.style.transform = 'scale(' + sc + ')';
+    fr.addEventListener('load', function () { setTimeout(function () { shot.classList.add('ready'); }, 350); });
     info.style.animation = 'none'; void info.offsetWidth; info.style.animation = '';   // replay the pop
     placeInfo();
   }
@@ -739,9 +776,10 @@
     info.style.setProperty('--ox', (side === 'r' ? 0 : side === 'l' ? pw : (b.l + b.r) / 2 - x) + 'px');
     info.style.setProperty('--oy', (side === 'b' ? 0 : side === 't' ? ph : cy) + 'px');
   }
-  function closeInfo() { info.hidden = true; openKey = null; world.querySelectorAll('.ch-scr.on').forEach(function (b) { b.classList.remove('on'); }); }
+  function closeInfo() { if (info.hidden) return; info.hidden = true; info.innerHTML = ''; openKey = null; world.querySelectorAll('.ch-scr.on').forEach(function (b) { b.classList.remove('on'); }); }
   info.addEventListener('click', function (e) { if (e.target.closest('.ch-x')) closeInfo(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !info.hidden) closeInfo(); });
+  document.addEventListener('pointerdown', function (e) { if (!info.hidden && !view.contains(e.target)) closeInfo(); });
   info.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
 
   // Pan (drag) and zoom (buttons, or Ctrl + mouse wheel).
@@ -802,7 +840,7 @@
     if (!drag.moved && e.type === 'pointerup') {
       var s = document.elementFromPoint(e.clientX, e.clientY);
       s = s && s.closest('.ch-scr');
-      if (s) showInfo(s.getAttribute('data-k'));
+      if (s) showInfo(s.getAttribute('data-k')); else closeInfo();
     }
     if (!Object.keys(ptrs).length) drag = null;
   }
@@ -817,6 +855,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611232116"></script>
+<script src="member-login.js?v=202611232122"></script>
 </body>
 </html>

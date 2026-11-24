@@ -55,12 +55,15 @@
       document.querySelectorAll('.admin-panel').forEach(function (p) {
         p.hidden = p.getAttribute('data-panel') !== name;
       });
-      try { sessionStorage.setItem('adminTab', name); } catch (e) {}
+      // Remember the tab, except in the site map's preview of this page (a frame).
+      try { if (window.top === window.self) sessionStorage.setItem('adminTab', name); } catch (e) {}
     }
     tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute('data-tab')); }); });
     var saved = null;
     try { saved = sessionStorage.getItem('adminTab'); } catch (e) {}
-    if (location.hash === '#help') saved = 'help';   // "Back to Help" from the site map
+    // admin.html#help (Back to Help), or #events, #docs ... (the site map's previews) open that tab.
+    var hashTab = location.hash.slice(1);
+    if (hashTab && document.querySelector('.admin-tab[data-tab="' + hashTab.replace(/[^a-z]/g, '') + '"]')) saved = hashTab.replace(/[^a-z]/g, '');
     if (saved) show(saved);
   }
 
