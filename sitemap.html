@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611232129">
+<link rel="stylesheet" href="style.css?v=202611232133">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -73,8 +73,10 @@
   .ch-viewport.dragging { cursor: grabbing; }
   .ch-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
   .ch-world svg.ch-sea { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-  .ch-isle-name { position: absolute; transform: translate(-50%, -50%); font-family: Georgia, "Times New Roman", serif; font-size: 27px; letter-spacing: .32em; text-transform: uppercase; color: #2a2a22; white-space: nowrap; pointer-events: none; text-shadow: 0 0 4px #e7d8b5, 0 0 2px #e7d8b5; }
-  .ch-isle-name small { display: block; font-size: 14px; letter-spacing: .08em; text-transform: none; font-style: italic; text-align: center; color: #4b4535; }
+  .ch-isle-name { position: absolute; transform: translate(-50%, -50%); font-family: Georgia, "Times New Roman", serif; font-size: 58px; font-weight: 700; letter-spacing: .26em; text-transform: uppercase; color: #1b1b16; white-space: nowrap; pointer-events: none; line-height: 1.05; text-align: center;
+    text-shadow: 0 0 3px #f1eee2, 0 0 6px #f1eee2, 0 0 10px #f1eee2, 2px 2px 0 #f1eee2, -2px -2px 0 #f1eee2, 2px -2px 0 #f1eee2, -2px 2px 0 #f1eee2; z-index: 3; }
+  .ch-isle-name::after { content: ""; display: block; height: 3px; margin: 6px auto 0; width: 70%; background: linear-gradient(90deg, transparent, #1b1b16 15%, #1b1b16 85%, transparent); }
+  .ch-isle-name small { display: block; margin-top: 4px; font-size: 22px; font-weight: 400; letter-spacing: .1em; text-transform: none; font-style: italic; color: #3a3428; }
   .ch-cartouche { position: absolute; left: 880px; top: 1730px; transform: translate(-50%, -50%); padding: 10px 26px 12px; background: #efe6cf; border: 3px solid #2a2a22; outline: 1px solid #2a2a22; outline-offset: 4px; font-family: Georgia, serif; color: #2a2a22; text-align: center; pointer-events: none; }
   .ch-cartouche svg { display: block; width: 70px; height: 40px; margin: -44px auto 4px; }
   .ch-cartouche b { display: block; font-size: 26px; letter-spacing: .14em; }
@@ -494,8 +496,8 @@
   };
   // Where each island sits, how big it is (half its longest side), and where its name goes.
   var PLACE = {
-    public: { x: 760, y: 800, size: 640, lab: 'above' }, members: { x: 2130, y: 460, size: 560, lab: 'above' },
-    admin: { x: 2120, y: 1430, size: 570, lab: 'above' }, board: { x: 400, y: 1660, size: 235, lab: 'above' }, islet: { x: 1235, y: 1650, size: 140 }
+    public: { x: 760, y: 800, size: 640, lab: 'above' }, members: { x: 2130, y: 460, size: 560, lab: 'below' },
+    admin: { x: 2120, y: 1430, size: 570, lab: [0.32, 0.3] }, board: { x: 400, y: 1660, size: 235, lab: 'above' }, islet: { x: 1235, y: 1650, size: 140 }
   };
   ISLES.forEach(function (c) {
     var key = c.name ? c.g : 'islet', P = PLACE[key], raw = SHAPES[key], pts = [], minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
@@ -505,7 +507,9 @@
     }
     c.pts = pts; c.x = P.x; c.y = P.y; c.rx = (maxX - minX) / 2; c.ry = (maxY - minY) / 2;
     if (c.name) {   // the island's name sits in the water beside it
-      if (P.lab === 'right') { c.lx = maxX + 150; c.ly = (minY + maxY) / 2; } else { c.lx = (minX + maxX) / 2; c.ly = minY - 40; }
+      if (P.lab === 'below') { c.lx = (minX + maxX) / 2; c.ly = maxY + 62; }
+      else if (P.lab === 'above') { c.lx = (minX + maxX) / 2; c.ly = minY - 70; }
+      else { c.lx = minX + P.lab[0] * (maxX - minX); c.ly = minY + P.lab[1] * (maxY - minY); }   // a spot in the water inside its outline box
     }
   });
   function inPoly(pts, x, y) {
@@ -748,7 +752,7 @@
       '<text y="48" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="14" fill="#7a2318" stroke="none">ANCH</text></g>' +
     // a little wreck symbol and a sea serpent, for fun
     '<g transform="translate(1180,1180)" stroke="#1e1e1a" stroke-width="2" fill="none"><path d="M-16,0 H16 M-10,-7 V7 M0,-9 V9 M10,-7 V7"/><text y="26" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="12" fill="#1e1e1a" stroke="none">Wk (404)</text></g>' +
-    '<g transform="translate(2470,905)" fill="none" stroke="#3f6a70" stroke-width="2.5" stroke-linecap="round" opacity=".85">' +
+    '<g transform="translate(2560,1330)" fill="none" stroke="#3f6a70" stroke-width="2.5" stroke-linecap="round" opacity=".85">' +
       '<path d="M-60,10 q15,-40 30,0 q15,-40 30,0 q15,-40 30,0"/><path d="M30,10 q12,-38 30,-26 q8,6 2,14"/><circle cx="54" cy="-20" r="2.5" fill="#3f6a70"/>' +
       '<text x="0" y="44" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="16" fill="#2f2a20" stroke="none">Here be bugs</text></g>' +
     // paper grain over everything
@@ -901,6 +905,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611232129"></script>
+<script src="member-login.js?v=202611232133"></script>
 </body>
 </html>
