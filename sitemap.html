@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611232108">
+<link rel="stylesheet" href="style.css?v=202611232116">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -56,15 +56,28 @@
   .ch-head .note { max-width: 680px; margin: 0; color: var(--muted); }
   .ch-zoom { display: flex; gap: 6px; }
   .ch-zoom .btn-sm { min-width: 40px; }
-  .ch-viewport { position: relative; height: min(78vh, 760px); min-height: 420px; overflow: hidden; border-radius: var(--radius); border: 8px double #b79b63; box-shadow: 0 0 0 4px #efe3c6, 0 0 0 5px #c9b48a, var(--shadow);
-    background: radial-gradient(ellipse at 45% 50%, #d9eaee 0%, #c3dce3 50%, #a9cbd5 100%); cursor: grab; touch-action: none; user-select: none; }
+  .ch-board { position: relative; padding: 26px; border-radius: 6px; box-shadow: var(--shadow);
+    background:
+      repeating-linear-gradient(90deg, transparent 0 148px, rgba(20,40,45,.55) 148px 151px, rgba(255,255,255,.12) 151px 152px, transparent 152px 300px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 7px, rgba(0,0,0,.05) 7px 9px, transparent 9px 17px),
+      linear-gradient(90deg, #6f9198 0%, #7da0a6 20%, #678a91 40%, #7b9ea4 60%, #6a8c93 80%, #779aa0 100%); }
+  .ch-rivet { position: absolute; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 35% 30%, #d9c48f, #7a5a28 55%, #3a2a12 100%); box-shadow: 0 2px 3px rgba(0,0,0,.5); }
+  .ch-rivet[style*="right"] { transform: translate(50%, -50%); }
+  .ch-rivet[style*="bottom"] { transform: translate(-50%, 50%); }
+  .ch-rivet[style*="right"][style*="bottom"] { transform: translate(50%, 50%); }
+  .ch-viewport { position: relative; height: min(78vh, 760px); min-height: 420px; overflow: hidden; border-radius: 2px;
+    background: #ebe8db; box-shadow: 0 6px 18px rgba(0,0,0,.45); cursor: grab; touch-action: none; user-select: none; }
+  .ch-burn { position: absolute; inset: 0; pointer-events: none; z-index: 8;
+    box-shadow: inset 0 0 0 2px rgba(60,35,10,.55), inset 0 0 26px 6px rgba(90,55,20,.55), inset 0 0 90px 10px rgba(120,80,30,.28); }
   .ch-viewport.dragging { cursor: grabbing; }
   .ch-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
   .ch-world svg.ch-sea { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-  .ch-isle-name { position: absolute; transform: translate(-50%, -50%); font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 30px; letter-spacing: .06em; color: #6b5a3a; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 0 rgba(255,255,255,.6); }
-  .ch-isle-name small { display: block; font-size: 15px; letter-spacing: .02em; text-align: center; color: #8a7655; }
-  .ch-cartouche { position: absolute; left: 50px; top: 46px; padding: 14px 22px; background: #fbf5e6; border: 2px solid #b79b63; outline: 1px solid #b79b63; outline-offset: 4px; font-family: Georgia, serif; color: #4b3d22; text-align: center; pointer-events: none; }
-  .ch-cartouche b { display: block; font-size: 24px; letter-spacing: .08em; }
+  .ch-isle-name { position: absolute; transform: translate(-50%, -50%); font-family: Georgia, "Times New Roman", serif; font-size: 27px; letter-spacing: .32em; text-transform: uppercase; color: #2a2a22; white-space: nowrap; pointer-events: none; text-shadow: 0 0 4px #e7d8b5, 0 0 2px #e7d8b5; }
+  .ch-isle-name small { display: block; font-size: 14px; letter-spacing: .08em; text-transform: none; font-style: italic; text-align: center; color: #4b4535; }
+  .ch-cartouche { position: absolute; left: 950px; top: 1720px; transform: translate(-50%, -50%); padding: 10px 26px 12px; background: #efe6cf; border: 3px solid #2a2a22; outline: 1px solid #2a2a22; outline-offset: 4px; font-family: Georgia, serif; color: #2a2a22; text-align: center; pointer-events: none; }
+  .ch-cartouche svg { display: block; width: 70px; height: 40px; margin: -44px auto 4px; }
+  .ch-cartouche b { display: block; font-size: 26px; letter-spacing: .14em; }
   .ch-cartouche span { display: block; font-size: 14px; font-style: italic; }
   .ch-cartouche em { display: block; margin-top: 4px; font-size: 12px; color: #7a6a4a; }
   .ch-scr { position: absolute; transform: translate(-50%, -50%) rotate(var(--r, 0deg)); width: var(--w, 180px); background: #fff; border-radius: 7px; box-shadow: 0 6px 16px rgba(11,37,64,.25), 0 1px 0 rgba(0,0,0,.05);
@@ -76,7 +89,7 @@
   .ch-bar i { width: 7px; height: 7px; border-radius: 50%; background: #e0a39a; flex: none; } .ch-bar i + i { background: #e6cc8d; } .ch-bar i + i + i { background: #9fcfa8; }
   .ch-bar em { flex: 1; margin-left: 4px; height: 11px; border-radius: 6px; background: #fff; font-style: normal; font-size: 8px; line-height: 11px; padding: 0 5px; color: #7b8794; overflow: hidden; white-space: nowrap; }
   .ch-pg { height: var(--h, 100px); padding: 7px; overflow: hidden; position: relative; border-radius: 0 0 7px 7px; }
-  .ch-lbl { position: absolute; left: 50%; top: 100%; transform: translate(-50%, 6px); white-space: nowrap; font-size: 13px; font-weight: 700; color: var(--navy); background: rgba(251,245,230,.92); border: 1px solid #d6c39b; border-radius: 10px; padding: 1px 9px; pointer-events: none; }
+  .ch-lbl { position: absolute; left: 50%; top: 100%; transform: translate(-50%, 6px); white-space: nowrap; font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: .04em; color: #2a2a22; background: #efe6cf; border: 1px solid #2a2a22; border-radius: 2px; padding: 1px 8px; pointer-events: none; }
   /* little wireframe pieces */
   .w-hero { height: 34%; border-radius: 4px; background: linear-gradient(135deg, var(--c), #0b2540); margin-bottom: 6px; position: relative; }
   .w-hero::after { content: ""; position: absolute; left: 8px; top: 40%; width: 45%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.75); }
@@ -122,7 +135,7 @@
   .ch-info.side-b::before, .ch-info.side-t::before { display: none; }
   .ch-info { overflow: visible; } .ch-info-in { max-height: inherit; overflow: auto; border-radius: 12px; }
   body:not(.sm-board) [data-board] { display: none !important; }
-  @media (max-width: 620px) { .ch-viewport { height: 70vh; } .ch-info { width: calc(100% - 20px); } }
+  @media (max-width: 620px) { .ch-viewport { height: 70vh; } .ch-info { width: calc(100% - 20px); } .ch-board { padding: 14px; } .ch-rivet { width: 10px; height: 10px; } .ch-rivet[style*="left:30px"] { left: 7px !important; } .ch-rivet[style*="right:30px"] { right: 7px !important; } .ch-rivet[style*="top:30px"] { top: 7px !important; } .ch-rivet[style*="bottom:30px"] { bottom: 7px !important; } }
   @media (max-width: 620px) { .sm-grid { grid-template-columns: 1fr; border-top: 0; padding-top: 0; } .sm-trunk { display: none; } .sm-root { margin-bottom: 16px; } }
 </style>
 </head>
@@ -209,9 +222,14 @@
         <button type="button" class="btn-sm" id="chIn" aria-label="Zoom in">+</button>
       </div>
     </div>
-    <div class="ch-viewport" id="chView">
-      <div class="ch-world" id="chWorld"></div>
-      <div class="ch-info" id="chInfo" hidden></div>
+    <div class="ch-board">
+      <div class="ch-viewport" id="chView">
+        <div class="ch-world" id="chWorld"></div>
+        <div class="ch-burn" aria-hidden="true"></div>
+        <div class="ch-info" id="chInfo" hidden></div>
+      </div>
+      <i class="ch-rivet" style="left:30px;top:30px"></i><i class="ch-rivet" style="right:30px;top:30px"></i>
+      <i class="ch-rivet" style="left:30px;bottom:30px"></i><i class="ch-rivet" style="right:30px;bottom:30px"></i>
     </div>
   </div>
 </section>
@@ -530,21 +548,54 @@
   var board = function (g) { return g === 'board' ? ' data-board' : ''; };
 
   var ROSE = [1545, 1010];   // compass rose in the open water between the islands
-  // Rhumb lines: the long bearing lines that cross old charts from the compass rose.
-  var rhumb = '';
-  for (var a = 0; a < 32; a++) {
-    var ang = a / 32 * Math.PI * 2, len = 2400;
-    rhumb += '<line x1="' + ROSE[0] + '" y1="' + ROSE[1] + '" x2="' + (ROSE[0] + Math.cos(ang) * len).toFixed(0) + '" y2="' + (ROSE[1] + Math.sin(ang) * len).toFixed(0) +
-      '" stroke="' + (a % 4 === 0 ? '#8a6d3b' : a % 2 === 0 ? '#2f6f84' : '#9a2c1a') + '" stroke-width="' + (a % 4 === 0 ? 1.4 : 0.9) + '" opacity="' + (a % 4 === 0 ? 0.35 : 0.22) + '"/>';
-  }
-  // Depth soundings: little numbers in the water, shallower near land. Same every time.
   var seed = 7, rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  // Rhumb lines: faint bearing lines from the compass rose, like old charts.
+  var rhumb = '';
+  for (var a = 0; a < 16; a++) {
+    var ang = a / 16 * Math.PI * 2, len = 2400;
+    rhumb += '<line x1="' + ROSE[0] + '" y1="' + ROSE[1] + '" x2="' + (ROSE[0] + Math.cos(ang) * len).toFixed(0) + '" y2="' + (ROSE[1] + Math.sin(ang) * len).toFixed(0) + '"/>';
+  }
+  // Depth soundings: dense little numbers, shallow near land, deep out at sea. Same every time.
   var sound = '', nSound = 0;
-  for (var t = 0; t < 400 && nSound < 95; t++) {
-    var sx = 60 + rnd() * (W - 120), sy = 60 + rnd() * (H - 120);
-    if (onLand(sx, sy, 1.12) || (Math.abs(sx - ROSE[0]) < 190 && Math.abs(sy - ROSE[1]) < 210) || (sx < 520 && sy < 170)) continue;
-    var deep = onLand(sx, sy, 1.6) ? 2 + Math.floor(rnd() * 9) : 12 + Math.floor(rnd() * 30);
-    sound += '<text x="' + sx.toFixed(0) + '" y="' + sy.toFixed(0) + '">' + deep + '</text>'; nSound++;
+  for (var t = 0; t < 1400 && nSound < 340; t++) {
+    var sx = 40 + rnd() * (W - 80), sy = 40 + rnd() * (H - 80);
+    if (onLand(sx, sy, 1.08) || (Math.abs(sx - ROSE[0]) < 120 && Math.abs(sy - ROSE[1]) < 130) || (sx > 720 && sx < 1180 && sy > 1640)) continue;
+    var near = onLand(sx, sy, 1.4), mid = onLand(sx, sy, 1.75);
+    var deep = near ? 1 + Math.floor(rnd() * 8) : mid ? 8 + Math.floor(rnd() * 12) : 18 + Math.floor(rnd() * 40);
+    sound += '<text x="' + sx.toFixed(0) + '" y="' + sy.toFixed(0) + '">' + deep + (rnd() < 0.18 ? '<tspan font-size="8" dy="3">' + Math.floor(rnd() * 9) + '</tspan>' : '') + '</text>'; nSound++;
+  }
+  // Point on an island's (wobbly) shore at angle a, scaled by f.
+  function shore(c, a, f) {
+    var w = 1 + 0.07 * Math.sin(a * 3 + c.seed) + 0.05 * Math.sin(a * 5 + c.seed * 2) + 0.03 * Math.cos(a * 7 + c.seed);
+    return [c.x + Math.cos(a) * c.rx * w * f, c.y + Math.sin(a) * c.ry * w * f];
+  }
+  // Creeks winding in from the shore, roads across the land, and marsh patches.
+  function landDetail(c) {
+    var creeks = '', roads = '', marsh = '', n = c.rx > 300 ? 7 : c.rx > 200 ? 4 : 2;
+    for (var k = 0; k < n; k++) {
+      var a0 = (k + 0.3 + rnd() * 0.4) / n * Math.PI * 2, p = shore(c, a0, 1.02), d = 'M' + p[0].toFixed(0) + ',' + p[1].toFixed(0);
+      var steps = 5, depth = 0.35 + rnd() * 0.3, br = '';
+      for (var s2 = 1; s2 <= steps; s2++) {
+        var f = 1 - depth * s2 / steps, wob = (rnd() - 0.5) * 0.25;
+        var q = shore(c, a0 + wob * (s2 / steps), f);
+        d += ' L' + q[0].toFixed(0) + ',' + q[1].toFixed(0);
+        if (s2 === 2 || s2 === 4) {   // a side branch
+          var side = shore(c, a0 + (rnd() < 0.5 ? -1 : 1) * (0.12 + rnd() * 0.1), f - 0.08);
+          br += ' M' + q[0].toFixed(0) + ',' + q[1].toFixed(0) + ' Q' + ((q[0] + side[0]) / 2 + (rnd() - 0.5) * 30).toFixed(0) + ',' + ((q[1] + side[1]) / 2 + (rnd() - 0.5) * 30).toFixed(0) + ' ' + side[0].toFixed(0) + ',' + side[1].toFixed(0);
+        }
+      }
+      creeks += '<path d="' + d + '" stroke-width="9"/><path d="' + br + '" stroke-width="4"/>';
+      var m = shore(c, a0 + 0.25, 0.86);
+      marsh += '<path d="' + islePath({ x: m[0], y: m[1], rx: 28 + rnd() * 40, ry: 18 + rnd() * 26, seed: k + c.seed }) + '"/>';
+    }
+    for (var r = 0; r < Math.max(2, n - 2); r++) {   // roads: gentle curves across the island
+      var ra = rnd() * Math.PI * 2, A = shore(c, ra, 0.95), B = shore(c, ra + Math.PI * (0.7 + rnd() * 0.6), 0.95);
+      var C = [c.x + (rnd() - 0.5) * c.rx * 0.6, c.y + (rnd() - 0.5) * c.ry * 0.6];
+      roads += '<path d="M' + A[0].toFixed(0) + ',' + A[1].toFixed(0) + ' Q' + C[0].toFixed(0) + ',' + C[1].toFixed(0) + ' ' + B[0].toFixed(0) + ',' + B[1].toFixed(0) + '"/>';
+    }
+    return '<g fill="#5f9e9b" opacity=".75">' + marsh + '</g>' +
+      '<g fill="none" stroke="#7fb8b4" stroke-linecap="round" stroke-linejoin="round">' + creeks + '</g>' +
+      '<g fill="none" stroke="#3d3a2e" stroke-width="1.6" opacity=".55">' + roads + '</g>';
   }
   // Channel buoys along a crossing: red on one side, green on the other.
   function buoys(k1, k2, flip) {
@@ -555,79 +606,84 @@
       var x = (1 - u) * (1 - u) * A[0] + 2 * (1 - u) * u * qx + u * u * B[0], y = (1 - u) * (1 - u) * A[1] + 2 * (1 - u) * u * qy + u * u * B[1];
       var gx = 2 * (1 - u) * (qx - A[0]) + 2 * u * (B[0] - qx), gy = 2 * (1 - u) * (qy - A[1]) + 2 * u * (B[1] - qy), l = Math.hypot(gx, gy);
       var nx = -gy / l * 26 * (flip ? -1 : 1), ny = gx / l * 26 * (flip ? -1 : 1);
-      out += '<g transform="translate(' + (x + nx).toFixed(0) + ',' + (y + ny).toFixed(0) + ')"><path d="M-7,6 L7,6 L0,-9Z" fill="#c0392b" stroke="#6b1d14"/><text y="22">R' + (2 * n + 2) + '</text></g>' +
-             '<g transform="translate(' + (x - nx).toFixed(0) + ',' + (y - ny).toFixed(0) + ')"><rect x="-6" y="-7" width="12" height="13" fill="#2e8b57" stroke="#14462b"/><text y="22">G' + (2 * n + 1) + '</text></g>';
+      out += '<g transform="translate(' + (x + nx).toFixed(0) + ',' + (y + ny).toFixed(0) + ')"><path d="M-7,6 L7,6 L0,-9Z" fill="#b8392b" stroke="#5a1a12"/><text y="22">R "' + (2 * n + 2) + '"</text></g>' +
+             '<g transform="translate(' + (x - nx).toFixed(0) + ',' + (y - ny).toFixed(0) + ')"><rect x="-6" y="-7" width="12" height="13" fill="#2f7a52" stroke="#123d27"/><text y="22">G "' + (2 * n + 1) + '"</text></g>';
     });
     return out;
   }
-  // Chart border: the black-and-white latitude / longitude bars.
-  var frame = '<rect x="10" y="10" width="' + (W - 20) + '" height="' + (H - 20) + '" fill="none" stroke="#4b3d22" stroke-width="2"/>' +
-    '<rect x="22" y="22" width="' + (W - 44) + '" height="' + (H - 44) + '" fill="none" stroke="#4b3d22" stroke-width="1"/>';
-  for (var fx = 22, on = 0; fx < W - 22; fx += 100, on ^= 1) if (on) frame += '<rect x="' + fx + '" y="10" width="' + Math.min(100, W - 22 - fx) + '" height="12" fill="#4b3d22"/><rect x="' + fx + '" y="' + (H - 22) + '" width="' + Math.min(100, W - 22 - fx) + '" height="12" fill="#4b3d22"/>';
-  for (var fy = 22, on2 = 0; fy < H - 22; fy += 100, on2 ^= 1) if (on2) frame += '<rect x="10" y="' + fy + '" width="12" height="' + Math.min(100, H - 22 - fy) + '" fill="#4b3d22"/><rect x="' + (W - 22) + '" y="' + fy + '" width="12" height="' + Math.min(100, H - 22 - fy) + '" fill="#4b3d22"/>';
-  // Compass rose ticks
-  var ticks = '';
-  for (var d = 0; d < 360; d += 5) {
-    var r1 = d % 45 === 0 ? 104 : d % 15 === 0 ? 110 : 115, ra = (d - 90) * Math.PI / 180;
-    ticks += '<line x1="' + (Math.cos(ra) * r1).toFixed(1) + '" y1="' + (Math.sin(ra) * r1).toFixed(1) + '" x2="' + (Math.cos(ra) * 120).toFixed(1) + '" y2="' + (Math.sin(ra) * 120).toFixed(1) + '" stroke="#8a6d3b" stroke-width="1"/>';
-  }
+  // Chart border: black-and-white latitude / longitude bars with minute ticks.
+  var frame = '<rect x="10" y="10" width="' + (W - 20) + '" height="' + (H - 20) + '" fill="none" stroke="#2f2a20" stroke-width="2"/>' +
+    '<rect x="22" y="22" width="' + (W - 44) + '" height="' + (H - 44) + '" fill="none" stroke="#2f2a20" stroke-width="1"/>';
+  for (var fx = 22, on = 0; fx < W - 22; fx += 100, on ^= 1) if (on) frame += '<rect x="' + fx + '" y="10" width="' + Math.min(100, W - 22 - fx) + '" height="12" fill="#2f2a20"/><rect x="' + fx + '" y="' + (H - 22) + '" width="' + Math.min(100, W - 22 - fx) + '" height="12" fill="#2f2a20"/>';
+  for (var fy = 22, on2 = 0; fy < H - 22; fy += 100, on2 ^= 1) if (on2) frame += '<rect x="10" y="' + fy + '" width="12" height="' + Math.min(100, H - 22 - fy) + '" fill="#2f2a20"/><rect x="' + (W - 22) + '" y="' + fy + '" width="12" height="' + Math.min(100, H - 22 - fy) + '" fill="#2f2a20"/>';
+  for (var tk = 42; tk < W - 22; tk += 20) frame += '<line x1="' + tk + '" y1="22" x2="' + tk + '" y2="28" stroke="#2f2a20"/><line x1="' + tk + '" y1="' + (H - 22) + '" x2="' + tk + '" y2="' + (H - 28) + '" stroke="#2f2a20"/>';
+  for (var tk2 = 42; tk2 < H - 22; tk2 += 20) frame += '<line y1="' + tk2 + '" x1="22" y2="' + tk2 + '" x2="28" stroke="#2f2a20"/><line y1="' + tk2 + '" x1="' + (W - 22) + '" y2="' + tk2 + '" x2="' + (W - 28) + '" stroke="#2f2a20"/>';
   var LH = [ISLES[0].x - ISLES[0].rx * 0.9, ISLES[0].y - 40];   // lighthouse on the west point of Public Harbor
 
   var sea = '<svg class="ch-sea" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
-    '<defs><pattern id="chGrid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M100 0H0V100" fill="none" stroke="#9fc2cc" stroke-width="1" opacity=".35"/></pattern>' +
-    '<radialGradient id="chShoal"><stop offset="0" stop-color="#e9f3f2"/><stop offset="1" stop-color="#e9f3f2" stop-opacity="0"/></radialGradient></defs>' +
-    '<rect width="' + W + '" height="' + H + '" fill="url(#chGrid)"/>' +
-    '<g>' + rhumb + '</g>' +
-    '<g font-family="Georgia,serif" font-style="italic" font-size="15" fill="#4f7d8b" opacity=".75">' + sound + '</g>' +
+    '<defs>' +
+      '<pattern id="chLinen" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#dcc9a0"/><path d="M0 1H6M0 4H6" stroke="#cbb388" stroke-width=".8"/><path d="M1 0V6M4 0V6" stroke="#e7d8b5" stroke-width=".7"/></pattern>' +
+      '<filter id="chGrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 .35  0 0 0 0 .27  0 0 0 0 .15  0 0 0 .5 0"/></filter>' +
+    '</defs>' +
+    '<rect width="' + W + '" height="' + H + '" fill="#ebe8db"/>' +
+    // shallows: teal bands that deepen in colour toward each shore
     ISLES.map(function (c) {
       return '<g' + board(c.g) + '>' +
-        '<ellipse cx="' + c.x + '" cy="' + c.y + '" rx="' + (c.rx * 1.45) + '" ry="' + (c.ry * 1.45) + '" fill="url(#chShoal)"/>' +
-        [1.55, 1.35, 1.17].map(function (f) { return '<path d="' + islePath(scaled(c, f)) + '" fill="none" stroke="#7fa9b6" stroke-width="1.2" stroke-dasharray="' + (f > 1.4 ? '2 6' : '6 6') + '" opacity=".7"/>'; }).join('') +
-        '<path d="' + islePath(scaled(c, 1.04)) + '" fill="none" stroke="#6f9aa6" stroke-width="7" stroke-dasharray="1 6" opacity=".5"/>' +
-        '<path d="' + islePath(c) + '" fill="#efe3c6" stroke="#9c7f45" stroke-width="3"/>' +
-        '<path d="' + islePath(scaled(c, 0.9)) + '" fill="#e3edd2" opacity=".55"/>' +
-        '<path d="' + islePath(scaled(c, 0.75)) + '" fill="none" stroke="#c9b48a" stroke-width="1.2" stroke-dasharray="3 5" opacity=".7"/></g>';
+        [[1.9, '#dfe8de'], [1.62, '#cfe3dc'], [1.4, '#b7dad4'], [1.22, '#9dcdc8'], [1.08, '#82bfba']].map(function (b) {
+          return '<path d="' + islePath(scaled(c, b[0])) + '" fill="' + b[1] + '"/>'; }).join('') +
+        '<path d="' + islePath(scaled(c, 1.4)) + '" fill="none" stroke="#4c7f86" stroke-width="1.2" stroke-dasharray="7 5" opacity=".6"/>' +
+        '<path d="' + islePath(scaled(c, 1.62)) + '" fill="none" stroke="#4c7f86" stroke-width="1" stroke-dasharray="2 5" opacity=".55"/></g>';
     }).join('') +
+    '<g stroke="#2f3a3a" stroke-width="1" opacity=".18">' + rhumb + '</g>' +
+    '<g font-family="Georgia,serif" font-size="13" fill="#3e5658" opacity=".8">' + sound + '</g>' +
+    // water names
+    '<g font-family="Georgia,serif" font-style="italic" font-size="34" letter-spacing="18" fill="#3f6a70" opacity=".7" text-anchor="middle">' +
+      '<text x="1530" y="330" transform="rotate(-8 1530 330)">NEUSE RIVER</text><text x="1500" y="1580" transform="rotate(6 1500 1580)">TRENT RIVER</text></g>' +
+    // land: linen-textured, dark shoreline, creeks, roads and marsh
+    ISLES.map(function (c) {
+      return '<g' + board(c.g) + '>' +
+        '<path d="' + islePath(c) + '" fill="url(#chLinen)" stroke="#2f3b3b" stroke-width="3"/>' +
+        landDetail(c) +
+        '<path d="' + islePath(scaled(c, 0.97)) + '" fill="none" stroke="#a88d5c" stroke-width="1" opacity=".5"/></g>';
+    }).join('') +
+    // routes between pages
     ROUTES.map(function (r) {
       var a = SPOT[r[0]], b = SPOT[r[1]]; if (!a || !b) return '';
       var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1];
       var bend = 0.18 * (r[0].length % 2 ? 1 : -1);   // alternate the curve direction
       var hidden = r[0].indexOf('board:') === 0 || r[1].indexOf('board:') === 0;
-      return '<path' + (hidden ? ' data-board' : '') + ' d="M' + a[0] + ',' + a[1] + ' Q' + (mx - dy * bend) + ',' + (my + dx * bend) + ' ' + b[0] + ',' + b[1] + '" fill="none" stroke="#1c5d6e" stroke-width="3.5" stroke-dasharray="1 10" stroke-linecap="round" opacity=".9"/>';
+      return '<path' + (hidden ? ' data-board' : '') + ' d="M' + a[0] + ',' + a[1] + ' Q' + (mx - dy * bend) + ',' + (my + dx * bend) + ' ' + b[0] + ',' + b[1] + '" fill="none" stroke="#7a2318" stroke-width="2.5" stroke-dasharray="10 7" opacity=".7"/>';
     }).join('') +
-    '<g font-family="Georgia,serif" font-size="12" fill="#4b3d22" text-anchor="middle">' + buoys('public:Home', 'members:Member Portal') + buoys('admin:Email Members', 'members:Cast Your Vote', true) + '</g>' +
-    '<g data-board font-family="Georgia,serif" font-size="12" fill="#4b3d22" text-anchor="middle">' + buoys('members:Member Portal', 'board:Board') + '</g>' +
-    // compass rose
-    '<g transform="translate(' + ROSE[0] + ',' + ROSE[1] + ')">' +
-      '<circle r="132" fill="#fbf5e6" stroke="#8a6d3b" stroke-width="2.5" opacity=".95"/><circle r="120" fill="none" stroke="#8a6d3b" stroke-width="1"/>' + ticks +
-      '<g fill="#c9a15a" stroke="#6b5a3a" stroke-width="1"><path d="M0,0 L60,-60 L14,0Z"/><path d="M0,0 L60,-60 L14,0Z" transform="rotate(90)"/><path d="M0,0 L60,-60 L14,0Z" transform="rotate(180)"/><path d="M0,0 L60,-60 L14,0Z" transform="rotate(270)"/></g>' +
-      '<g stroke="#0b2540" stroke-width="1"><path d="M0,-100 L16,0 L0,0Z" fill="#0b2540"/><path d="M0,-100 L-16,0 L0,0Z" fill="#fbf5e6"/><path d="M100,0 L0,16 L0,0Z" fill="#0b2540"/><path d="M100,0 L0,-16 L0,0Z" fill="#fbf5e6"/>' +
-      '<path d="M0,100 L-16,0 L0,0Z" fill="#0b2540"/><path d="M0,100 L16,0 L0,0Z" fill="#fbf5e6"/><path d="M-100,0 L0,-16 L0,0Z" fill="#0b2540"/><path d="M-100,0 L0,16 L0,0Z" fill="#fbf5e6"/></g>' +
-      '<circle r="9" fill="#9a2c1a" stroke="#fbf5e6" stroke-width="2"/><path d="M0,-150 l-9,14 h18z" fill="#9a2c1a"/>' +
-      '<g font-family="Georgia,serif" font-size="26" font-weight="bold" fill="#4b3d22" text-anchor="middle"><text y="-158">N</text><text y="182">S</text><text x="160" y="9">E</text><text x="-160" y="9">W</text></g></g>' +
+    '<g font-family="Georgia,serif" font-size="12" fill="#2f2a20" text-anchor="middle">' + buoys('public:Home', 'members:Member Portal') + buoys('admin:Email Members', 'members:Cast Your Vote', true) + '</g>' +
+    '<g data-board font-family="Georgia,serif" font-size="12" fill="#2f2a20" text-anchor="middle">' + buoys('members:Member Portal', 'board:Board') + '</g>' +
+    // compass rose: a plain black-and-white star, as on printed charts
+    '<g transform="translate(' + ROSE[0] + ',' + ROSE[1] + ')" stroke="#1e1e1a" stroke-width="1.4">' +
+      '<circle r="96" fill="none"/><circle r="88" fill="none" stroke-width=".8"/>' +
+      '<g fill="#1e1e1a"><path d="M0,-118 L13,-13 L0,0Z"/><path d="M118,0 L13,13 L0,0Z"/><path d="M0,118 L-13,13 L0,0Z"/><path d="M-118,0 L-13,-13 L0,0Z"/>' +
+      '<path d="M55,-55 L8,-2 L0,0Z"/><path d="M55,55 L2,8 L0,0Z"/><path d="M-55,55 L-8,2 L0,0Z"/><path d="M-55,-55 L-2,-8 L0,0Z"/></g>' +
+      '<g fill="#f4f1e6"><path d="M0,-118 L-13,-13 L0,0Z"/><path d="M118,0 L13,-13 L0,0Z"/><path d="M0,118 L13,13 L0,0Z"/><path d="M-118,0 L-13,13 L0,0Z"/>' +
+      '<path d="M55,-55 L2,-8 L0,0Z"/><path d="M55,55 L8,2 L0,0Z"/><path d="M-55,55 L-2,8 L0,0Z"/><path d="M-55,-55 L-8,-2 L0,0Z"/></g>' +
+      '<g font-family="Georgia,serif" font-size="26" fill="#1e1e1a" stroke="none" text-anchor="middle"><text y="-128">N</text><text y="150">S</text></g></g>' +
     // lighthouse
     '<g transform="translate(' + LH[0].toFixed(0) + ',' + LH[1].toFixed(0) + ')">' +
-      '<path d="M-90,-62 L-14,-52 L-14,-44 L-90,-30Z M90,-62 L14,-52 L14,-44 L90,-30Z" fill="#f6d77a" opacity=".55"/>' +
-      '<path d="M-11,0 L-7,-46 L7,-46 L11,0Z" fill="#fff" stroke="#4b3d22" stroke-width="1.5"/><path d="M-9.5,-16 L9.5,-16 L9,-26 L-9,-26Z M-8,-34 L8,-34 L7.5,-42 L-7.5,-42Z" fill="#c0392b"/>' +
-      '<rect x="-8" y="-56" width="16" height="10" fill="#f6d77a" stroke="#4b3d22"/><path d="M-10,-56 L0,-66 L10,-56Z" fill="#4b3d22"/>' +
-      '<text y="22" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="13" fill="#4b3d22">Fl W 4s</text></g>' +
-    // anchorage off Members' Cove
-    '<g transform="translate(1650,420)" fill="none" stroke="#4b3d22" stroke-width="3" stroke-linecap="round"><circle cy="-22" r="7"/><path d="M0,-15 V22 M-14,-6 H14 M-24,6 Q-22,24 0,24 Q22,24 24,6"/>' +
-      '<text y="50" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="14" fill="#4b3d22" stroke="none">Anchorage</text></g>' +
-    // a sea serpent
-    '<g transform="translate(1020,1660)" fill="none" stroke="#2f6f84" stroke-width="2.5" stroke-linecap="round" opacity=".8">' +
-      '<path d="M-60,10 q15,-40 30,0 q15,-40 30,0 q15,-40 30,0"/><path d="M30,10 q12,-38 30,-26 q8,6 2,14"/><circle cx="54" cy="-20" r="2.5" fill="#2f6f84"/>' +
-      '<text x="0" y="44" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="16" fill="#4b3d22" stroke="none">Here be bugs</text></g>' +
-    // waves and a sailboat
-    '<g fill="none" stroke="#5f93a3" stroke-width="2" opacity=".6">' +
-      [[1420, 160], [600, 120], [2080, 860], [1240, 1360], [80, 1240], [2500, 1180], [1880, 1790], [640, 1500], [1500, 640], [2300, 120]].map(function (q) {
-        return '<path d="M' + q[0] + ' ' + q[1] + ' q15 -12 30 0 t30 0 t30 0"/>'; }).join('') + '</g>' +
-    '<g transform="translate(1360,520)"><path d="M0,0 L44,0 L36,12 L8,12Z" fill="#7a5a1f"/><path d="M22,-4 L22,-58 L46,-6Z" fill="#fff" stroke="#9fb3bd"/><path d="M20,-4 L20,-46 L2,-6Z" fill="#fbf5e6" stroke="#9fb3bd"/>' +
-      '<path d="M-10,8 q-30,4 -60,-2" fill="none" stroke="#fff" stroke-width="2" opacity=".8"/></g>' +
+      '<path d="M-90,-62 L-14,-52 L-14,-44 L-90,-30Z M90,-62 L14,-52 L14,-44 L90,-30Z" fill="#f2d675" opacity=".5"/>' +
+      '<path d="M-11,0 L-7,-46 L7,-46 L11,0Z" fill="#f4f1e6" stroke="#1e1e1a" stroke-width="1.5"/><path d="M-9.5,-16 L9.5,-16 L9,-26 L-9,-26Z M-8,-34 L8,-34 L7.5,-42 L-7.5,-42Z" fill="#1e1e1a"/>' +
+      '<rect x="-8" y="-56" width="16" height="10" fill="#f2d675" stroke="#1e1e1a"/><path d="M-10,-56 L0,-66 L10,-56Z" fill="#1e1e1a"/>' +
+      '<text y="22" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="13" fill="#1e1e1a">Fl W 4s 52ft</text></g>' +
+    // anchorage
+    '<g transform="translate(1650,450)" fill="none" stroke="#7a2318" stroke-width="2.5" stroke-linecap="round"><circle cy="-22" r="7"/><path d="M0,-15 V22 M-14,-6 H14 M-24,6 Q-22,24 0,24 Q22,24 24,6"/>' +
+      '<text y="48" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="14" fill="#7a2318" stroke="none">ANCH</text></g>' +
+    // a little wreck symbol and a sea serpent, for fun
+    '<g transform="translate(2470,760)" stroke="#1e1e1a" stroke-width="2" fill="none"><path d="M-16,0 H16 M-10,-7 V7 M0,-9 V9 M10,-7 V7"/><text y="26" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="12" fill="#1e1e1a" stroke="none">Wk (404)</text></g>' +
+    '<g transform="translate(1110,1430)" fill="none" stroke="#3f6a70" stroke-width="2.5" stroke-linecap="round" opacity=".85">' +
+      '<path d="M-60,10 q15,-40 30,0 q15,-40 30,0 q15,-40 30,0"/><path d="M30,10 q12,-38 30,-26 q8,6 2,14"/><circle cx="54" cy="-20" r="2.5" fill="#3f6a70"/>' +
+      '<text x="0" y="44" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="16" fill="#2f2a20" stroke="none">Here be bugs</text></g>' +
+    // paper grain over everything
+    '<rect width="' + W + '" height="' + H + '" filter="url(#chGrain)" opacity=".35"/>' +
     frame +
     '</svg>';
 
-  var html = sea + '<div class="ch-cartouche"><b>NEW BERN GRAND MARINA</b><span>A Chart of the Website &middot; Neuse &amp; Trent Approaches</span><em>Soundings in clicks &middot; Scale 1 : 1 page</em></div>';
+  var html = sea + '<div class="ch-cartouche"><svg viewBox="0 0 70 40" aria-hidden="true"><g fill="none" stroke="#2a2a22" stroke-width="2.4" stroke-linecap="round"><g transform="rotate(-35 35 22)"><circle cx="35" cy="5" r="3"/><path d="M35,8 V36 M28,13 H42 M24,29 Q26,37 35,37 Q44,37 46,29"/></g><g transform="rotate(35 35 22)"><circle cx="35" cy="5" r="3"/><path d="M35,8 V36 M28,13 H42 M24,29 Q26,37 35,37 Q44,37 46,29"/></g></g></svg><b>NEW BERN GRAND MARINA</b><span>~ Chart of the Website ~</span><em>Soundings in clicks &middot; Scale 1 : 1 page</em></div>';
   html += ISLES.filter(function (c) { return c.name; }).map(function (c) { return '<div class="ch-isle-name"' + board(c.g) + ' style="left:' + c.lx + 'px;top:' + c.ly + 'px">' + c.name + '<small>' + c.sub + '</small></div>'; }).join('');
   Object.keys(SPOT).forEach(function (k) {
     var s = SPOT[k], e = pages[k]; if (!e) return;
@@ -761,6 +817,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611232108"></script>
+<script src="member-login.js?v=202611232116"></script>
 </body>
 </html>
