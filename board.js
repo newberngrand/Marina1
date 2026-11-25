@@ -1,6 +1,6 @@
-/* Board page: board members upload meeting minutes and approve them.
-   Minutes stay hidden from members until every board member has opened and approved them;
-   the database publishes them automatically after the last approval. */
+/* Board page: board members read, approve and suggest changes to meeting minutes, write minutes,
+   and upload minutes written elsewhere. Minutes stay hidden from members until every board member
+   has approved them; then they are published (minutes written here get their PDF at that point). */
 (function () {
   var D = window.MemberData, sb = null, me = null;
   function $(id) { return document.getElementById(id); }
@@ -31,6 +31,7 @@
         loadReview(justSubmitted ? 'Your minutes were submitted. Every board member can now review and approve them below.' : '');
         if (justSubmitted) history.replaceState(null, '', location.pathname);
         loadPublished();
+        cleanStaleFiles();
         setupBoardDocs();
         setupUpload();
         setupWriting();
@@ -41,62 +42,201 @@
   });
 
   /* ---------- review ---------- */
-  var list = [];
+  // Minutes written on the website are read right here. Each board member can approve (with an
+  // optional suggested change) or just suggest a change; the person editing the minutes works the
+  // suggestions in. Approvals stand when the minutes are edited; a member who approved an earlier
+  // version sees what changed. After the last approval this browser makes the PDF and publishes it.
+  // Minutes uploaded as a file keep the earlier review (open the file, then Approve).
+  var list = [], reviews = [], openReader = {};
+  var SUG_LABEL = { open: 'Waiting', made: 'Made', not_made: 'Not made' };
   function loadReview(note) {
-    return sb.rpc('minutes_for_review').then(function (r) {
-      list = r.data || [];
-      if (r.error) { $('reviewList').innerHTML = '<p class="member-login-error">' + D.esc(r.error.message) + '</p>'; return; }
+    return Promise.all([sb.rpc('minutes_review_list'), sb.rpc('minutes_for_review')]).then(function (res) {
+      if (res[0].error || res[1].error) {
+        $('reviewList').innerHTML = '<p class="member-login-error">' + D.esc((res[0].error || res[1].error).message) + '</p>'; return;
+      }
+      reviews = res[0].data || [];
+      list = (res[1].data || []).filter(function (x) { return !x.draft_id; });
       var html = note ? '<div class="member-login-note" style="margin-bottom:12px">' + note + '</div>' : '';
-      if (!list.length) {
+      if (!reviews.length && !list.length) {
         $('reviewList').innerHTML = html + '<p class="note" style="margin:0">Nothing is waiting for approval. All minutes have been published.</p>';
         return;
       }
-      $('reviewList').innerHTML = html + list.map(function (x, i) {
-        var pct = x.board_size ? Math.round(x.approved_count * 100 / x.board_size) : 0;
-        var who = (x.approved_by || []).map(function (a) { return D.esc(a.name || ('Slip ' + a.slip)); }).join(', ');
-        var mine = x.my_approved_at
-          ? '<span class="review-done">&#10003; You approved these ' + D.esc(fmtDate(x.my_approved_at)) + '</span>'
-          : '<button type="button" class="btn btn-gold" data-approve="' + i + '"' + (x.my_viewed_at ? '' : ' disabled title="Open the minutes first"') + '>Approve</button>';
-        return '<div class="review-card' + (x.my_approved_at ? ' done' : '') + '">' +
-          '<div class="review-head"><strong>' + D.esc(x.title) + '</strong>' +
-            (x.doc_date ? ' <span class="note">&middot; Meeting ' + D.esc(D.fmtDay(x.doc_date)) + '</span>' : '') + '</div>' +
-          (x.description ? '<div class="note">' + D.esc(x.description) + '</div>' : '') +
-          '<div class="note">Uploaded ' + D.esc(fmtDate(x.created_at)) + (x.submitted_by ? ' by slip ' + D.esc(x.submitted_by) : '') + '</div>' +
-          '<div class="review-progress"><div class="vr-bar"><span style="width:' + pct + '%"></span></div>' +
-            '<span><strong>' + x.approved_count + ' of ' + x.board_size + '</strong> board members have approved' + (who ? ': ' + who : '') + '</span></div>' +
-          '<div class="portal-actions">' +
-            '<button type="button" class="btn btn-outline" data-view="' + i + '">' + (x.my_viewed_at ? 'View again' : 'View minutes') + '</button>' + mine +
-            (x.draft_id ? '<button type="button" class="btn-sm btn-danger" data-return="' + i + '" title="Send back to the draft for changes">Needs changes</button>' : '') +
-          '</div>' +
-          (!x.my_viewed_at && !x.my_approved_at ? '<p class="note" style="margin:6px 0 0">Approve unlocks after you open the minutes.</p>' : '') +
-        '</div>';
-      }).join('');
+      $('reviewList').innerHTML = html + reviews.map(draftCard).join('') + list.map(fileCard).join('');
+      reviews.forEach(function (x, i) { if (openReader[x.id]) showReader(i, false); });
+      // Fully approved but not yet published (e.g. the browser closed mid-way): publish now.
+      reviews.forEach(function (x) { if (x.board_size && x.approved_count >= x.board_size) publishDraft(x); });
+    });
+  }
+
+  function progress(x) {
+    var pct = x.board_size ? Math.round(x.approved_count * 100 / x.board_size) : 0;
+    var who = (x.approvals || x.approved_by || []).map(function (a) {
+      return D.esc(a.name || ('Slip ' + a.slip)) + (a.changed ? ' <span class="note">(before the latest changes)</span>' : '');
+    }).join(', ');
+    return '<div class="review-progress"><div class="vr-bar"><span style="width:' + pct + '%"></span></div>' +
+      '<span><strong>' + x.approved_count + ' of ' + x.board_size + '</strong> board members have approved' + (who ? ': ' + who : '') + '</span></div>';
+  }
+
+  function draftCard(x, i) {
+    var stale = x.my_approved_at && x.my_approved_html !== x.html;
+    var mine = (x.suggestions || []).filter(function (s) { return s.slip === me.board_slip; });
+    var open = (x.suggestions || []).filter(function (s) { return s.status === 'open'; }).length;
+    var state = x.my_approved_at
+      ? (stale ? '<span class="review-stale">&#9888; Changed since you approved ' + D.esc(fmtDate(x.my_approved_at)) + '</span>'
+               : '<span class="review-done">&#10003; You approved these ' + D.esc(fmtDate(x.my_approved_at)) + '</span>')
+      : '';
+    return '<div class="review-card' + (x.my_approved_at && !stale ? ' done' : '') + '" data-card="' + i + '">' +
+      '<div class="review-head"><strong>' + D.esc(x.title) + '</strong> <span class="note">&middot; Meeting ' + D.esc(D.fmtDay(x.meeting_date)) + '</span></div>' +
+      '<div class="note">Submitted ' + D.esc(fmtDate(x.submitted_at)) + (x.submitted_by ? ' by slip ' + D.esc(x.submitted_by) : '') +
+        ' &middot; last edited ' + D.esc(fmtDate(x.updated_at)) + (x.updated_by ? ' by slip ' + D.esc(x.updated_by) : '') +
+        ((x.suggestions || []).length ? ' &middot; ' + x.suggestions.length + ' suggestion' + (x.suggestions.length === 1 ? '' : 's') + (open ? ' (' + open + ' waiting)' : '') : '') + '</div>' +
+      progress(x) +
+      '<div class="portal-actions">' +
+        '<button type="button" class="btn btn-outline" data-read="' + i + '">' + (openReader[x.id] ? 'Hide minutes' : (x.my_viewed_at ? 'Read again' : 'Read the minutes')) + '</button>' + state +
+        '<a class="btn-sm" href="minutes-edit.html?draft=' + x.id + '" title="Edit the minutes and work in the suggestions">Edit / see suggestions</a>' +
+      '</div>' +
+      (mine.length ? '<ul class="sug-mine">' + mine.map(function (s) {
+        return '<li><span class="sug-status sug-' + s.status + '">' + SUG_LABEL[s.status] + '</span> ' + D.esc(s.body) + '</li>'; }).join('') + '</ul>' : '') +
+      '<div class="review-reader" id="rd-' + i + '" hidden></div>' +
+    '</div>';
+  }
+
+  function fileCard(x, i) {
+    var mine = x.my_approved_at
+      ? '<span class="review-done">&#10003; You approved these ' + D.esc(fmtDate(x.my_approved_at)) + '</span>'
+      : '<button type="button" class="btn btn-gold" data-approve="' + i + '"' + (x.my_viewed_at ? '' : ' disabled title="Open the minutes first"') + '>Approve</button>';
+    return '<div class="review-card' + (x.my_approved_at ? ' done' : '') + '">' +
+      '<div class="review-head"><strong>' + D.esc(x.title) + '</strong>' +
+        (x.doc_date ? ' <span class="note">&middot; Meeting ' + D.esc(D.fmtDay(x.doc_date)) + '</span>' : '') + ' <span class="note">&middot; uploaded file</span></div>' +
+      (x.description ? '<div class="note">' + D.esc(x.description) + '</div>' : '') +
+      '<div class="note">Uploaded ' + D.esc(fmtDate(x.created_at)) + (x.submitted_by ? ' by slip ' + D.esc(x.submitted_by) : '') + '</div>' +
+      progress(x) +
+      '<div class="portal-actions">' +
+        '<button type="button" class="btn btn-outline" data-view="' + i + '">' + (x.my_viewed_at ? 'View again' : 'View minutes') + '</button>' + mine +
+      '</div>' +
+      (!x.my_viewed_at && !x.my_approved_at ? '<p class="note" style="margin:6px 0 0">Approve unlocks after you open the minutes.</p>' : '') +
+    '</div>';
+  }
+
+  // The minutes as a read-only page, with Approve / Suggest a change underneath.
+  function showReader(i, record) {
+    var x = reviews[i], box = $('rd-' + i); if (!box) return;
+    openReader[x.id] = true;
+    var stale = x.my_approved_at && x.my_approved_html !== x.html;
+    var changes = stale ? MinutesTools.diffHtml(x.my_approved_html || '', x.html) : '';
+    box.innerHTML =
+      (stale ? '<div class="review-changes"><strong>What changed since you approved</strong> <span class="note">(removed text is struck through, new text is underlined)</span>' +
+        '<div class="review-diff">' + (changes || '<span class="note">Only formatting changed.</span>') + '</div></div>' : '') +
+      // Laid out like the PDF the members will get: same page width, margins, header, footer and type.
+      '<div class="minutes-sheet"><div class="ms-head"><b>New Bern Grand Marina Yacht Club</b><span>' + D.esc(x.title) + '</span></div>' +
+        '<div class="minutes-page">' + x.html + '</div>' +
+        '<div class="ms-foot"><span>Board review copy &middot; Meeting ' + D.esc(x.meeting_date) + '</span></div></div>' +
+      '<div class="review-respond">' +
+        '<label>Suggested change <span class="note">(optional with an approval)</span>' +
+          '<textarea id="sg-' + i + '" rows="3" maxlength="4000" placeholder="e.g. In Motion 2, the vote was 4-1, not 5-0."></textarea></label>' +
+        '<div class="portal-actions">' +
+          '<button type="button" class="btn btn-gold" data-approve-draft="' + i + '">' + (x.my_approved_at ? (stale ? 'Approve the changes' : 'Approve again') : 'Approve') + '</button>' +
+          '<button type="button" class="btn btn-outline" data-suggest="' + i + '">Suggest a change without approving</button>' +
+          '<button type="button" class="btn-sm" data-pdf="' + i + '" title="Shows the PDF as it would be made now; nothing is saved">Preview as PDF</button>' +
+        '</div>' +
+        '<p class="note" style="margin:4px 0 0">Your approval stands even if the minutes are edited later; you&rsquo;ll be shown what changed.</p>' +
+      '</div>';
+    box.hidden = false;
+    var b = document.querySelector('[data-read="' + i + '"]'); if (b) b.textContent = 'Hide minutes';
+    if (record && !x.my_viewed_at) sb.rpc('minutes_read', { p_draft_id: x.id }).then(function (r) { if (!r.error) x.my_viewed_at = new Date().toISOString(); });
+  }
+
+  // Make the PDF from the minutes as they stand, file it, and publish it to members.
+  var publishing = {};
+  function publishDraft(x) {
+    if (publishing[x.id]) return publishing[x.id];
+    var date = x.meeting_date, name = (x.title || 'Minutes').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 80) + '.pdf';
+    var path = 'minutes/' + date.slice(0, 4) + '/' + Date.now() + '-' + name, size = 0;
+    publishing[x.id] = MinutesTools.toPdf(x.html, { title: x.title, meetingDate: date, final: true }).then(function (blob) {
+      size = blob.size;
+      return sb.storage.from('marina-docs').upload(path, blob, { contentType: 'application/pdf', upsert: false });
+    }).then(function (r) {
+      if (r.error) throw new Error(r.error.message);
+      return sb.rpc('minutes_publish', { p_draft_id: x.id, p_storage_path: path, p_file_name: name, p_size: size });
+    }).then(function (r) {
+      if (r.error) { sb.storage.from('marina-docs').remove([path]); throw new Error(r.error.message); }
+      if (r.data && r.data.already) sb.storage.from('marina-docs').remove([path]);   // someone else published it first
+      delete publishing[x.id];
+      loadReview('All board members approved <strong>' + D.esc(x.title) + '</strong>. The PDF was made and it is now published on the Members page.');
+      loadPublished(); refreshMenuCount();
+    }).catch(function (ex) {
+      delete publishing[x.id];
+      $('reviewList').insertAdjacentHTML('afterbegin', '<p class="member-login-error">All board members approved ' + D.esc(x.title) +
+        ', but publishing it didn&rsquo;t finish: ' + D.esc(ex.message) + ' Reload this page to try again.</p>');
+    });
+    return publishing[x.id];
+  }
+
+  // Early PDFs left over from minutes moved to the new review are removed here.
+  function cleanStaleFiles() {
+    sb.from('minutes_stale_files').select('storage_path').then(function (r) {
+      (r.data || []).forEach(function (f) {
+        sb.storage.from('marina-docs').remove([f.storage_path]).then(function (x) {
+          if (!x.error) sb.rpc('minutes_stale_file_removed', { p_path: f.storage_path });
+        });
+      });
     });
   }
 
   document.addEventListener('click', function (e) {
+    var rd = e.target.closest('[data-read]');
+    if (rd) {
+      var ri = +rd.getAttribute('data-read'), rx = reviews[ri];
+      if (openReader[rx.id]) { delete openReader[rx.id]; $('rd-' + ri).hidden = true; rd.textContent = 'Read again'; }
+      else showReader(ri, true);
+    }
+    var ad = e.target.closest('[data-approve-draft]');
+    if (ad && !ad.disabled) {
+      var ai = +ad.getAttribute('data-approve-draft'), ax = reviews[ai], sug = ($('sg-' + ai).value || '').trim();
+      if (!confirm('Approve "' + ax.title + '"' + (sug ? ' with your suggested change' : '') + '?\n\nWhen every board member has approved, a PDF is made and the minutes are published to the Members page.')) return;
+      ad.disabled = true;
+      var go = ax.my_viewed_at ? Promise.resolve({}) : sb.rpc('minutes_read', { p_draft_id: ax.id });
+      go.then(function () { return sb.rpc('minutes_approve_draft', { p_draft_id: ax.id, p_suggestion: sug || null }); }).then(function (r) {
+        if (r.error) { alert(r.error.message); ad.disabled = false; return; }
+        var d = r.data || {};
+        refreshMenuCount();
+        if (d.ready) {
+          $('reviewList').insertAdjacentHTML('afterbegin', '<div class="member-login-note">That was the final approval. Making the PDF and publishing&hellip;</div>');
+          return sb.rpc('minutes_review_list').then(function (l) {
+            var fresh = (l.data || []).filter(function (y) { return y.id === ax.id; })[0] || ax;
+            return publishDraft(fresh);
+          });
+        }
+        loadReview('Thank you. Your approval is recorded (' + d.approved + ' of ' + d.board_size + ')' + (sug ? ', with your suggested change' : '') + '.');
+      });
+    }
+    var pf = e.target.closest('[data-pdf]');
+    if (pf) {   // the PDF as it would be made right now; shown, not saved
+      var px = reviews[+pf.getAttribute('data-pdf')], win = window.open('', '_blank');
+      MinutesTools.toPdf(px.html, { title: px.title, meetingDate: px.meeting_date }).then(function (blob) {
+        var url = URL.createObjectURL(blob);
+        if (win) win.location = url; else window.location = url;
+      }).catch(function (ex) { if (win) win.close(); alert(ex.message); });
+    }
+    var sg = e.target.closest('[data-suggest]');
+    if (sg && !sg.disabled) {
+      var si = +sg.getAttribute('data-suggest'), sx = reviews[si], body = ($('sg-' + si).value || '').trim();
+      if (!body) { alert('Please type the change you are suggesting in the box first.'); $('sg-' + si).focus(); return; }
+      sg.disabled = true;
+      sb.rpc('minutes_suggest', { p_draft_id: sx.id, p_body: body }).then(function (r) {
+        if (r.error) { alert(r.error.message); sg.disabled = false; return; }
+        loadReview('Thank you. Your suggested change for <strong>' + D.esc(sx.title) + '</strong> was sent to whoever is editing the minutes.');
+      });
+    }
+    // Uploaded files: open the file, then Approve.
     var v = e.target.closest('[data-view]'), a = e.target.closest('[data-approve]');
     if (v) {
       var x = list[+v.getAttribute('data-view')];
-      // Record the viewing, then open the file; Approve unlocks on return.
       sb.rpc('minutes_viewed', { p_document_id: x.id }).then(function (r) {
         if (r.error) { alert(r.error.message); return; }
         loadReview();
       });
       D.openDocument(sb, x.storage_path, x.file_name, { id: x.id, title: x.title + ' (board review)', category: 'minutes' });
-    }
-    var nc = e.target.closest('[data-return]');
-    if (nc) {
-      var z = list[+nc.getAttribute('data-return')];
-      var note = prompt('Send "' + z.title + '" back for changes?\n\nIt comes off the review list and goes back to its draft. Any approvals so far are cleared.\n\nWhat needs changing? (optional)');
-      if (note === null) return;
-      sb.rpc('minutes_return', { p_document_id: z.id, p_note: note }).then(function (r) {
-        if (r.error) { alert(r.error.message); return; }
-        if (r.data) sb.storage.from('marina-docs').remove([r.data]);
-        loadReview('<strong>' + D.esc(z.title) + '</strong> was sent back to its draft for changes.');
-        loadDrafts();
-        refreshMenuCount();
-      });
     }
     if (a && !a.disabled) {
       var y = list[+a.getAttribute('data-approve')];
@@ -189,20 +329,22 @@
     return sb.from('minutes_drafts').select('id, title, meeting_date, status, locked_by, locked_at, updated_at, updated_by, return_note')
       .order('meeting_date', { ascending: false }).then(function (r) {
         drafts = r.data || [];
-        var live = drafts.filter(function (d) { return d.status !== 'submitted'; }), sent = drafts.filter(function (d) { return d.status === 'submitted'; });
+        var live = drafts.filter(function (d) { return d.status === 'draft' || d.status === 'returned'; }),
+            sent = drafts.filter(function (d) { return d.status === 'submitted' || d.status === 'published'; });
         function row(d) {
           var i = drafts.indexOf(d);
           var editing = d.locked_by && d.locked_at && (Date.now() - new Date(d.locked_at).getTime() < 120000);
-          var status = d.status === 'submitted' ? '<span class="badge badge-board">Submitted for approval</span>'
+          var status = d.status === 'submitted' ? '<span class="badge badge-board">Under board review</span>'
+            : d.status === 'published' ? '<span class="badge badge-public">Approved &amp; published</span>'
             : d.status === 'returned' ? '<span class="badge badge-returned">Needs changes</span>' + (d.return_note ? ' <span class="note">&ldquo;' + D.esc(d.return_note) + '&rdquo;</span>' : '')
             : '<span class="badge badge-private">Draft</span>';
           return '<li class="tpl-row"><span><strong>' + D.esc(d.title) + '</strong> <span class="note">&middot; meeting ' + D.esc(D.fmtDay(d.meeting_date)) + '</span><br>' + status +
             ' <span class="note">' + (editing ? '&#9998; Being edited by slip ' + D.esc(d.locked_by) : 'Last saved ' + D.esc(fmtDate(d.updated_at)) + (d.updated_by ? ' by slip ' + D.esc(d.updated_by) : '')) + '</span></span>' +
-            '<span class="row-actions"><a class="btn-sm" href="minutes-edit.html?draft=' + d.id + '">' + (d.status === 'submitted' ? 'Read' : 'Open') + '</a>' +
-            (d.status !== 'submitted' ? '<button type="button" class="btn-sm btn-danger" data-del-draft="' + i + '">Delete</button>' : '') + '</span></li>';
+            '<span class="row-actions"><a class="btn-sm" href="minutes-edit.html?draft=' + d.id + '">' + (d.status === 'published' ? 'Read' : 'Open') + '</a>' +
+            (d.status === 'draft' || d.status === 'returned' ? '<button type="button" class="btn-sm btn-danger" data-del-draft="' + i + '">Delete</button>' : '') + '</span></li>';
         }
         $('draftList').innerHTML = (live.length ? '<ul class="doc-list">' + live.map(row).join('') + '</ul>' : '<p class="note" style="margin:0">No drafts in progress.</p>') +
-          (sent.length ? '<details class="doc-year" style="margin-top:10px"><summary>Submitted (' + sent.length + ')</summary><ul class="doc-list">' + sent.slice(0, 10).map(row).join('') + '</ul></details>' : '');
+          (sent.length ? '<details class="doc-year" style="margin-top:10px"><summary>Under review or published (' + sent.length + ')</summary><ul class="doc-list">' + sent.slice(0, 10).map(row).join('') + '</ul></details>' : '');
       });
   }
 

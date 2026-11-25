@@ -1439,6 +1439,44 @@ footer.site-footer {
 .review-progress .vr-bar { max-width: 360px; }
 .review-done { color: #1f6b33; font-weight: 700; align-self: center; }
 .review-card .btn[disabled] { opacity: .45; cursor: not-allowed; }
+.review-stale { color: #9a5a00; font-weight: 700; align-self: center; }
+.review-reader { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+/* The review copy, laid out like the PDF (letter page, 50pt side and 70pt top margins, 10.5pt type,
+   headings and tables as MinutesTools.toPdf makes them). 1pt = 1.333px. */
+.minutes-sheet { max-width: 816px; margin: 0 auto; background: #fff; box-shadow: 0 2px 10px rgba(11,37,64,.18); border: 1px solid #d9dee3;
+  padding: 37px 67px 27px; max-height: 760px; overflow: auto; font-family: Roboto, "Helvetica Neue", Arial, sans-serif; color: #000; }
+.ms-head { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 30px; font-size: 13.3px; }
+.ms-head b { color: #0e2a4a; } .ms-head span { color: #5c6b7a; font-size: 12px; text-align: right; }
+.ms-foot { margin-top: 30px; font-size: 10.7px; color: #8a96a3; }
+.minutes-page { font-size: 14px; line-height: 1.2; }
+.minutes-page p { margin: 3px 0 7px; }
+.minutes-page h1 { font-size: 21.3px; font-weight: 700; color: #0e2a4a; margin: 13px 0 8px; }
+.minutes-page h2 { font-size: 18.7px; font-weight: 700; color: #0e2a4a; margin: 11px 0 7px; }
+.minutes-page h3 { font-size: 16px; font-weight: 700; margin: 8px 0 5px; }
+.minutes-page table { border-collapse: collapse; width: 100%; margin: 0 0 11px; }
+.minutes-page td, .minutes-page th { border: 1px solid #000; padding: 4px 3px; vertical-align: top; text-align: left; }
+.minutes-page th { background: #eef2f6; font-weight: 700; }
+.minutes-page td p, .minutes-page th p { margin: 0; }
+@media (max-width: 700px) { .minutes-sheet { padding: 20px 18px; } .ms-head { margin-bottom: 16px; } }
+.review-changes { background: #fff8e6; border: 1px solid #f0d58a; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; }
+.review-diff { margin-top: 6px; font-size: .92rem; line-height: 1.5; max-height: 260px; overflow: auto; }
+.review-diff del, .ed-diff del { background: #fde8e4; color: #8a2a1c; }
+.review-diff ins, .ed-diff ins { background: #e3f3e6; color: #1f6b33; text-decoration: underline; }
+.review-respond { margin-top: 12px; }
+.review-respond label { display: block; font-weight: 600; color: var(--navy); }
+.review-respond textarea { display: block; width: 100%; margin-top: 4px; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; }
+.sug-mine { list-style: none; margin: 8px 0 0; padding: 0; font-size: .9rem; }
+.sug-mine li { margin: 4px 0; }
+.sug-status { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 7px; border-radius: 9px; margin-right: 4px; }
+.sug-open { background: #eef1f4; color: #4a5866; } .sug-made { background: #e3f3e6; color: #1f6b33; } .sug-not_made { background: #f3e9e7; color: #8a3a2c; }
+.ed-review { margin: 0 0 14px; }
+.ed-review h3 { margin: 0 0 6px; color: var(--navy); font-size: 1.05rem; }
+.ed-sug { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0; background: #fff; }
+.ed-sug.done { background: #f7f9f7; }
+.ed-sug-head { font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+.ed-sug-body { white-space: pre-wrap; }
+.ed-sug .row-actions { margin-top: 6px; }
+.ed-approver { font-size: .9rem; margin: 3px 0; }
 .board-nav-link { position: relative; }
 .board-count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 5px; border-radius: 9px; background: #d6312b; color: #fff;
   font-size: .72rem; font-weight: 800; line-height: 18px; text-align: center; vertical-align: 1px; }

@@ -71,21 +71,28 @@
           (draft.return_note ? ': &ldquo;' + D.esc(draft.return_note) + '&rdquo;' : '.') + ' Make the changes, then submit again.';
         $('edReturned').hidden = false;
       }
-      if (draft.status === 'submitted') {
-        $('edLocked').innerHTML = 'These minutes were submitted for board approval, so they can&rsquo;t be edited here. ' +
-          'If they need changes, a board member can choose <strong>Needs changes</strong> on the <a href="board.html">Board page</a>.';
+      if (draft.status === 'published' || (draft.status === 'submitted' && draft.document_id)) {
+        $('edLocked').innerHTML = draft.status === 'published'
+          ? 'Every board member approved these minutes and they were published, so they can no longer be changed.'
+          : 'These minutes are under the earlier file review, so they can&rsquo;t be edited here.';
         $('edLocked').hidden = false;
         $('edTitle').disabled = $('edDate').disabled = true;
         return startEditor(draft.html, true);
       }
+      var inReview = draft.status === 'submitted';
       return sb.rpc('draft_open', { p_id: id }).then(function (o) {
         if (o.error) throw new Error(o.error.message);
         editable = !!(o.data && o.data.editable);
         if (!editable) showLocked(o.data || {});
         $('edTitle').disabled = $('edDate').disabled = !editable;
-        $('edSubmit').hidden = $('edPreview').hidden = false;
-        $('edHelp').innerHTML = 'Changes save automatically. When the minutes are finished, <strong>Submit for Board Approval</strong> turns them into a PDF ' +
-          'and sends them to every board member to review and approve. Members only see them once all board members approve.';
+        $('edSubmit').hidden = inReview; $('edPreview').hidden = false;
+        $('edHelp').innerHTML = inReview
+          ? 'These minutes are under board review. Changes still save automatically, and approvals already given stand; ' +
+            'board members who approved an earlier version are shown what changed. Mark each suggestion <strong>Made</strong> or <strong>Not made</strong>. ' +
+            'When every board member has approved, the PDF is made and the minutes are published to members.'
+          : 'Changes save automatically. When the minutes are finished, <strong>Submit for Board Approval</strong> sends them to every board member ' +
+            'to read and approve on the Board page. Members only see them once all board members approve; the PDF is made then.';
+        if (inReview) { loadReviewPanel(); setInterval(loadReviewPanel, 30000); }
         return startEditor(draft.html, !editable).then(function () {
           setSaved(editable ? 'All changes saved' : '');
           if (editable) startAutosave();
@@ -159,23 +166,11 @@
   function submit() {
     var title = $('edTitle').value.trim(), date = $('edDate').value;
     if (!title || !date) return err('Please fill in the title and meeting date.');
-    if (!confirm('Submit "' + title + '" for board approval?\n\nA PDF is made and every board member is asked to review and approve it. ' +
-                 'The draft can no longer be edited unless a board member sends it back for changes.')) return;
+    if (!confirm('Submit "' + title + '" for board approval?\n\nEvery board member is asked to read and approve it on the Board page, and can suggest changes. ' +
+                 'You can keep editing it while it is under review.')) return;
     var btn = $('edSubmit'); btn.disabled = true; btn.textContent = 'Submitting…';
-    var path = 'minutes/' + date.slice(0, 4) + '/' + Date.now() + '-' + pdfName();
-    var blobSize = 0;
     save(true).then(function () {
-      return T.toPdf(editor.getContent(), { title: title, meetingDate: date });
-    }).then(function (blob) {
-      blobSize = blob.size;
-      return sb.storage.from('marina-docs').upload(path, blob, { contentType: 'application/pdf', upsert: false });
-    }).then(function (r) {
-      if (r.error) throw new Error(r.error.message);
-      return sb.from('documents').insert({ category: 'minutes', title: title, doc_date: date, storage_path: path,
-        file_name: pdfName(), mime_type: 'application/pdf', size_bytes: blobSize, active: true, description: 'Written on the website' }).select('id').single();
-    }).then(function (r) {
-      if (r.error) { sb.storage.from('marina-docs').remove([path]); throw new Error(r.error.message); }
-      return sb.rpc('draft_submitted', { p_id: id, p_document_id: r.data.id });
+      return sb.rpc('draft_submit', { p_id: id });
     }).then(function (r) {
       if (r.error) throw new Error(r.error.message);
       editable = false;
@@ -185,6 +180,44 @@
       btn.disabled = false; btn.textContent = 'Submit for Board Approval';
     });
   }
+
+  /* ---------- board review: approvals and suggestions ---------- */
+  var SUG = { open: 'Waiting', made: 'Made', not_made: 'Not made' };
+  function loadReviewPanel() {
+    return sb.rpc('minutes_review_list').then(function (r) {
+      var x = (r.data || []).filter(function (y) { return y.id === id; })[0], box = $('edReview');
+      if (!x) { box.hidden = true; return; }
+      var sugs = x.suggestions || [], open = sugs.filter(function (s) { return s.status === 'open'; });
+      box.innerHTML = '<h3>Board review</h3>' +
+        '<div class="note"><strong>' + x.approved_count + ' of ' + x.board_size + '</strong> board members have approved.</div>' +
+        (x.approvals || []).map(function (a) {
+          return '<div class="ed-approver">&#10003; ' + D.esc(a.name) + ' <span class="note">approved ' + D.esc(D.fmtWhen(a.at)) +
+            (a.changed ? ' &middot; before later changes (they are shown what changed)' : '') + '</span></div>';
+        }).join('') +
+        '<h3 style="margin-top:12px">Suggested changes' + (sugs.length ? ' <span class="note">(' + open.length + ' waiting)</span>' : '') + '</h3>' +
+        (sugs.length ? sugs.map(function (s) {
+          return '<div class="ed-sug' + (s.status === 'open' ? '' : ' done') + '">' +
+            '<div class="ed-sug-head"><span class="sug-status sug-' + s.status + '">' + SUG[s.status] + '</span> <strong>' + D.esc(s.name) + '</strong> &middot; ' +
+              D.esc(D.fmtWhen(s.at)) + (s.with_approval ? ' &middot; approved with this suggestion' : ' &middot; not approved yet') + '</div>' +
+            '<div class="ed-sug-body">' + D.esc(s.body) + '</div>' +
+            '<div class="row-actions">' +
+              (s.status !== 'made' ? '<button type="button" class="btn-sm btn-primary-sm" data-sug="' + s.id + '" data-st="made">Made</button>' : '') +
+              (s.status !== 'not_made' ? '<button type="button" class="btn-sm" data-sug="' + s.id + '" data-st="not_made">Not made</button>' : '') +
+              (s.status !== 'open' ? '<button type="button" class="btn-sm" data-sug="' + s.id + '" data-st="open">Undo</button>' : '') +
+            '</div></div>';
+        }).join('') : '<p class="note" style="margin:4px 0 0">No suggestions yet.</p>');
+      box.hidden = false;
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sug]');
+    if (!b) return;
+    b.disabled = true;
+    sb.rpc('minutes_suggestion_set', { p_id: b.getAttribute('data-sug'), p_status: b.getAttribute('data-st') }).then(function (r) {
+      if (r.error) { alert(r.error.message); b.disabled = false; return; }
+      loadReviewPanel();
+    });
+  });
 
   /* ---------- templates ---------- */
   function openTemplate() {

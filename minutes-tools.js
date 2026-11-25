@@ -129,7 +129,7 @@
           { text: opts.title || '', alignment: 'right', color: '#5c6b7a', fontSize: 9 }] },
         footer: function (page, pages) {
           return { margin: [50, 20, 50, 0], columns: [
-            { text: 'Board review copy' + (opts.meetingDate ? ' · Meeting ' + opts.meetingDate : ''), color: '#8a96a3', fontSize: 8 },
+            { text: (opts.final ? 'Approved by the Board of Directors' : 'Board review copy') + (opts.meetingDate ? ' · Meeting ' + opts.meetingDate : ''), color: '#8a96a3', fontSize: 8 },
             { text: 'Page ' + page + ' of ' + pages, alignment: 'right', color: '#8a96a3', fontSize: 8 }] };
         },
         content: body,
@@ -139,5 +139,47 @@
     });
   }
 
-  window.MinutesTools = { load: load, cleanImported: cleanImported, wordToHtml: wordToHtml, fillTemplate: fillTemplate, toPdf: toPdf };
+  // What changed between two versions of the minutes, word by word, as HTML:
+  // removed words struck through, added words underlined, long unchanged stretches shortened.
+  function htmlText(html) {
+    var doc = new DOMParser().parseFromString('<div>' + (html || '') + '</div>', 'text/html'), root = doc.body.firstChild;
+    root.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li,tr,br,table').forEach(function (el) { el.appendChild(doc.createTextNode('\n')); });
+    root.querySelectorAll('td,th').forEach(function (el) { el.appendChild(doc.createTextNode(' | ')); });
+    return root.textContent.replace(/[ \t ]+/g, ' ').replace(/ *\n[\n ]*/g, '\n').trim();
+  }
+  function diffHtml(oldHtml, newHtml) {
+    function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    var a = htmlText(oldHtml).split(/(\s+)/).filter(Boolean), b = htmlText(newHtml).split(/(\s+)/).filter(Boolean);
+    // Trim the common start and end, then compare what is left.
+    var pre = 0; while (pre < a.length && pre < b.length && a[pre] === b[pre]) pre++;
+    var post = 0; while (post < a.length - pre && post < b.length - pre && a[a.length - 1 - post] === b[b.length - 1 - post]) post++;
+    var A = a.slice(pre, a.length - post), B = b.slice(pre, b.length - post), ops = [];
+    if (!A.length && !B.length) return '';
+    if (A.length * B.length > 4e6) { ops.push(['-', A.join('')], ['+', B.join('')]); }
+    else {
+      var n = A.length, m = B.length, L = [];
+      for (var i = 0; i <= n; i++) L.push(new Uint16Array(m + 1));
+      for (i = n - 1; i >= 0; i--) for (var j = m - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+      i = 0; j = 0;
+      while (i < n || j < m) {
+        if (i < n && j < m && A[i] === B[j]) { ops.push(['=', A[i]]); i++; j++; }
+        else if (j < m && (i === n || L[i][j + 1] > L[i + 1][j])) { ops.push(['+', B[j]]); j++; }
+        else { ops.push(['-', A[i]]); i++; }
+      }
+    }
+    var before = a.slice(Math.max(0, pre - 16), pre).join(''), after = a.slice(a.length - post, a.length - post + 16).join('');
+    var out = (pre > 16 ? '&hellip;' : '') + esc(before), run = '', kind = '';
+    function flush() {
+      if (!run) return;
+      if (kind === '=') out += esc(run.length > 160 ? run.slice(0, 70) + ' … ' + run.slice(-70) : run);
+      else out += kind === '+' ? '<ins>' + esc(run) + '</ins>' : '<del>' + esc(run) + '</del>';
+      run = '';
+    }
+    ops.forEach(function (o) { if (o[0] !== kind) { flush(); kind = o[0]; } run += o[1]; });
+    flush();
+    out += esc(after) + (post > 16 ? '&hellip;' : '');
+    return out.replace(/\n/g, '<br>');
+  }
+
+  window.MinutesTools = { load: load, cleanImported: cleanImported, wordToHtml: wordToHtml, fillTemplate: fillTemplate, toPdf: toPdf, diffHtml: diffHtml };
 })();
