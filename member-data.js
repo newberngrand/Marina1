@@ -216,6 +216,9 @@
     });
     window.addEventListener('resize', function () { if (!document.body.contains(ov)) return; var was = z <= fit + 1e-3; fit = Math.min(stage.clientWidth / img.naturalWidth, stage.clientHeight / img.naturalHeight, 1); if (was) z = fit; apply(); });
   }
+  // Help request topics (Request Help page; each can have its own email recipients on the Admin page).
+  var HELP_TOPICS = ['Dock or slip', 'Electrical / power', 'Water', 'Damage or repair', 'Security or safety', 'Billing or account', 'Website or login', 'Other'];
+
   window.MemberData = {
     ballotChoices: ballotChoices, voteState: voteState, voteWindowText: voteWindowText,
     EVENT_TYPES: EVENT_TYPES, DOC_CATEGORIES: DOC_CATEGORIES, GAMES: GAMES,
@@ -225,6 +228,6 @@
     categoryLabel: function (id) { return label(DOC_CATEGORIES, id); },
     esc: esc, richText: richText, fmtWhen: fmtWhen, fmtDay: fmtDay, monthKey: monthKey,
     toLocalInput: toLocalInput, fromLocalInput: fromLocalInput, fileSize: fileSize,
-    openDocument: openDocument, loadImage: loadImage, drawImage: drawImage, openViewer: openViewer
+    openDocument: openDocument, loadImage: loadImage, drawImage: drawImage, openViewer: openViewer, HELP_TOPICS: HELP_TOPICS
   };
 })();

@@ -1,6 +1,7 @@
 // Emails the marina office about a new help request (called by the database right after a
-// request is saved, with { id }). Sends to site_settings.help_notify_email; each request is
-// emailed at most once. Replying to the email goes to the member when they gave an email.
+// request is saved, with { id }). Sends to the addresses set for the request's topic
+// (site_settings.help_notify_topics, JSON { topic: "a@x, b@y" }), or the default
+// (site_settings.help_notify_email) when that topic has none. Each request is emailed at most once. Replying to the email goes to the member when they gave an email.
 //
 // Secrets: RESEND_API_KEY (required); MAIL_FROM or RESET_FROM for the sender.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -27,8 +28,13 @@ Deno.serve(async (req) => {
   if (!h) return json(404, { error: "No such request" });
   if (h.notified_at) return json(200, { already: true });
 
-  const { data: setting } = await db.from("site_settings").select("value").eq("key", "help_notify_email").maybeSingle();
-  const to = String(setting?.value ?? "").split(/[,;\s]+/).map((x) => x.trim()).filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+  const { data: settings } = await db.from("site_settings").select("key, value").in("key", ["help_notify_email", "help_notify_topics"]);
+  const map: Record<string, string> = {};
+  for (const x of settings ?? []) map[x.key] = x.value;
+  let topics: Record<string, string> = {};
+  try { topics = JSON.parse(map.help_notify_topics || "{}"); } catch { topics = {}; }
+  const list = (v: unknown) => String(v ?? "").split(/[,;\s]+/).map((x) => x.trim()).filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+  const to = list(topics[h.topic]).length ? list(topics[h.topic]) : list(map.help_notify_email);
   if (!to.length) return json(200, { skipped: "no notify address set" });
   const key = Deno.env.get("RESEND_API_KEY");
   if (!key) return json(500, { error: "RESEND_API_KEY not set" });

@@ -2362,13 +2362,22 @@
       hrWired = true;
       $('hrRefresh').addEventListener('click', loadRequests);
       $('hrShow').addEventListener('change', drawRequests);
+      $('hrTopics').innerHTML = D.HELP_TOPICS.map(function (t, i) {
+        return '<label>' + D.esc(t) + '<input type="text" data-topic="' + i + '" maxlength="500" placeholder="(uses the default)" autocomplete="off" spellcheck="false"></label>';
+      }).join('');
       $('hrSettings').addEventListener('submit', function (e) {
         e.preventDefault();
-        var v = $('hrNotify').value.split(/[,;\s]+/).map(function (x) { return x.trim(); }).filter(Boolean);
-        var bad = v.filter(function (x) { return !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x); });
+        function list(v) { return v.split(/[,;\s]+/).map(function (x) { return x.trim(); }).filter(Boolean); }
+        var def = list($('hrNotify').value), topics = {}, bad = [];
+        document.querySelectorAll('#hrTopics input').forEach(function (inp) {
+          var v = list(inp.value); if (v.length) topics[D.HELP_TOPICS[+inp.getAttribute('data-topic')]] = v.join(', ');
+          bad = bad.concat(v);
+        });
+        bad = bad.concat(def).filter(function (x) { return !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x); });
         if (bad.length) { $('hrNotifyDone').textContent = 'This doesn’t look like an email address: ' + bad.join(', '); return; }
-        sb.from('site_settings').upsert({ key: 'help_notify_email', value: v.join(', ') }).then(function (r) {
-          $('hrNotifyDone').textContent = r.error ? r.error.message : (v.length ? 'Saved. New requests will be emailed to ' + v.join(', ') + '.' : 'Saved. New requests won’t be emailed.');
+        sb.from('site_settings').upsert([{ key: 'help_notify_email', value: def.join(', ') }, { key: 'help_notify_topics', value: JSON.stringify(topics) }]).then(function (r) {
+          var missing = D.HELP_TOPICS.filter(function (t) { return !topics[t]; });
+          $('hrNotifyDone').textContent = r.error ? r.error.message : 'Saved.' + (!def.length && missing.length ? ' No default set, so these topics won’t be emailed: ' + missing.join(', ') + '.' : '');
         });
       });
       $('hrList').addEventListener('click', function (e) {
@@ -2383,8 +2392,11 @@
         });
       });
     }
-    sb.from('site_settings').select('value').eq('key', 'help_notify_email').maybeSingle().then(function (r) {
-      $('hrNotify').value = (r.data && r.data.value) || '';
+    sb.from('site_settings').select('key, value').in('key', ['help_notify_email', 'help_notify_topics']).then(function (r) {
+      var map = {}; (r.data || []).forEach(function (x) { map[x.key] = x.value; });
+      $('hrNotify').value = map.help_notify_email || '';
+      var topics = {}; try { topics = JSON.parse(map.help_notify_topics || '{}'); } catch (x) {}
+      document.querySelectorAll('#hrTopics input').forEach(function (inp) { inp.value = topics[D.HELP_TOPICS[+inp.getAttribute('data-topic')]] || ''; });
     });
     loadRequests();
   }

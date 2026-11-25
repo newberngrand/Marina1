@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611251634">
+<link rel="stylesheet" href="style.css?v=202611251639">
 </head>
 <body data-member-portal>
 
@@ -74,9 +74,12 @@
           <button type="button" class="btn-sm" id="hrRefresh">Refresh</button>
         </div>
         <form class="portal-card admin-form" id="hrSettings" style="margin-bottom:14px">
-          <label>Email new help requests to (separate several with commas)
+          <h3 style="margin:0 0 4px">Who gets emailed about new requests</h3>
+          <p class="note" style="margin:0 0 10px">Give each topic its own email address (or several, separated by commas). Topics left blank go to the default address.</p>
+          <label>Default (any topic left blank)
             <input type="text" id="hrNotify" maxlength="500" placeholder="e.g. newberngrand@f3marina.com" autocomplete="off" spellcheck="false">
           </label>
+          <div class="hr-topics" id="hrTopics"></div>
           <div class="portal-actions" style="margin-top:6px"><button type="submit" class="btn-sm btn-primary-sm">Save</button> <span class="note" id="hrNotifyDone"></span></div>
           <p class="note" style="margin:6px 0 0">Members, cruisers and staff send requests from <strong>Request Help</strong> in the Member Portal (or a Request Help button in an announcement email).</p>
         </form>
@@ -710,9 +713,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611251634"></script>
-<script src="member-data.js?v=202611251634"></script>
-<script src="video-utils.js?v=202611251634"></script>
-<script src="admin.js?v=202611251634"></script>
+<script src="member-login.js?v=202611251639"></script>
+<script src="member-data.js?v=202611251639"></script>
+<script src="video-utils.js?v=202611251639"></script>
+<script src="admin.js?v=202611251639"></script>
 </body>
 </html>

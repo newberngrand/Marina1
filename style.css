@@ -1487,6 +1487,7 @@ footer.site-footer {
 .help-mine:first-child { border-top: 0; }
 .help-status { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 8px; border-radius: 9px; margin-left: 4px; }
 .help-new { background: #fde8e4; color: #9a2c1a; } .help-open { background: #fff3d6; color: #7a5a1f; } .help-done { background: #e3f3e6; color: #1f6b33; }
+.hr-topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 14px; margin-top: 10px; }
 .hr-card { border: 1px solid var(--line); border-left: 4px solid #c9ced4; border-radius: 8px; padding: 12px 14px; margin: 0 0 12px; background: #fff; }
 .hr-card.st-new { border-left-color: #d6312b; background: #fffafa; } .hr-card.st-open { border-left-color: #e8b648; } .hr-card.st-done { border-left-color: #2f8a4a; background: #fafcfa; }
 .hr-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; }

@@ -7,6 +7,7 @@
   var STATUS = { new: 'Sent', open: 'Being handled', done: 'Done' };
 
   document.addEventListener('DOMContentLoaded', function () {
+    $('hfTopic').innerHTML = D.HELP_TOPICS.map(function (t) { return '<option' + (t === 'Other' ? ' selected' : '') + '>' + D.esc(t) + '</option>'; }).join('');
     MemberAuth.getClient().then(function (client) {
       sb = client;
       return sb.auth.getSession();
