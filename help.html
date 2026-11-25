@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request Help | New Bern Grand Marina</title>
+<meta name="description" content="Ask the New Bern Grand Marina office for help.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="style.css?v=202611251634">
+</head>
+<body data-member-portal>
+
+<div class="topbar">
+  <div class="container">
+    <div>134 Craven St, New Bern, NC 28560 &nbsp;<span class="sep">|</span>&nbsp; Open Daily 8:30 AM &ndash; 5:00 PM</div>
+    <div><a href="tel:+12526380318">(252) 638-0318</a> <span class="sep">|</span> <a href="mailto:newberngrand@f3marina.com">newberngrand@f3marina.com</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a href="index.html" class="brand">
+      <img src="images/logo.png" alt="New Bern Grand Marina logo">
+      <span class="brand-text">
+        <span class="name">New Bern Grand Marina</span>
+        <span class="tag">Downtown New Bern, NC</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.main-nav').classList.toggle('open')">&#9776;</button>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="rates.html">Rates &amp; Amenities</a>
+      <a href="marina-map.html">Marina Map</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="documents.html">Documents</a>
+      <a href="contact.html">Contact</a>
+      <a href="member-portal.html" id="memberLoginTrigger" class="member-login-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Marina Login
+      </a>
+      <a href="https://customer.marinago.com/fss2zz08/public" class="btn btn-gold nav-cta" target="_blank" rel="noopener">Reserve a Slip</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="container">
+    <div class="eyebrow">Members</div>
+    <h1>Request Help</h1>
+    <p>Tell the marina office what you need. We&rsquo;ll get back to you by email, text or phone.</p>
+    <p><a href="member-portal.html" style="color:inherit;">&larr; Back to the Member Portal</a></p>
+  </div>
+</div>
+
+<section>
+  <div class="container help-wrap">
+    <div id="helpStatus" class="portal-card"><p class="note" style="margin:0">Loading&hellip;</p></div>
+    <div id="helpBody" hidden>
+      <div class="board-alert" style="margin-bottom:16px"><strong>Emergency?</strong> Call 911. For anything urgent at the marina, call the office at <a href="tel:+12526380318">(252) 638-0318</a>.</div>
+      <form class="portal-card member-form help-form" id="helpForm" novalidate>
+        <div class="signup-grid">
+          <label>Your name<input type="text" id="hfName" maxlength="120" autocomplete="name" required></label>
+          <label>Email<input type="email" id="hfEmail" maxlength="254" autocomplete="email" inputmode="email" placeholder="you@example.com"></label>
+          <label>Phone (optional)<input type="tel" id="hfPhone" maxlength="40" autocomplete="tel" inputmode="tel" placeholder="(252) 555-0123"></label>
+          <fieldset class="help-reach">
+            <legend>How can we reach you?</legend>
+            <label class="check"><input type="checkbox" id="hfText"> Text me</label>
+            <label class="check"><input type="checkbox" id="hfCall"> Call me</label>
+            <span class="note">Or we&rsquo;ll reply by email.</span>
+          </fieldset>
+          <label class="full">What is it about?
+            <select id="hfTopic">
+              <option>Dock or slip</option>
+              <option>Electrical / power</option>
+              <option>Water</option>
+              <option>Damage or repair</option>
+              <option>Security or safety</option>
+              <option>Billing or account</option>
+              <option>Website or login</option>
+              <option selected>Other</option>
+            </select>
+          </label>
+          <label class="full">How can we help?<textarea id="hfMessage" rows="6" maxlength="4000" required placeholder="Tell us what you need, and where (slip or dock) if it applies."></textarea></label>
+        </div>
+        <div class="member-login-error" id="hfError" hidden></div>
+        <div class="portal-actions" style="margin-top:4px"><button type="submit" class="btn btn-gold" id="hfSend">Send Request</button></div>
+      </form>
+      <div class="member-login-note" id="hfDone" hidden></div>
+      <div class="portal-card" id="helpMineCard" hidden>
+        <h3>Your recent requests</h3>
+        <div id="helpMine"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <h4>New Bern Grand Marina</h4>
+      <p>134 Craven St, New Bern, NC 28560<br>Marina location: 134 Craven St</p>
+      <p>Open Daily 8:30 AM &ndash; 5:00 PM</p>
+    </div>
+    <div>
+      <h4>Quick Links</h4>
+      <a class="flink" href="about.html">About</a>
+      <a class="flink" href="rates.html">Rates &amp; Amenities</a>
+      <a class="flink" href="amenities.html">Docks &amp; Amenities</a>
+      <a class="flink" href="marina-map.html">Marina Map</a>
+      <a class="flink" href="gallery.html">Gallery</a>
+      <a class="flink" href="documents.html">Documents</a>
+      <a class="flink" href="reservations.html">Reservations</a>
+      <a class="flink" href="contact.html">Contact Us</a>
+    </div>
+    <div>
+      <h4>Get In Touch</h4>
+      <a class="flink" href="tel:+12526380318">(252) 638-0318</a>
+      <a class="flink" href="mailto:newberngrand@f3marina.com">newberngrand@f3marina.com</a>
+      <a class="flink" href="https://visitnewbern.com/" target="_blank" rel="noopener">Explore New Bern</a>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <div>&copy; <span id="year"></span> New Bern Grand Marina. All rights reserved.</div>
+    <div>Site content last updated 2026.</div>
+  </div>
+</footer>
+
+<nav class="mobile-action-bar" aria-label="Quick actions">
+  <a href="tel:+12526380318">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    <span>Call</span>
+  </a>
+  <a href="marina-map.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    <span>Map</span>
+  </a>
+  <a href="index.html#bridge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 7.76a6 6 0 0 0 0 8.49M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    <span>Bridge</span>
+  </a>
+  <a href="https://customer.marinago.com/fss2zz08/public" class="primary" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>
+    <span>Reserve</span>
+  </a>
+</nav>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="member-login.js?v=202611251634"></script>
+<script src="member-data.js?v=202611251634"></script>
+<script src="help.js?v=202611251634"></script>
+</body>
+</html>

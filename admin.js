@@ -33,6 +33,7 @@
         setupGallery();
         setupVideos();
         setupAnnouncements();
+        setupRequests();
       });
     }).catch(function (e) {
       $('adminLoading').textContent = e.message || 'Something went wrong.';
@@ -1617,7 +1618,7 @@
     sb.from('events').select('id, title, event_type, active, ballot_kind, ballot_options, audience').eq('active', true).order('created_at', { ascending: false }).then(function (r) {
       anEvents = {};
       (r.data || []).forEach(function (ev) { anEvents[ev.id] = ev; });
-      $('anEvent').innerHTML = '<option value="">No button</option><option value="portal">Member Portal (login page)</option>' + (r.data || []).map(function (ev) {
+      $('anEvent').innerHTML = '<option value="">No button</option><option value="portal">Member Portal (login page)</option><option value="help">Request Help (help request form)</option>' + (r.data || []).map(function (ev) {
         return '<option value="' + ev.id + '">' + D.esc(ev.title) + ' (' + D.eventTypeLabel(ev.event_type) + ')</option>';
       }).join('');
     });
@@ -1664,7 +1665,7 @@
         '<p class="note">No login needed. You&rsquo;ll be asked to confirm before your vote is recorded. One vote per slip; votes are final and can&rsquo;t be changed. Please don&rsquo;t forward this email: its buttons vote for your slip.</p></div>'
       : '';
     var ev = $('anEvent').selectedOptions[0];
-    var btnLabel = !ev || !ev.value ? '' : ev.value === 'portal' ? 'Go to the Member Portal' : ev.textContent.replace(/ \([^)]*\)$/, '');
+    var btnLabel = !ev || !ev.value ? '' : ev.value === 'portal' ? 'Go to the Member Portal' : ev.value === 'help' ? 'Request Help' : ev.textContent.replace(/ \([^)]*\)$/, '');
     $('anPrevSubject').textContent = $('anSubject').value.trim() || '(no subject)';
     $('anPreview').innerHTML = '<p>Dear [Owner name],</p><div>' + (D.richText($('anBody').value) || '<span class="note">Your message appears here.</span>') + '</div>' +
       (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') + voteBox +
@@ -2352,5 +2353,74 @@
       }).catch(function (ex) { showErr(err, ex.message); })
         .then(function () { btn.disabled = false; });
     });
+  }
+  /* ---------- Help requests ---------- */
+  var hrRows = [], hrWired = false;
+  var HR_STATUS = { new: 'New', open: 'Being handled', done: 'Done' };
+  function setupRequests() {
+    if (!hrWired) {
+      hrWired = true;
+      $('hrRefresh').addEventListener('click', loadRequests);
+      $('hrShow').addEventListener('change', drawRequests);
+      $('hrSettings').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = $('hrNotify').value.split(/[,;\s]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+        var bad = v.filter(function (x) { return !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x); });
+        if (bad.length) { $('hrNotifyDone').textContent = 'This doesn’t look like an email address: ' + bad.join(', '); return; }
+        sb.from('site_settings').upsert({ key: 'help_notify_email', value: v.join(', ') }).then(function (r) {
+          $('hrNotifyDone').textContent = r.error ? r.error.message : (v.length ? 'Saved. New requests will be emailed to ' + v.join(', ') + '.' : 'Saved. New requests won’t be emailed.');
+        });
+      });
+      $('hrList').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-hr-save]'); if (!b) return;
+        var id = b.getAttribute('data-hr-save'), card = b.closest('.hr-card');
+        b.disabled = true;
+        sb.from('help_requests').update({ status: card.querySelector('select').value, admin_note: card.querySelector('textarea').value.trim(),
+          handled_by: null, updated_at: new Date().toISOString() }).eq('id', id).then(function (r) {
+          b.disabled = false;
+          if (r.error) { alert(r.error.message); return; }
+          loadRequests();
+        });
+      });
+    }
+    sb.from('site_settings').select('value').eq('key', 'help_notify_email').maybeSingle().then(function (r) {
+      $('hrNotify').value = (r.data && r.data.value) || '';
+    });
+    loadRequests();
+  }
+  function loadRequests() {
+    return sb.from('help_requests').select('*').order('created_at', { ascending: false }).limit(300).then(function (r) {
+      hrRows = r.data || [];
+      var n = hrRows.filter(function (x) { return x.status === 'new'; }).length;
+      $('requestsTab').innerHTML = 'Help Requests' + (n ? '<span class="board-count">' + n + '</span>' : '');
+      drawRequests();
+    });
+  }
+  function drawRequests() {
+    var show = $('hrShow').value;
+    var rows = hrRows.filter(function (x) {
+      return show === 'all' || (show === 'todo' ? x.status !== 'done' : x.status === show);
+    });
+    var tel = function (p) { return p.replace(/[^\d+]/g, ''); };
+    $('hrList').innerHTML = rows.length ? rows.map(function (x) {
+      var who = D.esc(x.name || '(no name)') + ' <span class="note">&middot; ' + (x.member_class && x.member_class !== 'certificated'
+        ? D.esc(CLASS_LABEL[x.member_class] || x.member_class) + ' login' : 'slip ' + D.esc(x.slip || '')) + '</span>';
+      var wants = [x.contact_text ? 'Text' : '', x.contact_call ? 'Call' : ''].filter(Boolean);
+      return '<div class="hr-card st-' + x.status + '">' +
+        '<div class="hr-head"><div><strong>' + D.esc(x.topic) + '</strong> &middot; ' + who + '</div>' +
+          '<div class="note">' + D.esc(D.fmtWhen(x.created_at)) + ' <span class="help-status help-' + x.status + '">' + HR_STATUS[x.status] + '</span></div></div>' +
+        '<div class="hr-msg">' + D.esc(x.message) + '</div>' +
+        '<div class="hr-contact">' +
+          (x.email ? '<a href="mailto:' + D.esc(x.email) + '?subject=' + encodeURIComponent('Your help request: ' + x.topic) + '">' + D.esc(x.email) + '</a>' : '') +
+          (x.phone ? '<span>' + D.esc(x.phone) + ' &nbsp;<a href="tel:' + D.esc(tel(x.phone)) + '">Call</a> &middot; <a href="sms:' + D.esc(tel(x.phone)) + '">Text</a></span>' : '') +
+          (wants.length ? '<span class="badge badge-cert">Prefers: ' + wants.join(' or ') + '</span>' : (x.email ? '<span class="note">Prefers email</span>' : '')) +
+        '</div>' +
+        '<div class="hr-edit">' +
+          '<label style="font-size:.85rem">Status <select>' + ['new', 'open', 'done'].map(function (s) {
+            return '<option value="' + s + '"' + (s === x.status ? ' selected' : '') + '>' + HR_STATUS[s] + '</option>'; }).join('') + '</select></label>' +
+          '<textarea rows="2" maxlength="2000" placeholder="Notes for the office (members don’t see these)">' + D.esc(x.admin_note || '') + '</textarea>' +
+          '<button type="button" class="btn-sm btn-primary-sm" data-hr-save="' + x.id + '">Save</button>' +
+        '</div></div>';
+    }).join('') : '<p class="note">No help requests here.</p>';
   }
 })();

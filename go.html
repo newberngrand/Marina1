@@ -44,7 +44,7 @@
     headers: { 'Content-Type': 'application/json', apikey: KEY },
     body: JSON.stringify({ p_token: t, p_user_agent: navigator.userAgent || '', p_automated: !!navigator.webdriver })
   }).then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (j) { go(j && /^(event\.html\?id=[0-9a-f-]{36}|member-portal\.html)$/i.test(j.dest) ? j.dest : null); },
+    .then(function (j) { go(j && /^(event\.html\?id=[0-9a-f-]{36}|member-portal\.html|help\.html)$/i.test(j.dest) ? j.dest : null); },
           function () { go(); });
 })();
 </script>

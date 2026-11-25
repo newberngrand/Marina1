@@ -6,7 +6,7 @@
 //   { action: "send", subject, body, audience, event_id?, email_vote? } -> create + start sending
 // email_vote: on a vote, add one button per ballot choice so owners can vote from the email.
 //   { action: "resume", announcement_id }                            -> keep sending a paused one
-// event_id may be "portal" for a button to the Member Portal instead of an event.
+// event_id may be "portal" for a button to the Member Portal, or "help" for a Request Help button, instead of an event.
 // Each recipient's button is a personal link (go.html?t=<token>) so the Admin page
 // can show who clicked; test emails link straight to the page.
 // Sends in batches of up to 100 through Resend. If Resend refuses because of a
@@ -42,11 +42,12 @@ function ballotChoices(ev: Ev): string[] {
 }
 const btn_choices = (ev: Ev | null) => buttonFor(ev, false)?.choices;
 // What the email's button points to: an event, the Member Portal, or nothing.
-function buttonFor(ev: Ev | null, portal: boolean): Btn {
+function buttonFor(ev: Ev | null, portal: boolean, help = false): Btn {
   if (ev) {
     const choices = ev.event_type === "vote" && (ev.audience ?? []).includes("certificated") ? ballotChoices(ev) : [];
     return { label: ev.title, page: `event.html?id=${ev.id}`, choices: choices.length ? choices : undefined };
   }
+  if (help) return { label: "Request Help", page: "help.html" };
   if (portal) return { label: "Go to the Member Portal", page: "member-portal.html" };
   return null;
 }
@@ -160,7 +161,7 @@ Deno.serve(async (req) => {
   async function pump(id: string) {
     const { data: a } = await db.from("announcements").select("*").eq("id", id).maybeSingle();
     if (!a) return { error: "Announcement not found" };
-    const btn = buttonFor(await eventInfo(a.event_id), a.portal_button);
+    const btn = buttonFor(await eventInfo(a.event_id), a.portal_button, a.help_button);
     // Only when the admin ticked it, and only for slip owners (shared cruiser logins vote on the website by name).
     const ownerMail = !!a.email_vote && ["all", "voting", "docks", "slips"].includes(a.audience);
     let note = "";
@@ -203,7 +204,7 @@ Deno.serve(async (req) => {
     const to = String(b.to ?? me.email ?? "").trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return reply(400, { error: "Enter an email address for the test." });
     const ev = await eventInfo(b.event_id);
-    const btn = buttonFor(ev, b.event_id === "portal");
+    const btn = buttonFor(ev, b.event_id === "portal", b.event_id === "help");
     const sample = { email: to, name: "Sample Owner", slips: ["A12"] };
     if (!btn) {
       const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject, html: buildHtml(t.body, sample, null, "") }]);
@@ -214,7 +215,7 @@ Deno.serve(async (req) => {
     // so the admin can click it and see the click recorded.
     const { data: a, error } = await db.from("announcements").insert({
       subject: "[TEST] " + t.subject, body: t.body, audience: "slips", target: to, event_id: ev?.id ?? null,
-      portal_button: !ev, tracked: true, is_test: true, email_vote: !!b.email_vote, sent_by: me.slip, total: 1,
+      portal_button: !ev && b.event_id !== "help", help_button: !ev && b.event_id === "help", tracked: true, is_test: true, email_vote: !!b.email_vote, sent_by: me.slip, total: 1,
     }).select("id").single();
     if (error || !a) return reply(500, { error: error?.message ?? "Could not record the test." });
     const { data: rec } = await db.from("announcement_recipients")
@@ -243,7 +244,8 @@ Deno.serve(async (req) => {
     const ev = await eventInfo(b.event_id);
     const { data: a, error } = await db.from("announcements").insert({
       subject: t.subject, body: t.body, audience, target: targetText, event_id: ev?.id ?? null,
-      portal_button: !ev && b.event_id === "portal", tracked: !!ev || b.event_id === "portal", email_vote: !!b.email_vote && !!btn_choices(ev),
+      portal_button: !ev && b.event_id === "portal", help_button: !ev && b.event_id === "help",
+      tracked: !!ev || b.event_id === "portal" || b.event_id === "help", email_vote: !!b.email_vote && !!btn_choices(ev),
       sent_by: me.slip, total: list.length,
     }).select("id").single();
     if (error || !a) return reply(500, { error: error?.message ?? "Could not create the announcement." });
