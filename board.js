@@ -84,7 +84,8 @@
       ? (stale ? '<span class="review-stale">&#9888; Changed since you approved ' + D.esc(fmtDate(x.my_approved_at)) + '</span>'
                : '<span class="review-done">&#10003; You approved these ' + D.esc(fmtDate(x.my_approved_at)) + '</span>')
       : '';
-    return '<div class="review-card' + (x.my_approved_at && !stale ? ' done' : '') + '" data-card="' + i + '">' +
+    // Green: you approved. Light red: still needs your approval. Amber: changed since you approved.
+    return '<div class="review-card' + (!x.my_approved_at ? ' todo' : stale ? ' stale' : ' done') + '" data-card="' + i + '">' +
       '<div class="review-head"><strong>' + D.esc(x.title) + '</strong> <span class="note">&middot; Meeting ' + D.esc(D.fmtDay(x.meeting_date)) + '</span></div>' +
       '<div class="note">Written by <strong>' + D.esc(x.is_owner ? 'you' : (x.owner_name || 'a board member')) + '</strong> &middot; submitted ' + D.esc(fmtDate(x.submitted_at)) +
         ' &middot; last edited ' + D.esc(fmtDate(x.updated_at)) + (x.updated_by ? ' by slip ' + D.esc(x.updated_by) : '') +
@@ -102,7 +103,7 @@
     var mine = x.my_approved_at
       ? '<span class="review-done">&#10003; You approved these ' + D.esc(fmtDate(x.my_approved_at)) + '</span>'
       : '<button type="button" class="btn btn-gold" data-approve="' + i + '"' + (x.my_viewed_at ? '' : ' disabled title="Open the minutes first"') + '>Approve</button>';
-    return '<div class="review-card' + (x.my_approved_at ? ' done' : '') + '">' +
+    return '<div class="review-card' + (x.my_approved_at ? ' done' : ' todo') + '">' +
       '<div class="review-head"><strong>' + D.esc(x.title) + '</strong>' +
         (x.doc_date ? ' <span class="note">&middot; Meeting ' + D.esc(D.fmtDay(x.doc_date)) + '</span>' : '') + ' <span class="note">&middot; uploaded file</span></div>' +
       (x.description ? '<div class="note">' + D.esc(x.description) + '</div>' : '') +
