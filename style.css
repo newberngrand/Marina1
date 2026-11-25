@@ -1469,6 +1469,16 @@ footer.site-footer {
 .sug-mine li { margin: 4px 0; }
 .sug-status { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 7px; border-radius: 9px; margin-right: 4px; }
 .sug-open { background: #eef1f4; color: #4a5866; } .sug-made { background: #e3f3e6; color: #1f6b33; } .sug-not_made { background: #f3e9e7; color: #8a3a2c; }
+.review-split { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.review-split .minutes-sheet { margin: 0; width: 100%; }
+.sug-panel { position: sticky; top: 12px; max-height: 760px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: #f8fafb; padding: 12px 14px; }
+.sug-panel h4 { margin: 0 0 4px; color: var(--navy); font-size: 1rem; }
+.sug-item { background: #fff; border: 1px solid var(--line); border-left: 4px solid #c9ced4; border-radius: 6px; padding: 8px 10px; margin: 8px 0; font-size: .9rem; }
+.sug-item-made { border-left-color: #2f8a4a; } .sug-item-not_made { border-left-color: #b0574a; }
+.sug-who { font-size: .8rem; color: var(--muted); margin-bottom: 3px; }
+.sug-body { white-space: pre-wrap; line-height: 1.4; }
+.sug-foot { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+@media (max-width: 1000px) { .review-split { grid-template-columns: 1fr; } .sug-panel { position: static; max-height: none; } }
 .ed-review { margin: 0 0 14px; }
 .ed-review h3 { margin: 0 0 6px; color: var(--navy); font-size: 1.05rem; }
 .ed-sug { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0; background: #fff; }

@@ -85,10 +85,12 @@
         editable = !!(o.data && o.data.editable);
         if (!editable) showLocked(o.data || {});
         $('edTitle').disabled = $('edDate').disabled = !editable;
-        $('edSubmit').hidden = inReview; $('edPreview').hidden = false;
+        var notOwner = !editable && o.data && o.data.reason === 'owner';
+        $('edSubmit').hidden = inReview || notOwner; $('edPreview').hidden = false;
+        if (notOwner) { $('edHelp').innerHTML = ''; return startEditor(draft.html, true); }
         $('edHelp').innerHTML = inReview
           ? 'These minutes are under board review. Changes still save automatically, and approvals already given stand; ' +
-            'board members who approved an earlier version are shown what changed. Mark each suggestion <strong>Made</strong> or <strong>Not made</strong>. ' +
+            'board members who approved an earlier version are shown what changed. For each suggestion, choose <strong>I made this change</strong> or <strong>I didn&rsquo;t make this change</strong>. ' +
             'When every board member has approved, the PDF is made and the minutes are published to members.'
           : 'Changes save automatically. When the minutes are finished, <strong>Submit for Board Approval</strong> sends them to every board member ' +
             'to read and approve on the Board page. Members only see them once all board members approve; the PDF is made then.';
@@ -102,6 +104,13 @@
   }
 
   function showLocked(o) {
+    if (o.reason === 'owner') {   // only the board member who wrote the minutes edits them
+      $('edLocked').innerHTML = 'These minutes were written by <strong>' + D.esc(o.owner_name || ('slip ' + o.owner)) + '</strong>, so only they can edit them. ' +
+        'To suggest a change, open them on the <a href="board.html">Board page</a>.';
+      $('edLocked').hidden = false;
+      $('edSubmit').hidden = true;
+      return;
+    }
     $('edLocked').innerHTML = '<strong>' + D.esc(o.locked_name || ('Slip ' + o.locked_by)) + '</strong> (slip ' + D.esc(o.locked_by || '') +
       ') is editing these minutes right now. You can read them; editing opens when they finish. ' +
       '<button type="button" class="btn-sm" id="edRetry">Try again</button>';
@@ -182,7 +191,7 @@
   }
 
   /* ---------- board review: approvals and suggestions ---------- */
-  var SUG = { open: 'Waiting', made: 'Made', not_made: 'Not made' };
+  var SUG = { open: 'Waiting', made: 'Change made', not_made: 'Not changed' };
   function loadReviewPanel() {
     return sb.rpc('minutes_review_list').then(function (r) {
       var x = (r.data || []).filter(function (y) { return y.id === id; })[0], box = $('edReview');
@@ -200,11 +209,11 @@
             '<div class="ed-sug-head"><span class="sug-status sug-' + s.status + '">' + SUG[s.status] + '</span> <strong>' + D.esc(s.name) + '</strong> &middot; ' +
               D.esc(D.fmtWhen(s.at)) + (s.with_approval ? ' &middot; approved with this suggestion' : ' &middot; not approved yet') + '</div>' +
             '<div class="ed-sug-body">' + D.esc(s.body) + '</div>' +
-            '<div class="row-actions">' +
-              (s.status !== 'made' ? '<button type="button" class="btn-sm btn-primary-sm" data-sug="' + s.id + '" data-st="made">Made</button>' : '') +
-              (s.status !== 'not_made' ? '<button type="button" class="btn-sm" data-sug="' + s.id + '" data-st="not_made">Not made</button>' : '') +
+            (!editable ? '' : '<div class="row-actions">' +
+              (s.status !== 'made' ? '<button type="button" class="btn-sm btn-primary-sm" data-sug="' + s.id + '" data-st="made">I made this change</button>' : '') +
+              (s.status !== 'not_made' ? '<button type="button" class="btn-sm" data-sug="' + s.id + '" data-st="not_made">I didn&rsquo;t make this change</button>' : '') +
               (s.status !== 'open' ? '<button type="button" class="btn-sm" data-sug="' + s.id + '" data-st="open">Undo</button>' : '') +
-            '</div></div>';
+            '</div>') + '</div>';
         }).join('') : '<p class="note" style="margin:4px 0 0">No suggestions yet.</p>');
       box.hidden = false;
     });
