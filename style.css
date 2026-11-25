@@ -1471,6 +1471,21 @@ footer.site-footer {
 .sug-mine li { margin: 4px 0; }
 .sug-status { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 7px; border-radius: 9px; margin-right: 4px; }
 .sug-open { background: #eef1f4; color: #4a5866; } .sug-made { background: #e3f3e6; color: #1f6b33; } .sug-not_made { background: #f3e9e7; color: #8a3a2c; }
+.badge-cert { background: #f4ecdc; color: #7a5a1f; }
+.cert-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.cert-thumb { width: 220px; min-height: 120px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: #f7f9fa; display: grid; place-items: center;
+  cursor: zoom-in; overflow: hidden; box-shadow: 0 2px 8px rgba(11,37,64,.12); }
+.cert-thumb img { display: block; width: 100%; height: auto; }
+.cert-thumb[disabled] { cursor: default; box-shadow: none; }
+.cert-actions { flex: 1; min-width: 200px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cert-actions .note { flex-basis: 100%; }
+.img-viewer { position: fixed; inset: 0; z-index: 1000; background: rgba(8,16,26,.92); display: flex; flex-direction: column; }
+.iv-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; color: #fff; font-weight: 600; }
+.iv-bar span:last-child { display: flex; gap: 6px; align-items: center; }
+.iv-bar button, .iv-bar a { background: rgba(255,255,255,.14); color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; text-decoration: none; min-width: 38px; text-align: center; }
+.iv-bar button:hover, .iv-bar a:hover { background: rgba(255,255,255,.26); }
+.iv-stage { position: relative; flex: 1; overflow: hidden; touch-action: none; }
+.iv-stage img { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; -webkit-user-drag: none; max-width: none; }
 .mem-jump { position: relative; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .mem-jump .admin-search { width: 100%; max-width: none; }
 .mem-jump-list { position: absolute; left: 0; right: 0; top: 44px; z-index: 30; background: #fff; border: 1px solid var(--line); border-radius: 8px;

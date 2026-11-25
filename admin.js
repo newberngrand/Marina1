@@ -1962,15 +1962,18 @@
   }
 
   /* ---------- Members ---------- */
-  var memRows = [], memNotes = {}, memEditing = null, memWired = false;
+  var memRows = [], memNotes = {}, memCerts = {}, memEditing = null, memWired = false;
 
   function loadMembers() {
     if (!memWired) { wireMembers(); memWired = true; }
     return Promise.all([
       sb.from('members').select('slip, owner_name, email, active, is_admin, admin_rights, is_board, board_name, can_vote, user_id, member_class'),
-      sb.from('member_notes').select('slip, note')
+      sb.from('member_notes').select('slip, note'),
+      sb.from('member_certificates').select('slip, storage_path, thumb_path, uploaded_at')
     ]).then(function (r) {
       if (r[0].error) return;
+      memCerts = {};
+      (r[2].data || []).forEach(function (c) { memCerts[c.slip] = c; });
       memNotes = {};
       (r[1].data || []).forEach(function (n) { memNotes[n.slip] = n.note; });
       memRows = r[0].data.sort(function (a, b) { return a.slip.localeCompare(b.slip, undefined, { numeric: true }); });
@@ -2010,6 +2013,7 @@
     }).map(function (m) {
       return '<tr' + (m.active ? '' : ' class="row-inactive"') + '><td><strong>' + D.esc(m.slip) + '</strong></td><td>' + D.esc(m.owner_name) +
         (memNotes[m.slip] ? '<div class="note">' + D.esc(memNotes[m.slip]) + '</div>' : '') +
+        (memCerts[m.slip] ? '<div><span class="badge badge-cert" title="Membership certificate on file">Certificate</span></div>' : '') +
         '</td><td>' + (m.email ? D.esc(m.email) : '<em>none</em>') + '</td>' +
         '<td>' + (m.is_admin ? 'Admin' : (m.active ? 'Active' : '<span class="inactive">Inactive</span>')) +
         (!m.is_admin && !m.can_vote ? '<div class="note">Non-voting</div>' : '') +
@@ -2073,9 +2077,176 @@
       : 'Sets the password right away. Give it to the owner privately; they can change it after logging in.';
     $('memSave').textContent = isNew ? 'Add Slip' : 'Save Changes';
     ['memError', 'memDone', 'memPwDone', 'memAdded'].forEach(function (id) { $(id).hidden = true; });
+    $('certBox').hidden = isNew || m.is_admin;
+    if (!isNew) showCert(m.slip);
     $('memForm').hidden = false;
     $('memForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
     (isNew ? $('memSlip') : $('memOwner')).focus();
+  }
+
+  /* ---------- Membership certificates (private: admins only) ---------- */
+  var certShown = null;
+  function signed(path) {
+    return sb.storage.from('marina-docs').createSignedUrl(path, 3600).then(function (r) { return r.data && r.data.signedUrl; });
+  }
+  function showCert(slip) {
+    var c = memCerts[slip], t = $('certThumb');
+    certShown = slip;
+    $('certRotate').hidden = $('certRemove').hidden = !c;
+    $('certInfo').textContent = c ? 'Added ' + D.fmtWhen(c.uploaded_at) + '. Click the picture to view it full size and zoom.' : 'Upload a photo or scan of this slip’s certificate.';
+    if (!c) { t.innerHTML = '<span class="note">No certificate yet</span>'; t.disabled = true; return; }
+    t.disabled = false;
+    t.innerHTML = '<span class="note">Loading&hellip;</span>';
+    signed(c.thumb_path).then(function (u) { if (certShown === slip && u) t.innerHTML = '<img src="' + u + '" alt="Certificate for slip ' + D.esc(slip) + '">'; });
+  }
+  // A small copy for the thumbnail (and, when rotating, the turned image itself).
+  function loadImage(src) {
+    return new Promise(function (ok, bad) {
+      var img = new Image(); img.crossOrigin = 'anonymous';
+      img.onload = function () { ok(img); }; img.onerror = function () { bad(new Error('Could not read that image.')); };
+      img.src = src;
+    });
+  }
+  function drawTo(img, maxW, turn) {
+    var w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, maxW / Math.max(w, h));
+    var cw = Math.round((turn ? h : w) * s), ch = Math.round((turn ? w : h) * s), cv = document.createElement('canvas');
+    cv.width = cw; cv.height = ch;
+    var g = cv.getContext('2d');
+    if (turn) { g.translate(cw, 0); g.rotate(Math.PI / 2); }
+    g.drawImage(img, 0, 0, w * s, h * s);
+    return new Promise(function (ok) { cv.toBlob(ok, 'image/jpeg', maxW > 1000 ? 0.9 : 0.82); });
+  }
+  // Store a certificate image for a slip: the image itself plus a thumbnail; replaces any earlier one.
+  function saveCert(slip, fullBlob) {
+    var url = URL.createObjectURL(fullBlob), base = 'certificates/' + slip + '/' + Date.now(), old = memCerts[slip];
+    return loadImage(url).then(function (img) { return drawTo(img, 2400, false).then(function (full) { return drawTo(img, 480, false).then(function (th) { return [full, th]; }); }); })
+      .then(function (b) {
+        URL.revokeObjectURL(url);
+        return sb.storage.from('marina-docs').upload(base + '.jpg', b[0], { contentType: 'image/jpeg' }).then(function (r) {
+          if (r.error) throw new Error(r.error.message);
+          return sb.storage.from('marina-docs').upload(base + '_thumb.jpg', b[1], { contentType: 'image/jpeg' });
+        });
+      }).then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        var row = { slip: slip, storage_path: base + '.jpg', thumb_path: base + '_thumb.jpg', uploaded_at: new Date().toISOString() };
+        return sb.from('member_certificates').upsert(row).select().single();
+      }).then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        memCerts[slip] = r.data;
+        if (old) sb.storage.from('marina-docs').remove([old.storage_path, old.thumb_path]);
+      });
+  }
+  function wireCerts() {
+    $('certFile').addEventListener('change', function () {
+      var f = this.files[0], slip = memEditing && memEditing.slip; this.value = '';
+      if (!f || !slip) return;
+      $('certInfo').textContent = 'Uploading…';
+      saveCert(slip, f).then(function () { showCert(slip); drawMembers(); }, function (ex) { $('certInfo').textContent = ex.message; });
+    });
+    $('certRotate').addEventListener('click', function () {
+      var slip = memEditing && memEditing.slip, c = memCerts[slip]; if (!c) return;
+      var b = this; b.disabled = true; $('certInfo').textContent = 'Rotating…';
+      signed(c.storage_path).then(loadImage).then(function (img) { return drawTo(img, 2400, true); })
+        .then(function (blob) { return saveCert(slip, blob); })
+        .then(function () { showCert(slip); }, function (ex) { $('certInfo').textContent = ex.message; })
+        .then(function () { b.disabled = false; });
+    });
+    $('certRemove').addEventListener('click', function () {
+      var slip = memEditing && memEditing.slip, c = memCerts[slip]; if (!c) return;
+      if (!confirm('Remove the certificate picture for slip ' + slip + '?')) return;
+      sb.from('member_certificates').delete().eq('slip', slip).then(function (r) {
+        if (r.error) { alert(r.error.message); return; }
+        sb.storage.from('marina-docs').remove([c.storage_path, c.thumb_path]);
+        delete memCerts[slip]; showCert(slip); drawMembers();
+      });
+    });
+    $('certThumb').addEventListener('click', function () {
+      var slip = memEditing && memEditing.slip, c = memCerts[slip]; if (!c) return;
+      signed(c.storage_path).then(function (u) { if (u) openViewer(u, 'Slip ' + slip + ' · ' + (memEditing.owner_name || '')); });
+    });
+    // Many at once: files named by slip (A3.jpg, B-12.jpg, "Slip C 24.jpeg"...).
+    $('certBulk').addEventListener('change', function () {
+      var files = Array.prototype.slice.call(this.files), out = $('certBulkDone'); this.value = '';
+      if (!files.length) return;
+      var bySlip = {}; memRows.forEach(function (m) { bySlip[m.slip.toUpperCase()] = m; });
+      var jobs = [], unknown = [];
+      files.forEach(function (f) {
+        var key = f.name.replace(/\.[^.]+$/, '').toUpperCase().replace(/^SLIP\s*/, '').replace(/[^A-Z0-9]/g, '');
+        if (bySlip[key]) jobs.push({ f: f, slip: bySlip[key].slip }); else unknown.push(f.name);
+      });
+      var done = 0, failed = [];
+      out.hidden = false;
+      out.textContent = 'Uploading ' + jobs.length + ' certificate' + (jobs.length === 1 ? '' : 's') + '…';
+      jobs.reduce(function (p, j) {
+        return p.then(function () {
+          return saveCert(j.slip, j.f).then(function () { done++; out.textContent = 'Uploaded ' + done + ' of ' + jobs.length + '…'; },
+            function (ex) { failed.push(j.f.name + ' (' + ex.message + ')'); });
+        });
+      }, Promise.resolve()).then(function () {
+        out.innerHTML = 'Uploaded <strong>' + done + '</strong> certificate' + (done === 1 ? '' : 's') + '.' +
+          (unknown.length ? '<br>No slip matches these file names (name each file by its slip, e.g. A3.jpg): ' + D.esc(unknown.join(', ')) : '') +
+          (failed.length ? '<br>Could not upload: ' + D.esc(failed.join(', ')) : '');
+        drawMembers();
+        if (memEditing) showCert(memEditing.slip);
+      });
+    });
+  }
+
+  // Full-screen viewer: fit to screen; click, the wheel or a pinch zooms in; drag to move around.
+  function openViewer(src, title) {
+    var ov = document.createElement('div'); ov.className = 'img-viewer';
+    ov.innerHTML = '<div class="iv-bar"><span>' + D.esc(title) + '</span><span><button type="button" data-z="-1" aria-label="Zoom out">&minus;</button>' +
+      '<button type="button" data-z="0">Fit</button><button type="button" data-z="1" aria-label="Zoom in">+</button>' +
+      '<a href="' + src + '" target="_blank" rel="noopener">Open</a><button type="button" data-x aria-label="Close">&times;</button></span></div>' +
+      '<div class="iv-stage"><img alt=""></div>';
+    document.body.appendChild(ov);
+    var stage = ov.querySelector('.iv-stage'), img = ov.querySelector('img'), z = 1, fit = 1, tx = 0, ty = 0, drag = null, moved = false;
+    function apply() {
+      var sw = stage.clientWidth, sh = stage.clientHeight, w = img.naturalWidth * z, h = img.naturalHeight * z;
+      tx = w <= sw ? (sw - w) / 2 : Math.min(0, Math.max(sw - w, tx));
+      ty = h <= sh ? (sh - h) / 2 : Math.min(0, Math.max(sh - h, ty));
+      img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + z + ')';
+      stage.style.cursor = z > fit + 1e-3 ? 'grab' : 'zoom-in';
+    }
+    function zoomAt(nz, cx, cy) { nz = Math.max(fit, Math.min(4, nz)); tx = cx - (cx - tx) * nz / z; ty = cy - (cy - ty) * nz / z; z = nz; apply(); }
+    function close() { ov.remove(); document.removeEventListener('keydown', key); }
+    function key(e) { if (e.key === 'Escape') close(); }
+    img.onload = function () { fit = z = Math.min(stage.clientWidth / img.naturalWidth, stage.clientHeight / img.naturalHeight, 1); tx = ty = 0; apply(); };
+    img.src = src;
+    document.addEventListener('keydown', key);
+    ov.querySelector('.iv-bar').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.hasAttribute('data-x')) return close();
+      var d = +b.getAttribute('data-z'), cx = stage.clientWidth / 2, cy = stage.clientHeight / 2;
+      if (d === 0) { z = fit; apply(); } else zoomAt(z * (d > 0 ? 1.5 : 1 / 1.5), cx, cy);
+    });
+    stage.addEventListener('wheel', function (e) { e.preventDefault(); var r = stage.getBoundingClientRect(); zoomAt(z * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+    var pts = {}, pinch = 0;
+    stage.addEventListener('pointerdown', function (e) {
+      pts[e.pointerId] = [e.clientX, e.clientY]; moved = false;
+      var ids = Object.keys(pts);
+      if (ids.length === 2) { pinch = Math.hypot(pts[ids[0]][0] - pts[ids[1]][0], pts[ids[0]][1] - pts[ids[1]][1]); drag = null; }
+      else drag = { x: e.clientX, y: e.clientY, tx: tx, ty: ty };
+      try { stage.setPointerCapture(e.pointerId); } catch (x) {}
+    });
+    stage.addEventListener('pointermove', function (e) {
+      if (!pts[e.pointerId]) return;
+      pts[e.pointerId] = [e.clientX, e.clientY];
+      var ids = Object.keys(pts), r = stage.getBoundingClientRect();
+      if (ids.length === 2 && pinch) {
+        var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+        zoomAt(z * d / pinch, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); pinch = d; moved = true; return;
+      }
+      if (!drag) return;
+      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 4) moved = true;
+      tx = drag.tx + e.clientX - drag.x; ty = drag.ty + e.clientY - drag.y; apply();
+    });
+    stage.addEventListener('pointerup', function (e) {
+      delete pts[e.pointerId]; if (Object.keys(pts).length < 2) pinch = 0;
+      if (!moved && drag) { var r = stage.getBoundingClientRect(); if (z > fit + 1e-3) { z = fit; apply(); } else zoomAt(fit * 2.5, e.clientX - r.left, e.clientY - r.top); }
+      drag = null;
+    });
+    window.addEventListener('resize', function () { if (!document.body.contains(ov)) return; var was = z <= fit + 1e-3; fit = Math.min(stage.clientWidth / img.naturalWidth, stage.clientHeight / img.naturalHeight, 1); if (was) z = fit; apply(); });
   }
 
   function adminAllowed() { return $('memClass').value === 'certificated' || $('memClass').value === 'employee'; }
@@ -2092,6 +2263,7 @@
       if ($('memBoard').disabled) $('memBoard').checked = false;
     });
     $('memNew').addEventListener('click', function () { openMemberForm(null); });
+    wireCerts();
     // A board member is always an admin.
     $('memBoard').addEventListener('change', function () {
       if (this.checked) $('memAdmin').checked = true;

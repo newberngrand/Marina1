@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611251317">
+<link rel="stylesheet" href="style.css?v=202611251347">
 </head>
 <body data-member-portal>
 
@@ -560,8 +560,12 @@
       <div class="admin-panel" data-panel="members" hidden>
         <div class="admin-panel-head">
           <h2>Members</h2>
-          <button type="button" class="btn btn-gold" id="memNew">+ Add Slip</button>
+          <span class="portal-actions" style="margin:0">
+            <label class="btn btn-outline ed-import" title="Choose certificate photos named by slip, e.g. A3.jpg or B-12.jpg">Upload certificates&hellip;<input type="file" id="certBulk" accept="image/*" multiple hidden></label>
+            <button type="button" class="btn btn-gold" id="memNew">+ Add Slip</button>
+          </span>
         </div>
+        <div class="member-login-note" id="certBulkDone" hidden></div>
         <p style="margin:0 0 14px;color:var(--muted);font-size:0.9rem;" id="memCount"></p>
 
         <form class="portal-card admin-form" id="memForm" hidden>
@@ -604,6 +608,18 @@
             </label>
             <label class="check full" id="memAdminWrap"><input type="checkbox" id="memAdmin"> Admin: can use this Admin page (owners and employees only; an owner still votes and uses their slip as normal)</label>
           </div>
+          <fieldset class="full ballot-box cert-box" id="certBox" style="margin-top:16px" hidden>
+            <legend>Membership certificate</legend>
+            <div class="cert-row">
+              <button type="button" class="cert-thumb" id="certThumb" title="Click to view and zoom"><span class="note">No certificate yet</span></button>
+              <div class="cert-actions">
+                <label class="btn-sm ed-import">Upload or replace&hellip;<input type="file" id="certFile" accept="image/*" hidden></label>
+                <button type="button" class="btn-sm" id="certRotate" hidden>Rotate &#8635;</button>
+                <button type="button" class="btn-sm btn-danger" id="certRemove" hidden>Remove</button>
+                <p class="note" id="certInfo" style="margin:6px 0 0"></p>
+              </div>
+            </div>
+          </fieldset>
           <fieldset class="full ballot-box" style="margin-top:16px">
             <legend id="memPwLegend">Set a new password</legend>
             <div class="admin-grid">
@@ -669,9 +685,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611251317"></script>
-<script src="member-data.js?v=202611251317"></script>
-<script src="video-utils.js?v=202611251317"></script>
-<script src="admin.js?v=202611251317"></script>
+<script src="member-login.js?v=202611251347"></script>
+<script src="member-data.js?v=202611251347"></script>
+<script src="video-utils.js?v=202611251347"></script>
+<script src="admin.js?v=202611251347"></script>
 </body>
 </html>
