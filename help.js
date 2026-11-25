@@ -3,6 +3,9 @@
    The office is emailed about each new request; admins handle them on the Admin page. */
 (function () {
   var D = window.MemberData, sb = null, uid = null, shared = false;
+  // Opened from an email's Help Desk button (go.html adds ?t=<personal token>): no login needed.
+  // Read it now, before the login script tidies it out of the address bar.
+  var linkToken = (function () { var t = new URLSearchParams(location.search).get('t') || ''; return /^[0-9a-f-]{36}$/i.test(t) ? t : ''; })();
   function $(id) { return document.getElementById(id); }
   var STATUS = { new: 'Sent', open: 'Being handled', done: 'Done' };
 
@@ -12,6 +15,7 @@
       sb = client;
       return sb.auth.getSession();
     }).then(function (r) {
+      if (!r.data.session && linkToken) return openFromLink();
       if (!r.data.session) {
         $('helpStatus').innerHTML = '<p style="margin:0">Please log in with your slip (or your cruiser login) to request help. ' +
           'Or call the marina office at <a href="tel:+12526380318">(252) 638-0318</a>.</p>' +
@@ -53,8 +57,9 @@
       if ((text || call) && phone.replace(/\D/g, '').length < 10) return fail('Please enter your phone number (with area code) so we can text or call you.', $('hfPhone'));
       if (!email && !phone) return fail('Please give an email address or a phone number so we can reach you.', $('hfEmail'));
       btn.disabled = true; btn.textContent = 'Sending…';
-      sb.rpc('help_request_submit', { p_name: name, p_email: email, p_phone: phone, p_text: text, p_call: call,
-                                      p_topic: $('hfTopic').value, p_message: msg }).then(function (r) {
+      var args = { p_name: name, p_email: email, p_phone: phone, p_text: text, p_call: call, p_topic: $('hfTopic').value, p_message: msg };
+      if (!uid) args.p_token = linkToken;
+      sb.rpc(uid ? 'help_request_submit' : 'help_request_submit_link', args).then(function (r) {
         btn.disabled = false; btn.textContent = 'Send Request';
         if (r.error) return fail(r.error.message);
         var how = [text ? 'text' : '', call ? 'call' : '', email ? 'email' : ''].filter(Boolean);
@@ -63,10 +68,29 @@
         $('hfDone').hidden = false;
         $('hfMessage').value = ''; $('hfTopic').value = 'Other';
         $('hfDone').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        if (!shared) loadMine();
+        if (!shared && uid) loadMine();
       });
     });
   });
+
+  // No login, but a personal link from a member email: fill in who it was sent to.
+  function openFromLink() {
+    return sb.rpc('help_token_info', { p_token: linkToken }).then(function (d) {
+      var x = d.data;
+      if (d.error || !x) {
+        $('helpStatus').innerHTML = '<p style="margin:0">This help link has expired. Please call the marina office at <a href="tel:+12526380318">(252) 638-0318</a>, ' +
+          'or log in with your slip to request help.</p><div class="portal-actions"><button type="button" class="btn btn-gold" id="hpLogin">Marina Login</button></div>';
+        $('hpLogin').addEventListener('click', function () { MemberAuth.openLogin('login'); });
+        return;
+      }
+      $('helpStatus').hidden = true;
+      $('helpBody').hidden = false;
+      $('hfName').value = x.name || '';
+      $('hfEmail').value = x.email || '';
+      shared = true;   // no login: don't list earlier requests
+      (x.name ? $('hfMessage') : $('hfName')).focus();
+    });
+  }
 
   function loadMine() {
     sb.from('help_requests').select('created_at, topic, message, status, updated_at').eq('user_id', uid)   // admins can read all; show only this login's

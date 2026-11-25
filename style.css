@@ -485,6 +485,13 @@ nav.main-nav a.active {
 .an-preview-subject { font-weight: 700; color: var(--navy); padding: 8px 10px; background: #f2f6fa; border-radius: 6px; margin-bottom: 10px; }
 .an-preview { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-size: 0.92rem; line-height: 1.55; max-height: 520px; overflow-y: auto; }
 .an-btn-help { background: #1c5d6e; }
+.an-attach { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.an-attach-btn { cursor: pointer; }
+.an-attach-list { list-style: none; margin: 0; padding: 0; width: 100%; }
+.an-attach-list li { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
+.an-attach-list li span.note { margin-left: auto; }
+.an-attach-list button { border: 0; background: none; color: #9a2c1a; cursor: pointer; font-size: 1.1rem; line-height: 1; }
+.an-prev-files { margin: 14px 0; padding: 8px 12px; border: 1px dashed var(--line); border-radius: 8px; font-size: 0.9rem; }
 .an-btn { display: inline-block; padding: 10px 16px; background: var(--navy); color: #fff; border-radius: 6px; font-weight: 700; }
 .an-vote-box { margin: 16px 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: #f7f9fa; }
 .an-vote-box p { margin: 6px 0; }

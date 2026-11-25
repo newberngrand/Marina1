@@ -4,7 +4,10 @@
 // all / voting / docks mean slip owners (certificated); ltc / stc / employee are those logins.
 //   { action: "test", subject, body, event_id?, to }                 -> one test email
 //   { action: "send", subject, body, audience, event_id?, email_vote?, help_extra? } -> create + start sending
-// help_extra: also add a "Request Help" button (alongside any other button).
+// help_extra: also add a "Help Desk" button (alongside any other button).
+// attachments: [{ name, path, size }] files already uploaded to marina-docs under announcements/.
+//   Resend's batch call can't carry attachments, so those emails go one at a time; a call
+//   stops after about two minutes with { more: true } and the Admin page calls resume to go on.
 // email_vote: on a vote, add one button per ballot choice so owners can vote from the email.
 //   { action: "resume", announcement_id }                            -> keep sending a paused one
 // event_id may be "portal" for a button to the Member Portal, or "help" for a Request Help button, instead of an event.
@@ -48,7 +51,7 @@ function buttonFor(ev: Ev | null, portal: boolean, help = false): Btn {
     const choices = ev.event_type === "vote" && (ev.audience ?? []).includes("certificated") ? ballotChoices(ev) : [];
     return { label: ev.title, page: `event.html?id=${ev.id}`, choices: choices.length ? choices : undefined };
   }
-  if (help) return { label: "Request Help", page: "help.html" };
+  if (help) return { label: "Help Desk", page: "help.html" };
   if (portal) return { label: "Go to the Member Portal", page: "member-portal.html" };
   return null;
 }
@@ -69,7 +72,7 @@ function buildHtml(body: string, r: Recip, btn: Btn, link: string, voteLink = ""
   const greet = r.name ? `Dear ${esc(r.name)},` : "Dear Member,";
   const button = btn
     ? `<p style="margin:22px 0"><a href="${esc(link)}" style="display:inline-block;padding:12px 20px;background:#0b2540;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">${esc(btn.label)} &rarr;</a></p>
-       <p style="color:#5c6b7a;font-size:13px;margin-top:-10px">You'll be asked to log in with your slip number and password.</p>`
+       ${btn.page === "help.html" ? "" : `<p style="color:#5c6b7a;font-size:13px;margin-top:-10px">You'll be asked to log in with your slip number and password.</p>`}`
     : "";
   const votes = btn?.choices && voteLink ? voteButtons(btn.choices, voteLink) : "";
   // The separate "Help Desk" button any announcement can carry (after any vote buttons).
@@ -89,6 +92,36 @@ function buildHtml(body: string, r: Recip, btn: Btn, link: string, voteLink = ""
     <p style="margin-top:24px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br><a href="${SITE}" style="color:#1c5d6e">newberngrand.com</a></p>
     <p style="color:#8a96a3;font-size:12px;border-top:1px solid #e2e6ea;padding-top:10px">${slipLine}</p>
   </div>`;
+}
+
+type Att = { name: string; path: string; size: number };
+// Files attached to an announcement, checked: only our own uploads, at most 10, 15 MB in all.
+function cleanAttachments(v: unknown): Att[] | string {
+  if (v == null) return [];
+  if (!Array.isArray(v)) return "Invalid attachments.";
+  const list = v.map((x) => ({ name: String(x?.name ?? "").slice(0, 200), path: String(x?.path ?? ""), size: Number(x?.size) || 0 }));
+  if (list.length > 10) return "Please attach at most 10 files.";
+  if (list.some((a) => !a.name || !/^announcements\/[A-Za-z0-9]+\/[\w.\-]+$/.test(a.path))) return "One of the attachments wasn't uploaded properly. Remove it and attach it again.";
+  if (list.reduce((n, a) => n + a.size, 0) > 15 * 1024 * 1024) return "The attachments are over 15 MB in all.";
+  return list;
+}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// One email through Resend (used for tests and when there are attachments). Waits and retries
+// when sending too fast; a daily or monthly quota comes back as a 429 mentioning "quota".
+async function resendOne(message: unknown) {
+  for (let tries = 0; ; tries++) {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`, "Content-Type": "application/json" },
+      body: JSON.stringify(message),
+    });
+    const text = r.ok ? "" : await r.text();
+    if (r.status === 429 && !/quota/i.test(text) && tries < 6) {
+      await sleep(Math.max(1000, (Number(r.headers.get("retry-after")) || 1) * 1000));
+      continue;
+    }
+    return { status: r.status, text };
+  }
 }
 
 async function resendBatch(messages: unknown[]) {
@@ -171,13 +204,21 @@ Deno.serve(async (req) => {
     const btn = buttonFor(await eventInfo(a.event_id), a.portal_button, a.help_button);
     // Only when the admin ticked it, and only for slip owners (shared cruiser logins vote on the website by name).
     const ownerMail = !!a.email_vote && ["all", "voting", "docks", "slips"].includes(a.audience);
-    let note = "";
+    let note = "", more = false;
+    const files = await attachmentLinks(a.attachments ?? []);
+    if (typeof files === "string") return { id, error: files };
+    type Row = Recip & { token: string };
+    const msg = (r: Row) => ({ from, to: [r.email], subject: a.subject,
+      html: buildHtml(a.body, r, btn, `${SITE}/go.html?t=${r.token}`, ownerMail ? `${SITE}/vote.html?t=${r.token}` : "", a.help_extra ? `${SITE}/go.html?t=${r.token}&h=1` : ""),
+      ...(files.length ? { attachments: files } : {}) });
+    const started = Date.now();
     while (true) {
+      if (files.length && Date.now() - started > 110_000) { more = true; break; }   // the Admin page calls resume to go on
       const { data: batch } = await db.from("announcement_recipients").select("email, name, slips, token")
-        .eq("announcement_id", id).eq("status", "pending").limit(100);
+        .eq("announcement_id", id).eq("status", "pending").limit(files.length ? 1 : 100);
       if (!batch?.length) break;
-      const res = await resendBatch(batch.map((r) => ({ from, to: [r.email], subject: a.subject, html: buildHtml(a.body, r as Recip, btn, `${SITE}/go.html?t=${r.token}`, ownerMail ? `${SITE}/vote.html?t=${r.token}` : "", a.help_extra ? `${SITE}/go.html?t=${r.token}&h=1` : "") })));
-      if (res.status === 429 || /quota|limit/i.test(res.text)) {
+      const res = files.length ? await resendOne(msg(batch[0] as Row)) : await resendBatch(batch.map((r) => msg(r as Row)));
+      if (res.status === 429 || /quota/i.test(res.text)) {
         note = "Paused: the email service's sending limit was reached. Use Resume to send the rest.";
         break;
       }
@@ -194,9 +235,19 @@ Deno.serve(async (req) => {
     const counts = async (st: string) =>
       (await db.from("announcement_recipients").select("email", { count: "exact", head: true }).eq("announcement_id", id).eq("status", st)).count ?? 0;
     const [sent, failed, pending] = await Promise.all([counts("sent"), counts("failed"), counts("pending")]);
-    const status = pending ? "paused" : "done";
+    const status = pending ? (more ? "sending" : "paused") : "done";
     await db.from("announcements").update({ sent, failed, status, note }).eq("id", id);
-    return { id, sent, failed, pending, status, note };
+    return { id, sent, failed, pending, status, note, more: more && pending > 0 };
+  }
+  // Week-long download links that Resend fetches the attached files from.
+  async function attachmentLinks(list: Att[]) {
+    const out: { filename: string; path: string }[] = [];
+    for (const f of list) {
+      const { data, error } = await db.storage.from("marina-docs").createSignedUrl(f.path, 7 * 24 * 3600);
+      if (error || !data?.signedUrl) return `The attachment ${f.name} couldn't be found. Remove it and attach it again.`;
+      out.push({ filename: f.name, path: data.signedUrl });
+    }
+    return out;
   }
 
   if (action === "preview") {
@@ -213,9 +264,14 @@ Deno.serve(async (req) => {
     const ev = await eventInfo(b.event_id);
     const btn = buttonFor(ev, b.event_id === "portal", b.event_id === "help");
     const helpExtra = !!b.help_extra && b.event_id !== "help";
+    const atts = cleanAttachments(b.attachments);
+    if (typeof atts === "string") return reply(400, { error: atts });
+    const files = await attachmentLinks(atts);
+    if (typeof files === "string") return reply(400, { error: files });
+    const withFiles = files.length ? { attachments: files } : {};
     const sample = { email: to, name: "Sample Owner", slips: ["A12"] };
     if (!btn && !helpExtra) {
-      const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject, html: buildHtml(t.body, sample, null, "") }]);
+      const res = await resendOne({ from, to: [to], subject: "[TEST] " + t.subject, html: buildHtml(t.body, sample, null, ""), ...withFiles });
       if (res.status >= 300) return reply(400, { error: `Test email failed: ${res.status} ${res.text}` });
       return reply(200, { ok: true, message: `Test sent to ${to}.` });
     }
@@ -223,13 +279,13 @@ Deno.serve(async (req) => {
     // so the admin can click it and see the click recorded.
     const { data: a, error } = await db.from("announcements").insert({
       subject: "[TEST] " + t.subject, body: t.body, audience: "slips", target: to, event_id: ev?.id ?? null,
-      portal_button: !ev && b.event_id === "portal", help_button: !ev && b.event_id === "help", help_extra: helpExtra, tracked: true, is_test: true, email_vote: !!b.email_vote, sent_by: me.slip, total: 1,
+      portal_button: !ev && b.event_id === "portal", help_button: !ev && b.event_id === "help", help_extra: helpExtra, attachments: atts, tracked: true, is_test: true, email_vote: !!b.email_vote, sent_by: me.slip, total: 1,
     }).select("id").single();
     if (error || !a) return reply(500, { error: error?.message ?? "Could not record the test." });
     const { data: rec } = await db.from("announcement_recipients")
       .insert({ announcement_id: a.id, email: to, name: "", slips: [] }).select("token").single();
-    const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject,
-      html: buildHtml(t.body, sample, btn, `${SITE}/go.html?t=${rec?.token}`, b.email_vote ? `${SITE}/vote.html?t=${rec?.token}` : "", helpExtra ? `${SITE}/go.html?t=${rec?.token}&h=1` : "") }]);
+    const res = await resendOne({ from, to: [to], subject: "[TEST] " + t.subject,
+      html: buildHtml(t.body, sample, btn, `${SITE}/go.html?t=${rec?.token}`, b.email_vote ? `${SITE}/vote.html?t=${rec?.token}` : "", helpExtra ? `${SITE}/go.html?t=${rec?.token}&h=1` : ""), ...withFiles });
     const ok = res.status < 300;
     await db.from("announcement_recipients").update(ok ? { status: "sent", sent_at: new Date().toISOString() } : { status: "failed", error: `${res.status} ${res.text}`.slice(0, 500) })
       .eq("announcement_id", a.id);
@@ -249,8 +305,11 @@ Deno.serve(async (req) => {
     if (unknown.length) return reply(400, { error: "These slips weren't found: " + unknown.join(", ") + ". Fix or remove them, then send again." });
     if (!list.length) return reply(400, { error: "None of those slips have an email address on file." });
     const targetText = audience === "docks" ? target.docks.join(", ") : audience === "slips" ? target.slips.join(", ") : "";
+    const atts = cleanAttachments(b.attachments);
+    if (typeof atts === "string") return reply(400, { error: atts });
     const ev = await eventInfo(b.event_id);
     const { data: a, error } = await db.from("announcements").insert({
+      attachments: atts,
       subject: t.subject, body: t.body, audience, target: targetText, event_id: ev?.id ?? null,
       portal_button: !ev && b.event_id === "portal", help_button: !ev && b.event_id === "help",
       help_extra: !!b.help_extra && b.event_id !== "help",

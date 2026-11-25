@@ -1552,6 +1552,38 @@
   }
   function anTargetKey() { return JSON.stringify(anTarget()); }
 
+  // Files attached to the email. Each is uploaded once (on the first test or send) and reused.
+  var anFiles = [], AN_MAX_BYTES = 15 * 1024 * 1024;
+  function anSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function anFilesTooBig() { return anFiles.reduce(function (n, f) { return n + f.size; }, 0) > AN_MAX_BYTES; }
+  function renderAnFiles() {
+    $('anFileList').innerHTML = anFiles.map(function (f, i) {
+      return '<li>&#128206; ' + D.esc(f.name) + ' <span class="note">' + anSize(f.size) + '</span><button type="button" data-an-unattach="' + i + '" title="Remove" aria-label="Remove ' + D.esc(f.name) + '">&times;</button></li>';
+    }).join('');
+    previewAnnouncement();
+  }
+  function uploadAnFiles() {
+    var folder = 'announcements/' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + '/';
+    return anFiles.reduce(function (chain, f) {
+      return chain.then(function () {
+        if (f.path) return;
+        var path = folder + (f.name.replace(/[^\w.\-]+/g, '_') || 'file');
+        return sb.storage.from('marina-docs').upload(path, f.file, { contentType: f.file.type || 'application/octet-stream', upsert: false }).then(function (up) {
+          if (up.error) throw new Error('Could not upload ' + f.name + ': ' + up.error.message);
+          f.path = path;
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      return anFiles.map(function (f) { return { name: f.name, path: f.path, size: f.size }; });
+    });
+  }
+  // Emails with attachments go out one at a time, so a big send can take several calls; keep going until done.
+  function anKeepSending(r, onProgress) {
+    if (!r.more) return Promise.resolve(r);
+    if (onProgress) onProgress(r);
+    return callAnnounce({ action: 'resume', announcement_id: r.id }).then(function (r2) { return anKeepSending(r2, onProgress); });
+  }
+
   function setupAnnouncements() {
     if (anWired) return;
     anWired = true;
@@ -1565,6 +1597,22 @@
     $('anSlips').addEventListener('input', recount);
     $('anEmailVote').addEventListener('change', previewAnnouncement);
     $('anHelpExtra').addEventListener('change', previewAnnouncement);
+    $('anFiles').addEventListener('change', function () {
+      var err = $('anError'); err.hidden = true;
+      Array.prototype.forEach.call($('anFiles').files, function (file) {
+        if (!anFiles.some(function (f) { return f.name === file.name && f.size === file.size; })) anFiles.push({ file: file, name: file.name, size: file.size, path: null });
+      });
+      $('anFiles').value = '';
+      if (anFilesTooBig()) showErr(err, 'The attachments add up to ' + anSize(anFiles.reduce(function (n, f) { return n + f.size; }, 0)) + '. Please keep them under 15 MB in all (remove one, or put a large file on the Documents page and link to it).');
+      renderAnFiles();
+    });
+    $('anFileList').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-an-unattach]');
+      if (!b) return;
+      anFiles.splice(+b.getAttribute('data-an-unattach'), 1);
+      $('anError').hidden = true;
+      renderAnFiles();
+    });
     $('anAudience').addEventListener('change', previewAnnouncement);
     ['anSubject', 'anBody', 'anEvent'].forEach(function (id) { $(id).addEventListener('input', previewAnnouncement); $(id).addEventListener('change', previewAnnouncement); });
     $('anAudience').addEventListener('change', updateAnCount);
@@ -1572,8 +1620,11 @@
       var err = $('anError'), done = $('anDone'); err.hidden = true; done.hidden = true;
       var to = $('anTestTo').value.trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return showErr(err, 'Type the email address to send the test to.');
+      if (anFilesTooBig()) return showErr(err, 'The attachments are over 15 MB in all. Please remove one.');
       var btn = $('anTest'); btn.disabled = true; btn.textContent = 'Sending\u2026';
-      callAnnounce({ action: 'test', subject: $('anSubject').value, body: $('anBody').value, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn(), help_extra: anHelpExtraOn(), to: to })
+      uploadAnFiles().then(function (atts) {
+        return callAnnounce({ action: 'test', subject: $('anSubject').value, body: $('anBody').value, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn(), help_extra: anHelpExtraOn(), attachments: atts, to: to });
+      })
         .then(function (r) { done.textContent = r.message + ' Check that inbox (and spam) before sending to everyone.'; done.hidden = false; if (r.tracked) loadAnnouncements(); })
         .catch(function (ex) { showErr(err, ex.message); })
         .then(function () { btn.disabled = false; btn.textContent = 'Send test'; });
@@ -1586,13 +1637,20 @@
       var n = anCounts[anTargetKey()];
       if (n === 0) return showErr(err, 'Nobody to send to: pick docks or type slips that have an email on file.');
       if (!confirm('Send "' + subject + '" to ' + (n != null ? n + ' email addresses' : 'all members') + ' now?\n\nThis can\'t be undone. (Tip: send yourself a test first.)')) return;
-      var btn = $('anSend'); btn.disabled = true; btn.textContent = 'Sending\u2026 please wait';
-      callAnnounce(Object.assign({ action: 'send', subject: subject, body: body, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn(), help_extra: anHelpExtraOn() }, anTarget()))
+      if (anFilesTooBig()) return showErr(err, 'The attachments are over 15 MB in all. Please remove one.');
+      var btn = $('anSend'); btn.disabled = true; btn.textContent = anFiles.length ? 'Uploading files\u2026' : 'Sending\u2026 please wait';
+      uploadAnFiles().then(function (atts) {
+        btn.textContent = 'Sending\u2026 please wait';
+        return callAnnounce(Object.assign({ action: 'send', subject: subject, body: body, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn(), help_extra: anHelpExtraOn(), attachments: atts }, anTarget()));
+      })
+        .then(function (r) {
+          return anKeepSending(r, function (p) { btn.textContent = 'Sending\u2026 ' + p.sent + ' of ' + (p.sent + p.failed + p.pending) + ' sent; keep this page open'; });
+        })
         .then(function (r) {
           done.textContent = 'Sent to ' + r.sent + ' of ' + (r.sent + r.failed + r.pending) + ' addresses.' +
             (r.pending ? ' ' + r.pending + ' still waiting: ' + r.note : '') + (r.failed ? ' ' + r.failed + ' failed.' : '');
           done.hidden = false;
-          if (!r.pending) $('anForm').reset();
+          if (!r.pending) { $('anForm').reset(); anFiles = []; renderAnFiles(); }
           previewAnnouncement(); loadAnnouncements();
         })
         .catch(function (ex) { showErr(err, ex.message); })
@@ -1603,6 +1661,7 @@
       if (!b) return;
       b.disabled = true; b.textContent = 'Sending\u2026';
       callAnnounce({ action: 'resume', announcement_id: b.getAttribute('data-an-resume') })
+        .then(function (r) { return anKeepSending(r, function (p) { b.textContent = 'Sending\u2026 ' + p.sent + ' sent'; }); })
         .then(function (r) { alert('Sent ' + r.sent + ' so far' + (r.pending ? '; ' + r.pending + ' still waiting. ' + r.note : '. All done.')); })
         .catch(function (ex) { alert(ex.message); })
         .then(loadAnnouncements);
@@ -1619,7 +1678,7 @@
     sb.from('events').select('id, title, event_type, active, ballot_kind, ballot_options, audience').eq('active', true).order('created_at', { ascending: false }).then(function (r) {
       anEvents = {};
       (r.data || []).forEach(function (ev) { anEvents[ev.id] = ev; });
-      $('anEvent').innerHTML = '<option value="">No button</option><option value="portal">Member Portal (login page)</option><option value="help">Request Help (help request form)</option>' + (r.data || []).map(function (ev) {
+      $('anEvent').innerHTML = '<option value="">No button</option><option value="portal">Member Portal (login page)</option><option value="help">Help Desk (help request form, no login needed)</option>' + (r.data || []).map(function (ev) {
         return '<option value="' + ev.id + '">' + D.esc(ev.title) + ' (' + D.eventTypeLabel(ev.event_type) + ')</option>';
       }).join('');
     });
@@ -1669,10 +1728,10 @@
         '<p class="note">No login needed. You&rsquo;ll be asked to confirm before your vote is recorded. One vote per slip; votes are final and can&rsquo;t be changed. Please don&rsquo;t forward this email: its buttons vote for your slip.</p></div>'
       : '';
     var ev = $('anEvent').selectedOptions[0];
-    var btnLabel = !ev || !ev.value ? '' : ev.value === 'portal' ? 'Go to the Member Portal' : ev.value === 'help' ? 'Request Help' : ev.textContent.replace(/ \([^)]*\)$/, '');
+    var btnLabel = !ev || !ev.value ? '' : ev.value === 'portal' ? 'Go to the Member Portal' : ev.value === 'help' ? 'Help Desk' : ev.textContent.replace(/ \([^)]*\)$/, '');
     $('anPrevSubject').textContent = $('anSubject').value.trim() || '(no subject)';
     $('anPreview').innerHTML = '<p>Dear [Owner name],</p><div>' + (D.richText($('anBody').value) || '<span class="note">Your message appears here.</span>') + '</div>' +
-      (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') + voteBox + helpBox +
+      (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p>' + (ev.value === 'help' ? '' : '<p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>') : '') + voteBox + helpBox + (anFiles.length ? '<div class="an-prev-files"><strong>Attached:</strong> ' + anFiles.map(function (f) { return '&#128206; ' + D.esc(f.name); }).join(', ') + '</div>' : '') +
       '<p style="margin-top:18px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br>newberngrand.com</p>' +
       '<p class="note an-foot">You\'re receiving this as the owner of record for slip [slips] at New Bern Grand Marina.</p>';
   }
@@ -1700,6 +1759,7 @@
             : '<strong>' + k.clicked + '</strong> of ' + a.sent + (a.sent ? ' (' + Math.round(k.clicked * 100 / a.sent) + '%)' : '') +
               '<div class="note">' + k.arrived + ' logged in</div>';
           return '<tr><td class="note nowrap">' + D.esc(D.fmtWhen(a.created_at)) + '</td><td><strong>' + D.esc(a.subject) + '</strong>' +
+            ((a.attachments || []).length ? '<div class="note">&#128206; ' + a.attachments.map(function (f) { return D.esc(f.name); }).join(', ') + '</div>' : '') +
             (a.note ? '<div class="note">' + D.esc(a.note) + '</div>' : '') + '</td>' +
             '<td class="note">' + (a.is_test ? '<span class="an-test-tag">TEST</span> to ' + D.esc(a.target) : { all: 'All owners', voting: 'Voting slips', docks: 'Dock ' + D.esc(a.target), slips: 'Slips ' + D.esc(a.target), ltc: 'Long-term cruisers', stc: 'Transients', employee: 'Employees' }[a.audience] || a.audience) + '</td>' +
             '<td>' + a.sent + ' of ' + a.total + (a.failed ? ' <span class="inactive">(' + a.failed + ' failed)</span>' : '') + '</td>' +
@@ -2420,7 +2480,8 @@
     var tel = function (p) { return p.replace(/[^\d+]/g, ''); };
     $('hrList').innerHTML = rows.length ? rows.map(function (x) {
       var who = D.esc(x.name || '(no name)') + ' <span class="note">&middot; ' + (x.member_class && x.member_class !== 'certificated'
-        ? D.esc(CLASS_LABEL[x.member_class] || x.member_class) + ' login' : 'slip ' + D.esc(x.slip || '')) + '</span>';
+        ? D.esc(CLASS_LABEL[x.member_class] || x.member_class) + (x.via_email ? '' : ' login') : x.slip ? 'slip ' + D.esc(x.slip) : 'member') +
+        (x.via_email ? ' &middot; from an email&rsquo;s Help Desk button, no login' : '') + '</span>';
       var wants = [x.contact_text ? 'Text' : '', x.contact_call ? 'Call' : ''].filter(Boolean);
       return '<div class="hr-card st-' + x.status + '">' +
         '<div class="hr-head"><div><strong>' + D.esc(x.topic) + '</strong> &middot; ' + who + '</div>' +

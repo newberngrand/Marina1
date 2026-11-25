@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611251652">
+<link rel="stylesheet" href="style.css?v=202611251704">
 </head>
 <body data-member-portal>
 
@@ -503,6 +503,12 @@
               <label class="full">Message (each owner's email starts with "Dear [owner name],"; web links become clickable)
                 <textarea id="anBody" rows="10" required placeholder="Type your announcement here."></textarea>
               </label>
+              <div class="full an-attach">
+                <label class="btn-sm an-attach-btn" for="anFiles">&#128206; Attach files</label>
+                <input type="file" id="anFiles" multiple hidden accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp">
+                <span class="note">PDF, Word, Excel, PowerPoint, text or photos; up to 15 MB in all.</span>
+                <ul class="an-attach-list" id="anFileList"></ul>
+              </div>
             </div>
             <p class="note" id="anCount" style="margin:8px 0 0"></p>
             <div class="member-login-error" id="anError" hidden></div>
@@ -714,9 +720,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611251652"></script>
-<script src="member-data.js?v=202611251652"></script>
-<script src="video-utils.js?v=202611251652"></script>
-<script src="admin.js?v=202611251652"></script>
+<script src="member-login.js?v=202611251704"></script>
+<script src="member-data.js?v=202611251704"></script>
+<script src="video-utils.js?v=202611251704"></script>
+<script src="admin.js?v=202611251704"></script>
 </body>
 </html>

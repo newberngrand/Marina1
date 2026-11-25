@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     .eq("id", id).is("notified_at", null).select("id");
   if (!claimed?.length) return json(200, { already: true });
 
-  const who = h.member_class && h.member_class !== "certificated" ? `${CLASS[h.member_class] ?? h.member_class} login` : `Slip ${h.slip ?? ""}`;
+  const who = (h.member_class && h.member_class !== "certificated" ? `${CLASS[h.member_class] ?? h.member_class}${h.via_email ? "" : " login"}` : h.slip ? `Slip ${h.slip}` : "Member") + (h.via_email ? " (from an email link, no login)" : "");
   const wants = [h.contact_text ? "Text" : "", h.contact_call ? "Call" : ""].filter(Boolean).join(" or ") || (h.email ? "Email" : "");
   const phone = h.phone ? `${esc(h.phone)} &nbsp;<a href="tel:${esc(h.phone.replace(/[^\d+]/g, ""))}">Call</a> &middot; <a href="sms:${esc(h.phone.replace(/[^\d+]/g, ""))}">Text</a>` : "";
   const html = `<div style="font-family:Arial,sans-serif;color:#1c2733;max-width:560px">
