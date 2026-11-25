@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611251255">
+<link rel="stylesheet" href="style.css?v=202611251317">
 </head>
 <body data-member-portal>
 
@@ -565,6 +565,10 @@
         <p style="margin:0 0 14px;color:var(--muted);font-size:0.9rem;" id="memCount"></p>
 
         <form class="portal-card admin-form" id="memForm" hidden>
+          <div class="mem-jump">
+            <input type="search" id="memJump" class="admin-search" placeholder="Find another slip: type a slip, name or email" autocomplete="off" spellcheck="false" aria-label="Find another slip">
+            <div class="mem-jump-list" id="memJumpList" hidden></div>
+          </div>
           <h3 id="memFormTitle">Edit Slip</h3>
           <div class="member-login-note" id="memAdded" style="margin:0 0 14px" hidden></div>
           <p class="note" id="memSoldTip" style="margin:-6px 0 14px">
@@ -665,9 +669,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611251255"></script>
-<script src="member-data.js?v=202611251255"></script>
-<script src="video-utils.js?v=202611251255"></script>
-<script src="admin.js?v=202611251255"></script>
+<script src="member-login.js?v=202611251317"></script>
+<script src="member-data.js?v=202611251317"></script>
+<script src="video-utils.js?v=202611251317"></script>
+<script src="admin.js?v=202611251317"></script>
 </body>
 </html>

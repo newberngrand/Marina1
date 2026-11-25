@@ -2104,6 +2104,47 @@
       }
     });
     $('memCancel').addEventListener('click', function () { $('memForm').hidden = true; memEditing = null; });
+
+    // "Find another slip" at the top of the edit form: search and switch slips without going back to the list.
+    var jumpHits = [];
+    function memDirty() {
+      var m = memEditing;
+      if (!m) return !!($('memSlip').value.trim() || $('memOwner').value.trim() || $('memEmail').value.trim());
+      return $('memOwner').value !== (m.owner_name || '') || $('memEmail').value !== (m.email || '') ||
+        $('memNote').value !== (memNotes[m.slip] || '') || $('memActive').checked !== !!m.active || $('memCanVote').checked !== !!m.can_vote ||
+        $('memClass').value !== (m.member_class || 'certificated') || $('memBoard').checked !== !!m.is_board ||
+        $('memAdmin').checked !== !!m.admin_rights || $('memBoardName').value !== (m.board_name || '');
+    }
+    function drawJump() {
+      var f = $('memJump').value.trim().toLowerCase(), list = $('memJumpList');
+      if (!f) { list.hidden = true; jumpHits = []; return; }
+      var slipFirst = function (m) { return m.slip.toLowerCase() === f ? 0 : m.slip.toLowerCase().indexOf(f) === 0 ? 1 : 2; };
+      jumpHits = memRows.filter(function (m) {
+        return (m.slip + ' ' + m.owner_name + ' ' + (m.email || '') + ' ' + (memNotes[m.slip] || '')).toLowerCase().indexOf(f) !== -1;
+      }).sort(function (a, b) { return slipFirst(a) - slipFirst(b) || a.slip.localeCompare(b.slip, undefined, { numeric: true }); }).slice(0, 8);
+      list.innerHTML = jumpHits.length ? jumpHits.map(function (m, i) {
+        return '<button type="button" data-jump="' + i + '"' + (memEditing && memEditing.slip === m.slip ? ' class="on"' : '') + '><strong>' + D.esc(m.slip) + '</strong> ' +
+          D.esc(m.owner_name) + ' <span class="note">' + (m.email ? D.esc(m.email) : 'no email') + '</span></button>';
+      }).join('') : '<p class="note" style="margin:6px 10px">No slips match.</p>';
+      list.hidden = false;
+    }
+    function jumpTo(m) {
+      if (!m) return;
+      if (memEditing && memEditing.slip === m.slip) { $('memJump').value = ''; drawJump(); return; }
+      if (memDirty() && !confirm('You have unsaved changes to ' + (memEditing ? 'slip ' + memEditing.slip : 'this new slip') + '. Leave without saving?')) return;
+      $('memJump').value = ''; drawJump();
+      openMemberForm(m);
+    }
+    $('memJump').addEventListener('input', drawJump);
+    $('memJump').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); jumpTo(jumpHits[0]); }
+      if (e.key === 'Escape') { this.value = ''; drawJump(); }
+    });
+    $('memJumpList').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-jump]');
+      if (b) jumpTo(jumpHits[+b.getAttribute('data-jump')]);
+    });
+    document.addEventListener('click', function (e) { if (!e.target.closest('.mem-jump')) $('memJumpList').hidden = true; });
     $('memSearch').addEventListener('input', drawMembers);
     $('memShow').addEventListener('change', drawMembers);
     $('memSort').addEventListener('change', drawMembers);

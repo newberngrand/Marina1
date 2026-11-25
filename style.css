@@ -1471,6 +1471,13 @@ footer.site-footer {
 .sug-mine li { margin: 4px 0; }
 .sug-status { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 7px; border-radius: 9px; margin-right: 4px; }
 .sug-open { background: #eef1f4; color: #4a5866; } .sug-made { background: #e3f3e6; color: #1f6b33; } .sug-not_made { background: #f3e9e7; color: #8a3a2c; }
+.mem-jump { position: relative; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.mem-jump .admin-search { width: 100%; max-width: none; }
+.mem-jump-list { position: absolute; left: 0; right: 0; top: 44px; z-index: 30; background: #fff; border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(11,37,64,.18); max-height: 340px; overflow: auto; }
+.mem-jump-list button { display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid #eef1f4; padding: 9px 12px; font: inherit; cursor: pointer; color: var(--ink); }
+.mem-jump-list button:hover, .mem-jump-list button:focus { background: #f2f6fa; outline: none; }
+.mem-jump-list button.on { background: #fff8e6; }
 .review-split { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
 .review-split .minutes-sheet { margin: 0; width: 100%; }
 .sug-panel { position: sticky; top: 12px; max-height: 760px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: #f8fafb; padding: 12px 14px; }
