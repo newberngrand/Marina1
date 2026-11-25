@@ -2307,6 +2307,15 @@
       $('memJump').value = ''; drawJump();
       openMemberForm(m);
     }
+    // Clicking the Members menu item while editing a slip goes back to the full list.
+    document.querySelector('.admin-tab[data-tab="members"]').addEventListener('click', function () {
+      if ($('memForm').hidden) return;
+      if (memDirty() && !confirm('You have unsaved changes to ' + (memEditing ? 'slip ' + memEditing.slip : 'this new slip') + '. Leave without saving?')) return;
+      $('memForm').hidden = true; memEditing = null;
+      $('memJump').value = ''; $('memJumpList').hidden = true;
+      $('memSearch').value = ''; drawMembers();
+      window.scrollTo({ top: document.querySelector('.admin-tabs').getBoundingClientRect().top + window.scrollY - 10 });
+    });
     $('memJump').addEventListener('input', drawJump);
     $('memJump').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); jumpTo(jumpHits[0]); }
