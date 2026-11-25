@@ -31,9 +31,11 @@
   var t = new URLSearchParams(location.search).get('t') || '';
   var ok = /^[0-9a-f-]{36}$/i.test(t);
   var gone = false;
+  // h=1: the email's extra "Request Help" button (the click is still recorded for this announcement).
+  var toHelp = new URLSearchParams(location.search).get('h') === '1';
   function go(dest) {
     if (gone) return; gone = true;
-    dest = dest || 'member-portal.html';
+    dest = toHelp ? 'help.html' : (dest || 'member-portal.html');
     if (ok) dest += (dest.indexOf('?') < 0 ? '?' : '&') + 't=' + encodeURIComponent(t);
     location.replace(dest);
   }

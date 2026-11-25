@@ -484,6 +484,7 @@ nav.main-nav a.active {
 .an-preview-card { position: sticky; top: 12px; }
 .an-preview-subject { font-weight: 700; color: var(--navy); padding: 8px 10px; background: #f2f6fa; border-radius: 6px; margin-bottom: 10px; }
 .an-preview { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-size: 0.92rem; line-height: 1.55; max-height: 520px; overflow-y: auto; }
+.an-btn-help { background: #1c5d6e; }
 .an-btn { display: inline-block; padding: 10px 16px; background: var(--navy); color: #fff; border-radius: 6px; font-weight: 700; }
 .an-vote-box { margin: 16px 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: #f7f9fa; }
 .an-vote-box p { margin: 6px 0; }

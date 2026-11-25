@@ -1564,6 +1564,7 @@
     $('anDocks').addEventListener('change', recount);
     $('anSlips').addEventListener('input', recount);
     $('anEmailVote').addEventListener('change', previewAnnouncement);
+    $('anHelpExtra').addEventListener('change', previewAnnouncement);
     $('anAudience').addEventListener('change', previewAnnouncement);
     ['anSubject', 'anBody', 'anEvent'].forEach(function (id) { $(id).addEventListener('input', previewAnnouncement); $(id).addEventListener('change', previewAnnouncement); });
     $('anAudience').addEventListener('change', updateAnCount);
@@ -1572,7 +1573,7 @@
       var to = $('anTestTo').value.trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return showErr(err, 'Type the email address to send the test to.');
       var btn = $('anTest'); btn.disabled = true; btn.textContent = 'Sending\u2026';
-      callAnnounce({ action: 'test', subject: $('anSubject').value, body: $('anBody').value, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn(), to: to })
+      callAnnounce({ action: 'test', subject: $('anSubject').value, body: $('anBody').value, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn(), help_extra: anHelpExtraOn(), to: to })
         .then(function (r) { done.textContent = r.message + ' Check that inbox (and spam) before sending to everyone.'; done.hidden = false; if (r.tracked) loadAnnouncements(); })
         .catch(function (ex) { showErr(err, ex.message); })
         .then(function () { btn.disabled = false; btn.textContent = 'Send test'; });
@@ -1586,7 +1587,7 @@
       if (n === 0) return showErr(err, 'Nobody to send to: pick docks or type slips that have an email on file.');
       if (!confirm('Send "' + subject + '" to ' + (n != null ? n + ' email addresses' : 'all members') + ' now?\n\nThis can\'t be undone. (Tip: send yourself a test first.)')) return;
       var btn = $('anSend'); btn.disabled = true; btn.textContent = 'Sending\u2026 please wait';
-      callAnnounce(Object.assign({ action: 'send', subject: subject, body: body, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn() }, anTarget()))
+      callAnnounce(Object.assign({ action: 'send', subject: subject, body: body, event_id: $('anEvent').value || null, email_vote: anEmailVoteOn(), help_extra: anHelpExtraOn() }, anTarget()))
         .then(function (r) {
           done.textContent = 'Sent to ' + r.sent + ' of ' + (r.sent + r.failed + r.pending) + ' addresses.' +
             (r.pending ? ' ' + r.pending + ' still waiting: ' + r.note : '') + (r.failed ? ' ' + r.failed + ' failed.' : '');
@@ -1639,7 +1640,7 @@
       $('anCount').innerHTML = 'Goes to <strong>' + r.count + ' email address' + (r.count === 1 ? '' : 'es') + '</strong> covering ' + r.slips + ' slip' + (r.slips === 1 ? '' : 's') + who + ' (owners with several slips get one email).' +
         (r.unknown && r.unknown.length ? '<br><span class="inactive">Not found: ' + D.esc(r.unknown.join(', ')) + '. Check those slip numbers.</span>' : '') +
         (r.no_email && r.no_email.length ? '<br><span class="inactive">No email on file, will be skipped: ' + D.esc(r.no_email.join(', ')) + '</span>' : '') +
-        (r.count > 100 ? '<br><span class="inactive">Note: the free email plan sends 100 per day, so this will pause partway and you can Resume the rest tomorrow.</span>' : '');
+        '';
       $('anSend').textContent = 'Send to ' + r.count + ' member' + (r.count === 1 ? '' : 's');
     }).catch(function (ex) { $('anCount').textContent = ex.message; });
   }
@@ -1652,12 +1653,15 @@
     if (!ev || ev.event_type !== 'vote' || (ev.audience || []).indexOf('certificated') < 0) return [];
     return D.ballotChoices(ev);
   }
+  function anHelpExtraOn() { return $('anHelpExtra').checked && $('anEvent').value !== 'help'; }
   function anEmailVoteOn() {
     return anVoteChoices().length > 0 && OWNER_AUD.indexOf($('anAudience').value) >= 0 && $('anEmailVote').checked;
   }
   function previewAnnouncement() {
     var choices = anVoteChoices();
     $('anEmailVoteWrap').hidden = !choices.length || OWNER_AUD.indexOf($('anAudience').value) < 0;
+    $('anHelpExtraWrap').hidden = $('anEvent').value === 'help';   // the main button already is Request Help
+    var helpBox = anHelpExtraOn() ? '<p><span class="an-btn an-btn-help">Request Help &rarr;</span></p>' : '';
     $('anEmailVoteChoices').textContent = choices.join(' / ');
     var voteBox = anEmailVoteOn()
       ? '<div class="an-vote-box"><p><strong>Or vote right from this email:</strong></p><p>' + choices.map(function (c, i) {
@@ -1668,7 +1672,7 @@
     var btnLabel = !ev || !ev.value ? '' : ev.value === 'portal' ? 'Go to the Member Portal' : ev.value === 'help' ? 'Request Help' : ev.textContent.replace(/ \([^)]*\)$/, '');
     $('anPrevSubject').textContent = $('anSubject').value.trim() || '(no subject)';
     $('anPreview').innerHTML = '<p>Dear [Owner name],</p><div>' + (D.richText($('anBody').value) || '<span class="note">Your message appears here.</span>') + '</div>' +
-      (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') + voteBox +
+      (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') + helpBox + voteBox +
       '<p style="margin-top:18px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br>newberngrand.com</p>' +
       '<p class="note an-foot">You\'re receiving this as the owner of record for slip [slips] at New Bern Grand Marina.</p>';
   }

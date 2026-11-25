@@ -3,7 +3,8 @@
 // audience: "all" | "voting" | "docks" (docks: ["A","C"]) | "slips" (slips: "A12, B7") | "ltc" | "stc" | "employee"
 // all / voting / docks mean slip owners (certificated); ltc / stc / employee are those logins.
 //   { action: "test", subject, body, event_id?, to }                 -> one test email
-//   { action: "send", subject, body, audience, event_id?, email_vote? } -> create + start sending
+//   { action: "send", subject, body, audience, event_id?, email_vote?, help_extra? } -> create + start sending
+// help_extra: also add a "Request Help" button (alongside any other button).
 // email_vote: on a vote, add one button per ballot choice so owners can vote from the email.
 //   { action: "resume", announcement_id }                            -> keep sending a paused one
 // event_id may be "portal" for a button to the Member Portal, or "help" for a Request Help button, instead of an event.
@@ -64,13 +65,17 @@ function voteButtons(choices: string[], voteLink: string) {
     </div>`;
 }
 
-function buildHtml(body: string, r: Recip, btn: Btn, link: string, voteLink = "") {
+function buildHtml(body: string, r: Recip, btn: Btn, link: string, voteLink = "", helpLink = "") {
   const greet = r.name ? `Dear ${esc(r.name)},` : "Dear Member,";
   const button = btn
     ? `<p style="margin:22px 0"><a href="${esc(link)}" style="display:inline-block;padding:12px 20px;background:#0b2540;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">${esc(btn.label)} &rarr;</a></p>
        <p style="color:#5c6b7a;font-size:13px;margin-top:-10px">You'll be asked to log in with your slip number and password.</p>`
     : "";
   const votes = btn?.choices && voteLink ? voteButtons(btn.choices, voteLink) : "";
+  // The extra "Request Help" button any announcement can carry.
+  const helpBtn = helpLink
+    ? `<p style="margin:${button ? "0" : "22px"} 0 22px"><a href="${esc(helpLink)}" style="display:inline-block;padding:12px 20px;background:#1c5d6e;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">Request Help &rarr;</a></p>`
+    : "";
   const slipLine = r.slips.length
     ? `You're receiving this as the owner of record for slip${r.slips.length > 1 ? "s" : ""} ${esc(r.slips.join(", "))} at New Bern Grand Marina.`
     : "You're receiving this as a New Bern Grand Marina member.";
@@ -78,6 +83,7 @@ function buildHtml(body: string, r: Recip, btn: Btn, link: string, voteLink = ""
     <p>${greet}</p>
     <div>${linkify(body)}</div>
     ${button}
+    ${helpBtn}
     ${votes}
     <p style="margin-top:24px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br><a href="${SITE}" style="color:#1c5d6e">newberngrand.com</a></p>
     <p style="color:#8a96a3;font-size:12px;border-top:1px solid #e2e6ea;padding-top:10px">${slipLine}</p>
@@ -169,9 +175,9 @@ Deno.serve(async (req) => {
       const { data: batch } = await db.from("announcement_recipients").select("email, name, slips, token")
         .eq("announcement_id", id).eq("status", "pending").limit(100);
       if (!batch?.length) break;
-      const res = await resendBatch(batch.map((r) => ({ from, to: [r.email], subject: a.subject, html: buildHtml(a.body, r as Recip, btn, `${SITE}/go.html?t=${r.token}`, ownerMail ? `${SITE}/vote.html?t=${r.token}` : "") })));
+      const res = await resendBatch(batch.map((r) => ({ from, to: [r.email], subject: a.subject, html: buildHtml(a.body, r as Recip, btn, `${SITE}/go.html?t=${r.token}`, ownerMail ? `${SITE}/vote.html?t=${r.token}` : "", a.help_extra ? `${SITE}/go.html?t=${r.token}&h=1` : "") })));
       if (res.status === 429 || /quota|limit/i.test(res.text)) {
-        note = "Paused: the email service's sending limit was reached. Use Resume later (the free plan allows 100 emails per day).";
+        note = "Paused: the email service's sending limit was reached. Use Resume to send the rest.";
         break;
       }
       const now = new Date().toISOString();
@@ -205,8 +211,9 @@ Deno.serve(async (req) => {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return reply(400, { error: "Enter an email address for the test." });
     const ev = await eventInfo(b.event_id);
     const btn = buttonFor(ev, b.event_id === "portal", b.event_id === "help");
+    const helpExtra = !!b.help_extra && b.event_id !== "help";
     const sample = { email: to, name: "Sample Owner", slips: ["A12"] };
-    if (!btn) {
+    if (!btn && !helpExtra) {
       const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject, html: buildHtml(t.body, sample, null, "") }]);
       if (res.status >= 300) return reply(400, { error: `Test email failed: ${res.status} ${res.text}` });
       return reply(200, { ok: true, message: `Test sent to ${to}.` });
@@ -215,13 +222,13 @@ Deno.serve(async (req) => {
     // so the admin can click it and see the click recorded.
     const { data: a, error } = await db.from("announcements").insert({
       subject: "[TEST] " + t.subject, body: t.body, audience: "slips", target: to, event_id: ev?.id ?? null,
-      portal_button: !ev && b.event_id !== "help", help_button: !ev && b.event_id === "help", tracked: true, is_test: true, email_vote: !!b.email_vote, sent_by: me.slip, total: 1,
+      portal_button: !ev && b.event_id === "portal", help_button: !ev && b.event_id === "help", help_extra: helpExtra, tracked: true, is_test: true, email_vote: !!b.email_vote, sent_by: me.slip, total: 1,
     }).select("id").single();
     if (error || !a) return reply(500, { error: error?.message ?? "Could not record the test." });
     const { data: rec } = await db.from("announcement_recipients")
       .insert({ announcement_id: a.id, email: to, name: "", slips: [] }).select("token").single();
     const res = await resendBatch([{ from, to: [to], subject: "[TEST] " + t.subject,
-      html: buildHtml(t.body, sample, btn, `${SITE}/go.html?t=${rec?.token}`, b.email_vote ? `${SITE}/vote.html?t=${rec?.token}` : "") }]);
+      html: buildHtml(t.body, sample, btn, `${SITE}/go.html?t=${rec?.token}`, b.email_vote ? `${SITE}/vote.html?t=${rec?.token}` : "", helpExtra ? `${SITE}/go.html?t=${rec?.token}&h=1` : "") }]);
     const ok = res.status < 300;
     await db.from("announcement_recipients").update(ok ? { status: "sent", sent_at: new Date().toISOString() } : { status: "failed", error: `${res.status} ${res.text}`.slice(0, 500) })
       .eq("announcement_id", a.id);
@@ -245,7 +252,8 @@ Deno.serve(async (req) => {
     const { data: a, error } = await db.from("announcements").insert({
       subject: t.subject, body: t.body, audience, target: targetText, event_id: ev?.id ?? null,
       portal_button: !ev && b.event_id === "portal", help_button: !ev && b.event_id === "help",
-      tracked: !!ev || b.event_id === "portal" || b.event_id === "help", email_vote: !!b.email_vote && !!btn_choices(ev),
+      help_extra: !!b.help_extra && b.event_id !== "help",
+      tracked: !!ev || b.event_id === "portal" || b.event_id === "help" || !!b.help_extra, email_vote: !!b.email_vote && !!btn_choices(ev),
       sent_by: me.slip, total: list.length,
     }).select("id").single();
     if (error || !a) return reply(500, { error: error?.message ?? "Could not create the announcement." });
