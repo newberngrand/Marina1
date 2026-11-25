@@ -81,7 +81,78 @@
         $('portalSlipTop').textContent = rows.map(function (x) { return x.slip; }).join(', ');
         $('portalSlipsNote').hidden = false;
       }
+      if (!m.is_admin && (m.member_class || 'certificated') === 'certificated') setupCertificates(rows.map(function (x) { return x.slip; }));
     });
+
+    /* ---------- My membership certificate(s): see, zoom and upload ---------- */
+    function setupCertificates(slips) {
+      var certs = {};
+      function signed(path) {
+        return sb.storage.from('marina-docs').createSignedUrl(path, 3600).then(function (r) { return r.data && r.data.signedUrl; });
+      }
+      function draw() {
+        $('portalCertList').innerHTML = slips.map(function (s) {
+          var c = certs[s];
+          return '<div class="pc-item">' +
+            '<button type="button" class="cert-thumb" data-pc-view="' + D.esc(s) + '"' + (c ? '' : ' disabled') + ' title="Click to view and zoom">' +
+              (c ? '<span class="note">Loading&hellip;</span>' : '<span class="note">No certificate yet</span>') + '</button>' +
+            '<div class="pc-side"><strong>Slip ' + D.esc(s) + '</strong>' +
+              (c ? '<span class="note">Added ' + D.esc(D.fmtWhen(c.uploaded_at)) + '</span>' : '') +
+              '<label class="btn-sm ed-import">' + (c ? 'Replace with a new photo&hellip;' : 'Upload a photo&hellip;') +
+                '<input type="file" accept="image/*" data-pc-up="' + D.esc(s) + '" hidden></label>' +
+            '</div></div>';
+        }).join('');
+        slips.forEach(function (s) {
+          var c = certs[s]; if (!c) return;
+          signed(c.thumb_path).then(function (u) {
+            var b = document.querySelector('[data-pc-view="' + s + '"]');
+            if (b && u) b.innerHTML = '<img src="' + u + '" alt="Certificate for slip ' + D.esc(s) + '">';
+          });
+        });
+      }
+      function load() {
+        return sb.from('member_certificates').select('slip, storage_path, thumb_path, uploaded_at').in('slip', slips).then(function (r) {
+          certs = {}; (r.data || []).forEach(function (c) { certs[c.slip] = c; });
+          draw();
+        });
+      }
+      $('portalCerts').hidden = false;
+      load();
+      $('portalCertList').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-pc-view]'); if (!b || b.disabled) return;
+        var s = b.getAttribute('data-pc-view'), c = certs[s]; if (!c) return;
+        signed(c.storage_path).then(function (u) { if (u) D.openViewer(u, 'Slip ' + s + ' · Membership certificate'); });
+      });
+      $('portalCertList').addEventListener('change', function (e) {
+        var inp = e.target.closest('[data-pc-up]'); if (!inp) return;
+        var s = inp.getAttribute('data-pc-up'), f = inp.files[0], err = $('portalCertError'); inp.value = '';
+        if (!f) return;
+        if (!/^image\//.test(f.type)) { err.textContent = 'Please choose a photo (JPG, PNG or similar).'; err.hidden = false; return; }
+        err.hidden = true;
+        var lab = inp.parentNode; lab.firstChild.textContent = 'Uploading…';
+        var url = URL.createObjectURL(f), base = 'certificates/' + s + '/' + Date.now(), blobs;
+        D.loadImage(url).then(function (img) {
+          return D.drawImage(img, 2400, false).then(function (full) { return D.drawImage(img, 480, false).then(function (th) { blobs = [full, th]; }); });
+        }).then(function () {
+          URL.revokeObjectURL(url);
+          return sb.storage.from('marina-docs').upload(base + '.jpg', blobs[0], { contentType: 'image/jpeg' });
+        }).then(function (r) {
+          if (r.error) throw new Error(r.error.message);
+          return sb.storage.from('marina-docs').upload(base + '_thumb.jpg', blobs[1], { contentType: 'image/jpeg' });
+        }).then(function (r) {
+          if (r.error) throw new Error(r.error.message);
+          return sb.rpc('owner_certificate_save', { p_slip: s, p_storage_path: base + '.jpg', p_thumb_path: base + '_thumb.jpg' });
+        }).then(function (r) {
+          if (r.error) { sb.storage.from('marina-docs').remove([base + '.jpg', base + '_thumb.jpg']); throw new Error(r.error.message); }
+          var old = r.data || {};
+          if (old.storage_path) sb.storage.from('marina-docs').remove([old.storage_path, old.thumb_path]);
+          return load();
+        }).catch(function (ex) {
+          err.textContent = 'Could not upload the picture: ' + ex.message; err.hidden = false;
+          draw();
+        });
+      });
+    }
     // Admin rights follow the owner: any of their slips (same email) shows the Admin button.
     if (m.is_admin || m.admin_rights) $('portalAdminLink').hidden = false;
     else sb.rpc('is_admin').then(function (r) { if (r.data) $('portalAdminLink').hidden = false; });

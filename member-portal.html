@@ -6,7 +6,7 @@
 <title>Member Portal | New Bern Grand Marina</title>
 <meta name="description" content="New Bern Grand Marina member portal.">
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611251355">
+<link rel="stylesheet" href="style.css?v=202611251402">
 </head>
 <body data-member-portal>
 
@@ -93,6 +93,12 @@
           </table>
         </div>
         <p class="note" id="portalSlipsNote" style="margin:8px 0 0" hidden>Slips that share your email address are grouped here, so you can see and vote all of them from one login.</p>
+        <div id="portalCerts" hidden>
+          <h4 class="slips-head">Membership certificate</h4>
+          <p class="note" style="margin:-4px 0 10px">Add a photo or scan of your slip&rsquo;s Class A Membership Certificate. Only you and the marina&rsquo;s admins can see it.</p>
+          <div class="pc-list" id="portalCertList"></div>
+          <div class="member-login-error" id="portalCertError" hidden></div>
+        </div>
         <p style="color:var(--muted);font-size:0.88rem;margin:16px 0 0;">If any of this is out of date, please contact the marina office at (252) 638-0318.</p>
         <div class="portal-actions" id="portalPwActions">
           <button type="button" class="btn btn-outline" id="portalShowPw">Change Password</button>
@@ -161,8 +167,8 @@
   </a>
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611251355"></script>
-<script src="member-data.js?v=202611251355"></script>
-<script src="member-portal.js?v=202611251355"></script>
+<script src="member-login.js?v=202611251402"></script>
+<script src="member-data.js?v=202611251402"></script>
+<script src="member-portal.js?v=202611251402"></script>
 </body>
 </html>

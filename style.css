@@ -1479,6 +1479,10 @@ footer.site-footer {
 .cert-thumb[disabled] { cursor: default; box-shadow: none; }
 .cert-actions { flex: 1; min-width: 200px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .cert-actions .note { flex-basis: 100%; }
+.pc-list { display: grid; gap: 12px; margin-bottom: 6px; }
+.pc-item { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.pc-item .cert-thumb { width: 200px; }
+.pc-side { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .img-viewer { position: fixed; inset: 0; z-index: 1000; background: rgba(8,16,26,.92); display: flex; flex-direction: column; }
 .iv-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; color: #fff; font-weight: 600; }
 .iv-bar span:last-child { display: flex; gap: 6px; align-items: center; }

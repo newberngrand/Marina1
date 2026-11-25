@@ -1969,7 +1969,7 @@
     return Promise.all([
       sb.from('members').select('slip, owner_name, email, active, is_admin, admin_rights, is_board, board_name, can_vote, user_id, member_class'),
       sb.from('member_notes').select('slip, note'),
-      sb.from('member_certificates').select('slip, storage_path, thumb_path, uploaded_at')
+      sb.from('member_certificates').select('slip, storage_path, thumb_path, uploaded_at, uploaded_by, uploaded_by_owner')
     ]).then(function (r) {
       if (r[0].error) return;
       memCerts = {};
@@ -2093,29 +2093,14 @@
     var c = memCerts[slip], t = $('certThumb');
     certShown = slip;
     $('certRotate').hidden = $('certRemove').hidden = !c;
-    $('certInfo').textContent = c ? 'Added ' + D.fmtWhen(c.uploaded_at) + '. Click the picture to view it full size and zoom.' : 'Upload a photo or scan of this slip’s certificate.';
+    $('certInfo').textContent = c ? (c.uploaded_by_owner ? 'Uploaded by the owner' + (c.uploaded_by ? ' (slip ' + c.uploaded_by + ')' : '') : 'Added') + ' ' + D.fmtWhen(c.uploaded_at) +
+      '. Click the picture to view it full size and zoom.' : 'Upload a photo or scan of this slip’s certificate. Owners can also add it from My Account.';
     if (!c) { t.innerHTML = '<span class="note">No certificate yet</span>'; t.disabled = true; return; }
     t.disabled = false;
     t.innerHTML = '<span class="note">Loading&hellip;</span>';
     signed(c.thumb_path).then(function (u) { if (certShown === slip && u) t.innerHTML = '<img src="' + u + '" alt="Certificate for slip ' + D.esc(slip) + '">'; });
   }
-  // A small copy for the thumbnail (and, when rotating, the turned image itself).
-  function loadImage(src) {
-    return new Promise(function (ok, bad) {
-      var img = new Image(); img.crossOrigin = 'anonymous';
-      img.onload = function () { ok(img); }; img.onerror = function () { bad(new Error('Could not read that image.')); };
-      img.src = src;
-    });
-  }
-  function drawTo(img, maxW, turn) {
-    var w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, maxW / Math.max(w, h));
-    var cw = Math.round((turn ? h : w) * s), ch = Math.round((turn ? w : h) * s), cv = document.createElement('canvas');
-    cv.width = cw; cv.height = ch;
-    var g = cv.getContext('2d');
-    if (turn) { g.translate(cw, 0); g.rotate(Math.PI / 2); }
-    g.drawImage(img, 0, 0, w * s, h * s);
-    return new Promise(function (ok) { cv.toBlob(ok, 'image/jpeg', maxW > 1000 ? 0.9 : 0.82); });
-  }
+  var loadImage = D.loadImage, drawTo = D.drawImage;
   // Store a certificate image for a slip: the image itself plus a thumbnail; replaces any earlier one.
   function saveCert(slip, fullBlob) {
     var url = URL.createObjectURL(fullBlob), base = 'certificates/' + slip + '/' + Date.now(), old = memCerts[slip];
@@ -2128,7 +2113,7 @@
         });
       }).then(function (r) {
         if (r.error) throw new Error(r.error.message);
-        var row = { slip: slip, storage_path: base + '.jpg', thumb_path: base + '_thumb.jpg', uploaded_at: new Date().toISOString() };
+        var row = { slip: slip, storage_path: base + '.jpg', thumb_path: base + '_thumb.jpg', uploaded_at: new Date().toISOString(), uploaded_by: null, uploaded_by_owner: false };
         return sb.from('member_certificates').upsert(row).select().single();
       }).then(function (r) {
         if (r.error) throw new Error(r.error.message);
@@ -2192,62 +2177,8 @@
     });
   }
 
-  // Full-screen viewer: fit to screen; click, the wheel or a pinch zooms in; drag to move around.
-  function openViewer(src, title) {
-    var ov = document.createElement('div'); ov.className = 'img-viewer';
-    ov.innerHTML = '<div class="iv-bar"><span>' + D.esc(title) + '</span><span><button type="button" data-z="-1" aria-label="Zoom out">&minus;</button>' +
-      '<button type="button" data-z="0">Fit</button><button type="button" data-z="1" aria-label="Zoom in">+</button>' +
-      '<a href="' + src + '" target="_blank" rel="noopener">Open</a><button type="button" data-x aria-label="Close">&times;</button></span></div>' +
-      '<div class="iv-stage"><img alt=""></div>';
-    document.body.appendChild(ov);
-    var stage = ov.querySelector('.iv-stage'), img = ov.querySelector('img'), z = 1, fit = 1, tx = 0, ty = 0, drag = null, moved = false;
-    function apply() {
-      var sw = stage.clientWidth, sh = stage.clientHeight, w = img.naturalWidth * z, h = img.naturalHeight * z;
-      tx = w <= sw ? (sw - w) / 2 : Math.min(0, Math.max(sw - w, tx));
-      ty = h <= sh ? (sh - h) / 2 : Math.min(0, Math.max(sh - h, ty));
-      img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + z + ')';
-      stage.style.cursor = z > fit + 1e-3 ? 'grab' : 'zoom-in';
-    }
-    function zoomAt(nz, cx, cy) { nz = Math.max(fit, Math.min(4, nz)); tx = cx - (cx - tx) * nz / z; ty = cy - (cy - ty) * nz / z; z = nz; apply(); }
-    function close() { ov.remove(); document.removeEventListener('keydown', key); }
-    function key(e) { if (e.key === 'Escape') close(); }
-    img.onload = function () { fit = z = Math.min(stage.clientWidth / img.naturalWidth, stage.clientHeight / img.naturalHeight, 1); tx = ty = 0; apply(); };
-    img.src = src;
-    document.addEventListener('keydown', key);
-    ov.querySelector('.iv-bar').addEventListener('click', function (e) {
-      var b = e.target.closest('button'); if (!b) return;
-      if (b.hasAttribute('data-x')) return close();
-      var d = +b.getAttribute('data-z'), cx = stage.clientWidth / 2, cy = stage.clientHeight / 2;
-      if (d === 0) { z = fit; apply(); } else zoomAt(z * (d > 0 ? 1.5 : 1 / 1.5), cx, cy);
-    });
-    stage.addEventListener('wheel', function (e) { e.preventDefault(); var r = stage.getBoundingClientRect(); zoomAt(z * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
-    var pts = {}, pinch = 0;
-    stage.addEventListener('pointerdown', function (e) {
-      pts[e.pointerId] = [e.clientX, e.clientY]; moved = false;
-      var ids = Object.keys(pts);
-      if (ids.length === 2) { pinch = Math.hypot(pts[ids[0]][0] - pts[ids[1]][0], pts[ids[0]][1] - pts[ids[1]][1]); drag = null; }
-      else drag = { x: e.clientX, y: e.clientY, tx: tx, ty: ty };
-      try { stage.setPointerCapture(e.pointerId); } catch (x) {}
-    });
-    stage.addEventListener('pointermove', function (e) {
-      if (!pts[e.pointerId]) return;
-      pts[e.pointerId] = [e.clientX, e.clientY];
-      var ids = Object.keys(pts), r = stage.getBoundingClientRect();
-      if (ids.length === 2 && pinch) {
-        var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-        zoomAt(z * d / pinch, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); pinch = d; moved = true; return;
-      }
-      if (!drag) return;
-      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 4) moved = true;
-      tx = drag.tx + e.clientX - drag.x; ty = drag.ty + e.clientY - drag.y; apply();
-    });
-    stage.addEventListener('pointerup', function (e) {
-      delete pts[e.pointerId]; if (Object.keys(pts).length < 2) pinch = 0;
-      if (!moved && drag) { var r = stage.getBoundingClientRect(); if (z > fit + 1e-3) { z = fit; apply(); } else zoomAt(fit * 2.5, e.clientX - r.left, e.clientY - r.top); }
-      drag = null;
-    });
-    window.addEventListener('resize', function () { if (!document.body.contains(ov)) return; var was = z <= fit + 1e-3; fit = Math.min(stage.clientWidth / img.naturalWidth, stage.clientHeight / img.naturalHeight, 1); if (was) z = fit; apply(); });
-  }
+  var openViewer = D.openViewer;
+
 
   function adminAllowed() { return $('memClass').value === 'certificated' || $('memClass').value === 'employee'; }
   var CLASS_LABEL = { certificated: 'Owner', ltc: 'Long-term cruiser', stc: 'Transient', employee: 'Employee' };
