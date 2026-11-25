@@ -72,9 +72,10 @@ function buildHtml(body: string, r: Recip, btn: Btn, link: string, voteLink = ""
        <p style="color:#5c6b7a;font-size:13px;margin-top:-10px">You'll be asked to log in with your slip number and password.</p>`
     : "";
   const votes = btn?.choices && voteLink ? voteButtons(btn.choices, voteLink) : "";
-  // The extra "Request Help" button any announcement can carry.
+  // The separate "Help Desk" button any announcement can carry (after any vote buttons).
   const helpBtn = helpLink
-    ? `<p style="margin:${button ? "0" : "22px"} 0 22px"><a href="${esc(helpLink)}" style="display:inline-block;padding:12px 20px;background:#1c5d6e;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">Request Help &rarr;</a></p>`
+    ? `<p style="margin:22px 0"><a href="${esc(helpLink)}" style="display:inline-block;padding:12px 20px;background:#1c5d6e;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">Help Desk &rarr;</a></p>
+       <p style="color:#5c6b7a;font-size:13px;margin-top:-10px">Questions or need a hand? This opens a help request form.</p>`
     : "";
   const slipLine = r.slips.length
     ? `You're receiving this as the owner of record for slip${r.slips.length > 1 ? "s" : ""} ${esc(r.slips.join(", "))} at New Bern Grand Marina.`
@@ -83,8 +84,8 @@ function buildHtml(body: string, r: Recip, btn: Btn, link: string, voteLink = ""
     <p>${greet}</p>
     <div>${linkify(body)}</div>
     ${button}
-    ${helpBtn}
     ${votes}
+    ${helpBtn}
     <p style="margin-top:24px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br><a href="${SITE}" style="color:#1c5d6e">newberngrand.com</a></p>
     <p style="color:#8a96a3;font-size:12px;border-top:1px solid #e2e6ea;padding-top:10px">${slipLine}</p>
   </div>`;

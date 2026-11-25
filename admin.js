@@ -1661,7 +1661,7 @@
     var choices = anVoteChoices();
     $('anEmailVoteWrap').hidden = !choices.length || OWNER_AUD.indexOf($('anAudience').value) < 0;
     $('anHelpExtraWrap').hidden = $('anEvent').value === 'help';   // the main button already is Request Help
-    var helpBox = anHelpExtraOn() ? '<p><span class="an-btn an-btn-help">Request Help &rarr;</span></p>' : '';
+    var helpBox = anHelpExtraOn() ? '<p><span class="an-btn an-btn-help">Help Desk &rarr;</span></p>' : '';
     $('anEmailVoteChoices').textContent = choices.join(' / ');
     var voteBox = anEmailVoteOn()
       ? '<div class="an-vote-box"><p><strong>Or vote right from this email:</strong></p><p>' + choices.map(function (c, i) {
@@ -1672,7 +1672,7 @@
     var btnLabel = !ev || !ev.value ? '' : ev.value === 'portal' ? 'Go to the Member Portal' : ev.value === 'help' ? 'Request Help' : ev.textContent.replace(/ \([^)]*\)$/, '');
     $('anPrevSubject').textContent = $('anSubject').value.trim() || '(no subject)';
     $('anPreview').innerHTML = '<p>Dear [Owner name],</p><div>' + (D.richText($('anBody').value) || '<span class="note">Your message appears here.</span>') + '</div>' +
-      (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') + helpBox + voteBox +
+      (btnLabel ? '<p><span class="an-btn">' + D.esc(btnLabel) + ' &rarr;</span></p><p class="note" style="margin-top:-6px">You\'ll be asked to log in with your slip number and password.</p>' : '') + voteBox + helpBox +
       '<p style="margin-top:18px">New Bern Grand Marina<br>134 Craven St, New Bern, NC &middot; (252) 638-0318<br>newberngrand.com</p>' +
       '<p class="note an-foot">You\'re receiving this as the owner of record for slip [slips] at New Bern Grand Marina.</p>';
   }
