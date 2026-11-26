@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611251704">
+<link rel="stylesheet" href="style.css?v=202611261127">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -329,7 +329,8 @@
       { name: 'Gallery', url: 'gallery.html', icon: 'image', points: [
         'Photos and videos of the marina and downtown.',
         'Click a photo to see it full size; arrows or swipe move between photos.',
-        'The pictures are managed on the Admin page (Gallery tab).'] },
+        'The pictures are managed on the Admin page (Gallery tab).',
+        'Logged-in members, cruisers and staff can send photos, videos or video links; they show only after an admin approves them.'] },
       { name: 'Documents', url: 'documents.html', icon: 'doc', points: [
         'Documents the board has marked Public: permits, licenses, marina rules and forms.',
         'Members-only and board documents never appear here.'] },
@@ -377,7 +378,11 @@
         'Choose Public or members-only; Board documents are only for the board.',
         'Send a document out for review and track the reviewers.'] },
       { name: 'Gallery', url: 'admin.html', icon: 'image', points: [
-        'Add and remove the photos and videos shown on the Gallery page.'] },
+        'Add and remove the photos and videos shown on the Gallery page.'], children: [
+        { name: 'Gallery Review', url: 'gallery-review.html', icon: 'image', points: [
+          'Photos and videos sent by members and cruisers from the Gallery page.',
+          'Approve & Publish puts it at the end of the Gallery; Reject deletes it.',
+          'The Admin button (Members page) and the Gallery Review tab show a count of uploads waiting.'] }] },
       { name: 'Members', url: 'admin.html', icon: 'users', points: [
         'Every slip: owner, email, member type, voting or non-voting, active, board and admin rights.',
         'Search, filter and sort; edit a slip, add notes, or set a new password.'] },
@@ -905,6 +910,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611251704"></script>
+<script src="member-login.js?v=202611261127"></script>
 </body>
 </html>

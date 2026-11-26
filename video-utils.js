@@ -1,7 +1,7 @@
 /* Recognize video links and build embedded players.
    Supports YouTube (incl. Shorts), Vimeo, Instagram posts/reels, TikTok and Facebook. */
 (function () {
-  var NAMES = { youtube: 'YouTube', vimeo: 'Vimeo', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+  var NAMES = { youtube: 'YouTube', vimeo: 'Vimeo', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', file: 'Video' };
 
   function parse(raw) {
     var s = String(raw || '').trim();

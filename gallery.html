@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gallery | New Bern Grand Marina</title>
 <meta name="description" content="Photos of New Bern Grand Marina and downtown New Bern, North Carolina, at the confluence of the Neuse and Trent Rivers.">
-<link rel="stylesheet" href="style.css?v=202611251704">
+<link rel="stylesheet" href="style.css?v=202611261127">
 </head>
 <body>
 
@@ -57,6 +57,41 @@
       <button type="button" class="gallery-tab active" role="tab" aria-selected="true" data-view="photos" id="tabPhotos">Photos</button>
       <button type="button" class="gallery-tab" role="tab" aria-selected="false" data-view="videos" id="tabVideos">Videos</button>
     </div>
+    <!-- Logged-in members, cruisers and staff can send photos and videos; an admin approves them first. -->
+    <div class="gal-share" id="galShare" hidden>
+      <div class="gal-share-bar">
+        <button type="button" class="btn btn-gold" id="gsOpen">Share a Photo or Video</button>
+        <a href="gallery-review.html" class="btn btn-outline" id="gsReviewLink" hidden>Review Uploads<span class="board-count" hidden>0</span></a>
+      </div>
+      <form class="portal-card gal-share-form" id="gsForm" hidden novalidate>
+        <h3>Share with the Gallery</h3>
+        <p class="note">Everything you send is looked over by the marina first, and shows on the Gallery once it&rsquo;s approved.</p>
+        <div class="gs-pick">
+          <input type="file" id="gsFiles" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm" hidden>
+          <label for="gsFiles" class="btn btn-outline gs-pick-btn">Choose Photos or Videos</label>
+          <span class="note">Photos, or videos up to 50&nbsp;MB (about a minute of phone video).</span>
+        </div>
+        <ul class="gs-list" id="gsList"></ul>
+        <label class="gs-field">Or paste a video link <span class="note">(YouTube, Vimeo, Instagram, TikTok or Facebook, for longer videos)</span>
+          <input type="url" id="gsLink" maxlength="500" placeholder="https://youtu.be/..." autocomplete="off" spellcheck="false">
+        </label>
+        <div class="note" id="gsDetected"></div>
+        <label class="gs-field">Description
+          <input type="text" id="gsCaption" maxlength="400" placeholder="e.g. Sunset from D Dock">
+        </label>
+        <label class="gs-field">Taken by <span class="note">(optional, shown with it)</span>
+          <input type="text" id="gsCredit" maxlength="120">
+        </label>
+        <div class="member-login-error" id="gsErr" hidden></div>
+        <div class="portal-actions">
+          <button type="submit" class="btn btn-gold" id="gsSend">Send for Review</button>
+          <button type="button" class="btn btn-outline" id="gsCancel">Cancel</button>
+        </div>
+      </form>
+      <div class="member-login-note" id="gsDone" hidden></div>
+      <div class="gs-mine" id="gsMine" hidden></div>
+    </div>
+    <p class="note gal-share-hint" id="galShareHint" hidden>Marina members and cruisers: <a href="member-portal.html" id="gsLogin">log in</a> to share your photos and videos.</p>
   </div>
   <div class="container video-grid" id="videoGrid" hidden></div>
   <div class="container gallery-grid">
@@ -143,8 +178,9 @@
   </a>
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611251704"></script>
-<script src="video-utils.js?v=202611251704"></script>
-<script src="gallery.js?v=202611251704"></script>
+<script src="member-login.js?v=202611261127"></script>
+<script src="video-utils.js?v=202611261127"></script>
+<script src="gallery.js?v=202611261127"></script>
+<script src="gallery-share.js?v=202611261127"></script>
 </body>
 </html>

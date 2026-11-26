@@ -51,6 +51,14 @@
       $('boardTab').title = n ? n + ' set' + (n > 1 ? 's' : '') + ' of minutes waiting for your approval' : 'Review and approve meeting minutes';
       $('boardTab').hidden = false;
     });
+    // Gallery uploads from members waiting for review: a count like the Board tab's.
+    sb.rpc('gallery_pending_count').then(function (r) {
+      var n = (r && r.data) || 0;
+      if (!n) return;
+      $('galReviewTab').innerHTML = 'Gallery Review<span class="board-count">' + n + '</span>';
+      $('galReviewTab').title = n + ' upload' + (n > 1 ? 's' : '') + ' waiting for review';
+      $('galReviewBtn').innerHTML = 'Review member uploads<span class="board-count">' + n + '</span>';
+    });
     function show(name) {
       tabs.forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tab') === name); });
       document.querySelectorAll('.admin-panel').forEach(function (p) {
@@ -1299,8 +1307,9 @@
           setTimeout(function () { b.textContent = 'Save'; }, 1500);
         });
       }
-      if (act === 'delete' && confirm('Remove "' + v.title + '" from the gallery? (The video itself stays on ' + V.name(v.provider) + '.)')) {
-        sb.from('gallery_videos').delete().eq('id', v.id).then(loadVideos);
+      if (act === 'delete' && confirm('Remove "' + v.title + '" from the gallery?' + (v.storage_path ? ' The uploaded video file is deleted too.' : ' (The video itself stays on ' + V.name(v.provider) + '.)'))) {
+        var gone = v.storage_path ? sb.storage.from('gallery-videos').remove([v.storage_path]) : Promise.resolve();
+        gone.then(function () { return sb.from('gallery_videos').delete().eq('id', v.id); }).then(loadVideos);
       }
     });
     loadVideos();
@@ -1316,14 +1325,14 @@
         var thumb = V.thumbUrl(v);
         return '<div class="gal-card' + (v.active ? '' : ' hidden-photo') + '">' +
           '<div class="gal-thumb video-thumb vt-' + D.esc(v.provider) + '">' +
-            (thumb ? '<img src="' + D.esc(thumb) + '" alt="" loading="lazy">' : '<span class="vt-name">' + D.esc(V.name(v.provider)) + '</span>') +
+            (thumb ? '<img src="' + D.esc(thumb) + '" alt="" loading="lazy">' : v.provider === 'file' ? '<video src="' + D.esc(v.url) + '#t=0.5" preload="metadata" muted playsinline></video>' : '<span class="vt-name">' + D.esc(V.name(v.provider)) + '</span>') +
             '<span class="gal-pos">' + (i + 1) + '</span>' + (v.active ? '' : '<span class="gal-flag">Hidden</span>') +
             '<span class="video-source">' + D.esc(V.name(v.provider)) + '</span></div>' +
           '<div class="vid-fields">' +
             '<input type="text" data-f="title" maxlength="200" value="' + D.esc(v.title) + '" aria-label="Title">' +
             '<input type="text" data-f="credit" maxlength="120" value="' + D.esc(v.credit) + '" placeholder="Credit" aria-label="Credit">' +
             '<input type="text" data-f="desc" maxlength="300" value="' + D.esc(v.description) + '" placeholder="Short description" aria-label="Description">' +
-            '<a href="' + D.esc(v.url) + '" target="_blank" rel="noopener" class="note">Open on ' + D.esc(V.name(v.provider)) + ' &#8599;</a>' +
+            '<a href="' + D.esc(v.url) + '" target="_blank" rel="noopener" class="note">' + (v.provider === 'file' ? 'Open the video file' : 'Open on ' + D.esc(V.name(v.provider))) + ' &#8599;</a>' +
           '</div>' +
           '<div class="gal-actions">' +
             '<button type="button" class="btn-sm" data-vid="up" data-id="' + v.id + '"' + (i === 0 ? ' disabled' : '') + ' title="Move earlier">&#8593;</button>' +

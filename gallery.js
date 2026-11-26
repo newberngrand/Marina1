@@ -147,11 +147,13 @@
   function openVideo(v) {
     var frame = vbox.querySelector('.vb-frame');
     frame.className = 'vb-frame' + (V.isVertical(v) ? ' vertical' : '');
-    frame.innerHTML = '<iframe src="' + esc(V.embedUrl(v)) + '" title="' + esc(v.title || 'Video') + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+    frame.innerHTML = v.provider === 'file'
+      ? '<video src="' + esc(v.url) + '" controls autoplay playsinline title="' + esc(v.title || 'Video') + '"></video>'
+      : '<iframe src="' + esc(V.embedUrl(v)) + '" title="' + esc(v.title || 'Video') + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
     vbox.querySelector('.vb-caption').innerHTML = '<strong>' + esc(v.title) + '</strong>' +
       (v.credit ? ' <span>&middot; ' + esc(v.credit) + '</span>' : '') +
       (v.description ? '<div>' + esc(v.description) + '</div>' : '') +
-      '<div><a href="' + esc(v.url) + '" target="_blank" rel="noopener">Watch on ' + esc(V.name(v.provider)) + ' &#8599;</a></div>';
+      (v.provider === 'file' ? '' : '<div><a href="' + esc(v.url) + '" target="_blank" rel="noopener">Watch on ' + esc(V.name(v.provider)) + ' &#8599;</a></div>');
     vbox.classList.add('open');
     document.documentElement.classList.add('lb-lock');
     vbox.querySelector('.lb-close').focus();
@@ -170,9 +172,9 @@
       var thumb = V.thumbUrl(v);
       return '<button type="button" class="video-card" data-i="' + i + '" aria-label="Play video: ' + esc(v.title) + '">' +
         '<span class="video-thumb vt-' + esc(v.provider) + '">' +
-          (thumb ? '<img src="' + esc(thumb) + '" alt="" loading="lazy">' : '<span class="vt-name">' + esc(V.name(v.provider)) + '</span>') +
+          (thumb ? '<img src="' + esc(thumb) + '" alt="" loading="lazy">' : v.provider === 'file' ? '<video src="' + esc(v.url) + '#t=0.5" preload="metadata" muted playsinline tabindex="-1"></video>' : '<span class="vt-name">' + esc(V.name(v.provider)) + '</span>') +
           '<span class="video-play" aria-hidden="true">&#9654;</span>' +
-          '<span class="video-source">' + esc(V.name(v.provider)) + '</span>' +
+          (v.provider === 'file' ? '' : '<span class="video-source">' + esc(V.name(v.provider)) + '</span>') +
         '</span>' +
         '<span class="video-title">' + esc(v.title || 'Video') + '</span>' +
         (v.credit ? '<span class="video-credit">' + esc(v.credit) + '</span>' : '') +

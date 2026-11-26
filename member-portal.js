@@ -154,8 +154,23 @@
       });
     }
     // Admin rights follow the owner: any of their slips (same email) shows the Admin button.
-    if (m.is_admin || m.admin_rights) $('portalAdminLink').hidden = false;
-    else sb.rpc('is_admin').then(function (r) { if (r.data) $('portalAdminLink').hidden = false; });
+    // With Gallery uploads waiting, it carries the count like the Board button, plus a reminder.
+    function showAdmin() {
+      $('portalAdminLink').hidden = false;
+      sb.rpc('gallery_pending_count').then(function (r) {
+        var n = (r && r.data) || 0;
+        if (!n) return;
+        var al = $('portalAdminLink');
+        al.innerHTML = 'Admin<span class="board-count">' + n + '</span>';
+        al.title = n + ' Gallery upload' + (n > 1 ? 's' : '') + ' waiting for review';
+        if (document.getElementById('galleryAlert')) return;
+        $('portalMember').insertAdjacentHTML('afterbegin', '<div class="board-alert" id="galleryAlert">Gallery: <strong>' + n +
+          ' photo' + (n > 1 ? 's or videos' : ' or video') + '</strong> sent by members ' + (n > 1 ? 'are' : 'is') + ' waiting for review. ' +
+          '<a href="gallery-review.html">Review now &rarr;</a></div>');
+      });
+    }
+    if (m.is_admin || m.admin_rights) showAdmin();
+    else sb.rpc('is_admin').then(function (r) { if (r.data) showAdmin(); });
 
     $('portalLogout').addEventListener('click', function () {
       MemberAuth.logOut();

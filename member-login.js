@@ -313,7 +313,7 @@
 
   // Shared with member-portal.html and reset-password.html.
   window.MemberAuth = {
-    getClient: getClient, openLogin: openModal, slipEmail: slipEmail,
+    getClient: getClient, openLogin: openModal, slipEmail: slipEmail, hasSession: hasStoredSession,
     signOut: function () { return getClient().then(signOutHere, function () { clearLocalSession(); }); },
     logOut: logOut,
     track: track,
