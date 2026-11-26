@@ -6,7 +6,8 @@
 <title>Marina Chat | New Bern Grand Marina</title>
 <meta name="description" content="Live chat for New Bern Grand Marina members and cruisers.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611261437">
+<script>if (/[?&]popout=1/.test(location.search)) document.documentElement.className += ' chat-popout';</script>
+<link rel="stylesheet" href="style.css?v=202611261442">
 </head>
 <body>
 
@@ -68,8 +69,9 @@
     <div class="chat-app" id="chApp" hidden>
       <div class="chat-main portal-card">
         <div class="chat-top">
-          <span class="chat-live"><i></i> <span id="chConn">Connecting&hellip;</span></span>
-          <span class="chat-me">You are <strong id="chMe"></strong> <button type="button" class="chat-link" id="chRename" hidden>change</button></span>
+          <span class="chat-live"><strong class="chat-pop-title">Marina Chat</strong><i></i> <span id="chConn">Connecting&hellip;</span></span>
+          <span class="chat-me">You are <strong id="chMe"></strong> <button type="button" class="chat-link" id="chRename" hidden>change</button>
+            <button type="button" class="btn-sm chat-popbtn" id="chPop" title="Open the chat in its own small window so you can keep using the site">Pop out &#8599;</button></span>
         </div>
         <div class="chat-log" id="chLog" aria-live="polite" aria-label="Chat messages">
           <div class="chat-more" id="chMoreWrap" hidden><button type="button" class="btn-sm" id="chMore">Show earlier messages</button></div>
@@ -141,7 +143,7 @@
   </a>
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611261437"></script>
-<script src="chat.js?v=202611261437"></script>
+<script src="member-login.js?v=202611261442"></script>
+<script src="chat.js?v=202611261442"></script>
 </body>
 </html>

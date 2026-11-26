@@ -312,7 +312,25 @@
   }
 
   // Shared with member-portal.html and reset-password.html.
+  // Marina Chat opens in its own small window, so people can keep using the site (or other
+  // programs) while they chat. Phones and blocked pop-ups just open the chat page instead.
+  function openChat(e) {
+    if (window.innerWidth < 700 || /[?&]popout=1/.test(location.search)) return;   // phones: normal page
+    var w = window.open('', 'marinaChat', 'width=440,height=720,resizable=yes,scrollbars=yes');
+    if (!w) return;   // pop-up blocked: let the link open the page
+    if (e) e.preventDefault();
+    try { if (!/chat\.html/.test(w.location.href)) w.location.href = 'chat.html?popout=1'; }
+    catch (x) { w.location.href = 'chat.html?popout=1'; }
+    w.focus();
+    return w;
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="chat.html"]');
+    if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) openChat(e);
+  });
+
   window.MemberAuth = {
+    openChat: openChat,
     getClient: getClient, openLogin: openModal, slipEmail: slipEmail, hasSession: hasStoredSession,
     signOut: function () { return getClient().then(signOutHere, function () { clearLocalSession(); }); },
     logOut: logOut,

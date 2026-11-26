@@ -1789,3 +1789,29 @@ footer.site-footer {
   .chat-msg { max-width: 90%; }
   .chat-tools { display: flex; }
 }
+
+/* Marina Chat in its own small pop-out window */
+.chat-pop-title { display: none; color: var(--navy); margin-right: 8px; }
+.chat-popbtn { margin-left: 8px; }
+.chat-popout .topbar, .chat-popout .site-header, .chat-popout .site-footer, .chat-popout .mobile-action-bar,
+.chat-popout #memberBar, .chat-popout .chat-hero, .chat-popout .chat-popbtn, .chat-popout .idle-notice { display: none !important; }
+.chat-popout body { padding-bottom: 0 !important; background: #fbfcfd; }
+.chat-popout .chat-pop-title { display: inline; }
+.chat-popout .chat-section { padding: 0; }
+.chat-popout .chat-section > .container { max-width: none; padding: 0; }
+.chat-popout #chStatus, .chat-popout .chat-namebox { margin: 12px; }
+.chat-popout .chat-app { display: flex; flex-direction: column; gap: 0; height: 100vh; height: 100dvh; }
+.chat-popout .chat-app .portal-card { border-radius: 0; box-shadow: none; border-left: 0; border-right: 0; }
+.chat-popout .chat-side { order: -1; padding: 8px 12px; border-top: 0; }
+.chat-popout .chat-side h3 { font-size: .9rem; margin: 0 0 4px; }
+.chat-popout .chat-side ul { display: flex; flex-wrap: wrap; gap: 2px 12px; max-height: 3.2em; overflow-y: auto; }
+.chat-popout .chat-side li { border: 0; padding: 0; font-size: .82rem; }
+.chat-popout .chat-side .note { font-size: .78rem; margin: 4px 0 0; }
+.chat-popout .chat-main { flex: 1; min-height: 0; border-bottom: 0; }
+.chat-popout .chat-log { flex: 1; height: auto; min-height: 0; }
+.chat-popout .chat-msg { max-width: 88%; }
+.chat-popout .chat-tools { display: flex; }
+.chat-popout .chat-top { padding: 6px 12px; font-size: .82rem; }
+.chat-popout .chat-foot .note { display: none; }
+.chat-popout .chat-jump { bottom: 70px; }
+@media (max-width: 700px) { .chat-popbtn { display: none; } }

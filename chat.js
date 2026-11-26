@@ -118,6 +118,17 @@
     $('chText').addEventListener('input', grow);
     $('chMore').addEventListener('click', loadOlder);
     $('chJump').addEventListener('click', function () { toBottom(); });
+    // Full page: move the chat into its own window and go back to what you were doing.
+    $('chPop').addEventListener('click', function () {
+      var w = MemberAuth.openChat && MemberAuth.openChat();
+      if (!w) { showErr('Your browser blocked the pop-out window. Allow pop-ups for this site, or keep chatting here.'); return; }
+      leave();
+      setTimeout(function () {
+        if (document.referrer && document.referrer.indexOf(location.origin) === 0 && !/chat\.html/.test(document.referrer)) location.href = document.referrer;
+        else location.href = 'member-portal.html';
+      }, 300);
+    });
+    window.addEventListener('focus', clearTitle);
     $('chLog').addEventListener('scroll', function () { if (nearBottom()) { $('chJump').hidden = true; markRead(); } });
     $('chList').addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]');
@@ -178,14 +189,17 @@
   function poll() {
     if (!sb || document.visibilityState !== 'visible') return;
     sb.from('chat_messages').select(cols()).gt('id', lastId).order('id').limit(200).then(function (r) {
-      if (!r.error && add(r.data)) arrived();
+      if (r.error) return;
+      var fresh = (r.data || []).filter(function (m) { return !byId[m.id]; });
+      if (add(fresh)) arrived(fresh.filter(function (m) { return m.user_id !== me.id; }).length);
     });
   }
 
   function subscribe() {
     sb.channel('marina-chat')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, function (p) {
-        if (add([p.new])) arrived();
+        if (!add([p.new])) return;
+        arrived(p.new.user_id !== me.id ? 1 : 0);
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_messages' }, function (p) {
         var m = byId[p.new.id];
@@ -198,7 +212,14 @@
         if (live) poll();
       });
   }
-  function arrived() {
+  // While the chat window is in the background, its title counts new messages: "(3) Marina Chat".
+  var baseTitle = document.title, unseen = 0;
+  function clearTitle() { unseen = 0; document.title = baseTitle; }
+  function arrived(n) {
+    if (n && (document.visibilityState !== 'visible' || !document.hasFocus())) {
+      unseen += n || 1;
+      document.title = '(' + unseen + ') ' + baseTitle;
+    }
     var stick = nearBottom();
     render();
     if (stick) { toBottom(); markRead(); }
