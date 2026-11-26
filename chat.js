@@ -102,6 +102,7 @@
     loadLatest().then(function () { subscribe(); });
     beat(); setInterval(function () { if (document.visibilityState === 'visible') beat(); }, 30000);
     loadOnline(); setInterval(loadOnline, 30000);
+    if (window.HarborHunt) HarborHunt.init({ sb: sb, clientId: clientId, name: shownName });
     setInterval(poll, 20000);
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') { beat(); loadOnline(); poll(); markRead(); }
@@ -236,6 +237,10 @@
       if (m.deleted_at) return;
       var day = dayLabel(m.created_at);
       if (day !== lastDay) { html += '<div class="chat-day"><span>' + esc(day) + '</span></div>'; lastDay = day; lastWho = null; }
+      if (m.member_class === 'game') {   // game results are shown as a note, not as anyone's message
+        html += '<div class="chat-note">&#9875; ' + esc(m.body) + '</div>';
+        lastWho = null; return;
+      }
       var at = new Date(m.created_at).getTime();
       var mine = m.user_id === me.id && (m.name === shownName() || !(me.row.member_class && me.row.member_class !== 'certificated' && !isAdmin));
       var cont = lastWho === m.name && at - lastAt < 5 * 60000;

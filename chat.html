@@ -7,7 +7,7 @@
 <meta name="description" content="Live chat for New Bern Grand Marina members and cruisers.">
 <meta name="robots" content="noindex">
 <script>if (/[?&]popout=1/.test(location.search)) document.documentElement.className += ' chat-popout';</script>
-<link rel="stylesheet" href="style.css?v=202611261442">
+<link rel="stylesheet" href="style.css?v=202611261456">
 </head>
 <body>
 
@@ -71,6 +71,7 @@
         <div class="chat-top">
           <span class="chat-live"><strong class="chat-pop-title">Marina Chat</strong><i></i> <span id="chConn">Connecting&hellip;</span></span>
           <span class="chat-me">You are <strong id="chMe"></strong> <button type="button" class="chat-link" id="chRename" hidden>change</button>
+            <button type="button" class="btn-sm chat-gamebtn" id="chGame" hidden title="Challenge someone in the chat to Harbor Hunt">&#9875; Harbor Hunt</button>
             <button type="button" class="btn-sm chat-popbtn" id="chPop" title="Open the chat in its own small window so you can keep using the site">Pop out &#8599;</button></span>
         </div>
         <div class="chat-log" id="chLog" aria-live="polite" aria-label="Chat messages">
@@ -78,6 +79,7 @@
           <div id="chList"></div>
         </div>
         <button type="button" class="chat-jump" id="chJump" hidden>New messages &darr;</button>
+        <div class="hh-bar" id="hhBar" hidden></div>
         <form class="chat-compose" id="chForm">
           <textarea id="chText" rows="1" maxlength="1000" placeholder="Type a message&hellip;" aria-label="Message"></textarea>
           <button type="submit" class="btn btn-gold" id="chSend">Send</button>
@@ -143,7 +145,8 @@
   </a>
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611261442"></script>
-<script src="chat.js?v=202611261442"></script>
+<script src="member-login.js?v=202611261456"></script>
+<script src="harbor-hunt.js?v=202611261456"></script>
+<script src="chat.js?v=202611261456"></script>
 </body>
 </html>

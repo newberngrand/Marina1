@@ -6,7 +6,7 @@
 <title>Development Setup | New Bern Grand Marina</title>
 <meta name="description" content="How the New Bern Grand Marina website is built and hosted, and how to set up a development computer.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611261442">
+<link rel="stylesheet" href="style.css?v=202611261456">
 <style>
   .dv-wrap { max-width: 900px; }
   .dv-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -243,7 +243,7 @@ git push origin master</code></pre>
       <p>Sign in at <strong>supabase.com/dashboard</strong> and open the marina project. Project ID <code>afejychfqezorwyqfcsh</code>; address <code>https://afejychfqezorwyqfcsh.supabase.co</code>.</p>
       <h3>What&rsquo;s in it</h3>
       <ul>
-        <li><strong>Database (Table Editor / SQL Editor):</strong> members and slips, events and votes, ballots, documents, gallery photos and videos, gallery uploads waiting for review, announcements and who received them, help requests, minutes and reviews, Marina Chat messages (kept 90 days) and who is in the chat, site settings, and the activity log. Row Level Security rules decide who can read or change each table.</li>
+        <li><strong>Database (Table Editor / SQL Editor):</strong> members and slips, events and votes, ballots, documents, gallery photos and videos, gallery uploads waiting for review, announcements and who received them, help requests, minutes and reviews, Marina Chat messages (kept 90 days) and who is in the chat, Harbor Hunt games (<code>hh_matches</code>, <code>hh_boards</code>, <code>hh_shots</code>; the Poker Run uses the separate <code>game_*</code> tables), site settings, and the activity log. Row Level Security rules decide who can read or change each table.</li>
         <li><strong>Authentication:</strong> each slip logs in with its slip number and password. Behind the scenes the login is an account named <code>slip-&lt;slip&gt;@members.newberngrand.com</code>; these are not real mailboxes.</li>
         <li><strong>Storage:</strong> buckets <code>marina-docs</code> (private documents), <code>gallery</code> (public photos), <code>gallery-videos</code> (public approved videos) and <code>gallery-pending</code> (private uploads waiting for review).</li>
         <li><strong>Edge Functions</strong> (small server programs):
@@ -257,7 +257,7 @@ git push origin master</code></pre>
           </ul>
         </li>
         <li><strong>Secrets</strong> (Edge Functions &rarr; Secrets): <code>RESEND_API_KEY</code>, <code>MAIL_FROM</code> (the sender name and address), <code>RESET_FROM</code>, <code>SITE_URL</code>. <code>SUPABASE_URL</code> and the service role key are provided automatically.</li>
-        <li><strong>Realtime:</strong> Marina Chat uses Supabase Realtime, so new messages appear instantly. The <code>chat_messages</code> table is in the <code>supabase_realtime</code> publication (Database &rarr; Publications); the same database rules decide who receives them.</li>
+        <li><strong>Realtime:</strong> Marina Chat uses Supabase Realtime, so new messages and game moves appear instantly. The <code>chat_messages</code>, <code>hh_matches</code> and <code>hh_shots</code> tables are in the <code>supabase_realtime</code> publication (Database &rarr; Publications); the same database rules decide who receives them.</li>
         <li><strong>Database extensions:</strong> <code>pg_net</code> lets the database call an Edge Function right after a vote or help request is saved.</li>
       </ul>
       <h3>How database changes are made</h3>
@@ -443,6 +443,6 @@ git push origin master</code></pre>
   </a>
 </nav>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611261442"></script>
+<script src="member-login.js?v=202611261456"></script>
 </body>
 </html>
