@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611261144">
+<link rel="stylesheet" href="style.css?v=202611261154">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -329,11 +329,7 @@
       { name: 'Gallery', url: 'gallery.html', icon: 'image', points: [
         'Photos and videos of the marina and downtown.',
         'Click a photo to see it full size; arrows or swipe move between photos.',
-        'The pictures are managed on the Admin page (Gallery tab).',
-        'Logged in? Slip owners, long-term cruisers, transients and staff get a Share a Photo or Video button: choose photos or video files (several at once is fine) or paste a YouTube, Vimeo, Instagram, TikTok or Facebook link, add a description and who took it, then Send for Review.',
-        'Video files can be up to 50 MB (about a minute of phone video); longer videos go on YouTube and are shared as a link. Large phone photos are made smaller automatically.',
-        'Nothing sent shows on the Gallery until an admin approves it. Below the form, each person sees what they sent: Waiting for review, On the Gallery or Not used.',
-        'Visitors who aren’t logged in see a line asking them to log in to share.'] },
+        'The pictures are managed on the Admin page (Gallery tab).'] },
       { name: 'Documents', url: 'documents.html', icon: 'doc', points: [
         'Documents the board has marked Public: permits, licenses, marina rules and forms.',
         'Members-only and board documents never appear here.'] },
@@ -358,6 +354,12 @@
           'The Poker Run game: join, pick a slip on the marina map each day to flip a card.',
           'Trade cards on the last day; the leaderboard shows when the game is over.',
           'Opened from the game’s event; admins can run a practice game first.'] }] },
+      { name: 'Gallery', url: 'gallery.html', icon: 'image', points: [
+        'Only when logged in: slip owners, long-term cruisers, transients and staff get a Share a Photo or Video button on the Gallery page.',
+        'Choose photos or video files (several at once is fine) or paste a YouTube, Vimeo, Instagram, TikTok or Facebook link, add a description and who took it, then Send for Review.',
+        'Video files can be up to 50 MB (about a minute of phone video); longer videos go on YouTube and are shared as a link. Large phone photos are made smaller automatically.',
+        'Nothing sent shows on the Gallery until an admin approves it on Gallery Review. Below the form, each person sees what they sent: Waiting for review, On the Gallery or Not used.',
+        'Admins also see a Review Uploads button there with the number waiting.'] },
       { name: 'Cast Your Vote', url: 'vote.html', icon: 'check', points: [
         'Opened from the Approve / Disapprove (or Yea / Nay, etc.) buttons in a vote announcement email.',
         'No login needed: the owner picks the choice and slips, then presses Confirm.',
@@ -480,7 +482,7 @@
     'public:Walk the Docks in 3D': [1010, 1185, -6, '3d'],
     'members:Member Portal': [1300, 430, -2, 'portal'], 'members:Event page': [1505, 250, 3, 'event'], 'members:Poker Run': [1715, 345, -4, 'cards'],
     'members:Cast Your Vote': [1640, 545, 5, 'vote'], 'members:Reset Password': [1190, 190, -6, 'form'], 'members:Email link opener': [1435, 620, 2, 'link'],
-    'members:Document Review': [1840, 170, 4, 'docs'],
+    'members:Document Review': [1840, 170, 4, 'docs'], 'members:Gallery': [1860, 470, -3, 'gallery'],
     'admin:Current Events': [1345, 885, -1, 'dash'], 'admin:Documents': [1545, 825, 4, 'docs'], 'admin:Gallery': [1735, 885, -3, 'gallery'], 'admin:Gallery Review': [1935, 860, 4, 'gallery'],
     'admin:Members': [1300, 1095, 3, 'table'], 'admin:Email Members': [1515, 1075, -2, 'email'], 'admin:Activity Log': [1725, 1120, 2, 'log'],
     'admin:Visit Replay': [1885, 1010, -5, 'replay'], 'admin:Help': [1150, 965, 4, 'help'],
@@ -582,7 +584,7 @@
     ['members:Event page', 'members:Poker Run'], ['members:Reset Password', 'members:Member Portal'], ['members:Email link opener', 'members:Event page'],
     ['admin:Email Members', 'members:Email link opener'], ['admin:Email Members', 'members:Cast Your Vote'], ['members:Cast Your Vote', 'members:Event page'],
     ['admin:Documents', 'members:Document Review'], ['members:Member Portal', 'admin:Current Events'], ['admin:Activity Log', 'admin:Visit Replay'],
-    ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Gallery', 'admin:Gallery Review'], ['public:Gallery', 'admin:Gallery Review'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
+    ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Gallery', 'admin:Gallery Review'], ['members:Gallery', 'admin:Gallery Review'], ['public:Gallery', 'members:Gallery'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
     ['admin:Email Members', 'admin:Activity Log'], ['admin:Members', 'admin:Help'], ['members:Member Portal', 'board:Board'], ['board:Board', 'board:Minutes Editor']
   ];
   var L = function (cls) { return '<div class="w-ln' + (cls ? ' ' + cls : '') + '"></div>'; };
@@ -918,6 +920,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611261144"></script>
+<script src="member-login.js?v=202611261154"></script>
 </body>
 </html>
