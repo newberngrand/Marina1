@@ -97,6 +97,7 @@
       });
     });
     $('evGameWeek').addEventListener('click', function () { setGameDays(nextWeekdays()); });
+    $('evGameKind').addEventListener('change', updateBallotBox);
     $('evNew').addEventListener('click', function () { openEventForm(null); });
     $('evCancel').addEventListener('click', function () { $('evForm').hidden = true; });
     $('evForm').addEventListener('submit', saveEvent);
@@ -183,6 +184,7 @@
           var now = new Date(), gs = ev.starts_at && new Date(ev.starts_at), ge = ev.ends_at && new Date(ev.ends_at);
           var gst = gs && now < gs ? 'Not started yet' : ge && now > ge ? 'Finished' : 'In play';
           if (ev.game_practice) gst = 'Practice mode, day ' + ev.game_practice_day + (ev.game_practice_over ? ' (finished)' : '');
+          if (ev.game_kind === 'harbor_hunt') gst = gs && now < gs ? 'Opens ' + D.fmtWhen(ev.starts_at) : ge && now > ge ? 'Finished' : 'Playable' + (ge ? ' until ' + D.fmtWhen(ev.ends_at) : '');
           voteInfo += '<div class="note"><strong>' + D.esc(D.gameLabel(ev.game_kind)) + '</strong> &middot; ' + gst +
             ' &middot; Players: ' + (ev.game_players || []).map(function (a) { return CLASS_SHORT[a] || a; }).join(', ') +
             (ev.game_prize ? '<br>Prize: ' + D.esc(ev.game_prize) : '') + '</div>';
@@ -197,7 +199,7 @@
           '<td>' + (ev.active ? 'Active' : '<span class="inactive">Inactive</span>') + '</td>' +
           '<td class="row-actions">' +
             (isVote ? '<button type="button" class="btn-sm btn-primary-sm" data-act="results" data-id="' + ev.id + '">Results</button>' : '') +
-            (ev.event_type === 'game' ? '<a class="btn-sm btn-primary-sm" href="game.html?id=' + ev.id + '" target="_blank" rel="noopener">' + (ev.game_practice ? 'Practice' : 'Open game') + '</a>' : '') +
+            (ev.event_type === 'game' ? '<a class="btn-sm btn-primary-sm" href="' + D.gamePage(ev) + '" target="_blank" rel="noopener">' + (ev.game_kind === 'harbor_hunt' ? 'Play' : ev.game_practice ? 'Practice' : 'Open game') + '</a>' : '') +
             (ev.signup_enabled ? '<button type="button" class="btn-sm btn-primary-sm" data-act="signups" data-id="' + ev.id + '">Sign-ups (' + (signupCounts[ev.id] || 0) + ')</button>' : '') +
             (isVote && ev.vote_test && voteCounts[ev.id] ? '<button type="button" class="btn-sm" data-act="clear" data-id="' + ev.id + '">Clear test ballots</button>' : '') +
             '<button type="button" class="btn-sm" data-act="edit" data-id="' + ev.id + '">Edit</button>' +
@@ -296,7 +298,18 @@
       if (!id && new Date(row.vote_closes_at) <= new Date() &&
           !confirm('The closing time is in the past, so this ballot will not accept any votes. Save anyway?')) return;
     }
-    if (row.event_type === 'game') {
+    if (row.event_type === 'game' && $('evGameKind').value === 'harbor_hunt') {
+      // Harbor Hunt against the computer: no game days; playable from the start (or now) until the end (if any).
+      row.game_kind = 'harbor_hunt';
+      row.game_prize = $('evGamePrize').value.trim();
+      row.game_players = Array.prototype.filter.call(document.querySelectorAll('#evGamePlayers input'), function (c) { return c.checked; }).map(function (c) { return c.value; });
+      if (!row.game_players.length) return showErr($('evError'), 'Tick at least one group under "Who can play".');
+      row.game_days = [];
+      row.game_practice = false;
+      if (!row.starts_at) row.starts_at = new Date().toISOString();
+      if (row.ends_at && row.ends_at <= row.starts_at) return showErr($('evError'), 'The game must end after it starts.');
+      row.game_players.forEach(function (p) { if (row.audience.indexOf(p) === -1) row.audience.push(p); });
+    } else if (row.event_type === 'game') {
       row.game_kind = $('evGameKind').value;
       row.game_prize = $('evGamePrize').value.trim();
       row.game_players = Array.prototype.filter.call(document.querySelectorAll('#evGamePlayers input'), function (c) { return c.checked; }).map(function (c) { return c.value; });
@@ -604,11 +617,14 @@
     $('evAudienceLabel').textContent = isVote ? 'Who can see and vote on this' : 'Who can see this';
     $('evExclBox').hidden = isVote && aud.indexOf('certificated') === -1;
     $('evGroupRuleNote').hidden = !aud.some(function (a) { return a !== 'certificated'; });
-    var isGame = $('evType').value === 'game';
+    var isGame = $('evType').value === 'game', solo = isGame && $('evGameKind').value === 'harbor_hunt';
     $('evGame').hidden = !isGame;
-    $('evStartWrap').hidden = isGame;
+    $('evStartWrap').hidden = isGame && !solo;
     $('evAttach').hidden = isGame;
-    $('evEndWrap').hidden = isGame;
+    $('evEndWrap').hidden = isGame && !solo;
+    // Harbor Hunt has no game days or practice mode: just optional start and end times.
+    document.querySelectorAll('.pr-only').forEach(function (el) { el.hidden = solo; });
+    $('evSoloNote').hidden = !solo;
     var isSocial = $('evType').value === 'social';
     $('evSignup').hidden = !isSocial;
     $('evSignupOpts').hidden = !(isSocial && $('evSignupOn').checked);

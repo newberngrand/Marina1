@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611261728">
+<link rel="stylesheet" href="style.css?v=202611261742">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -370,6 +370,11 @@
         'Harbor Hunt: press the Harbor Hunt button in the chat to challenge someone who is in the chat. Each player hides four boats (Yacht 4, Sailboat 3, Trawler 3, Skiff 2) on an 8 x 8 harbor, then you take turns calling squares to find the other’s boats. The first to find every boat wins and the chat announces it. Boat positions stay hidden on the server, so no one can peek. The boats are drawn as little 3D models; hits explode and keep burning, misses splash, and sunk boats go down with bubbles, all with sound effects and low engine and water sounds (a Sound on/off button is in the game).',
         'Reached from the Chat button on the Member Portal and the Chat link in the logged-in bar at the top of every page, which shows how many are online.',
         'On a computer the chat pops out into its own small window, so people can keep using the site or other programs; clicking Chat again brings it to the front. While it is in the background its title counts new messages, e.g. (3) Marina Chat. On phones it opens as a normal page.'] },
+      { name: 'Harbor Hunt vs. the Computer', url: 'harbor-solo.html', icon: 'cards', points: [
+        'Harbor Hunt played one-on-one against the computer, opened from a Game event (Play on the Member Portal or the event page).',
+        'Pick an opponent: Deckhand (mostly guesses), Skipper (searches carefully and closes in on hits) or Admiral (works out where boats could be).',
+        'Hide your four boats, then take turns calling squares; the computer’s harbor tilts into 3D, with the same boats, explosions, splashes, sinking and stereo sound as the chat game.',
+        'Play as often as you like while the event is open. Each player’s win/loss record against each opponent is kept on their own device.'] },
       { name: 'Cast Your Vote', url: 'vote.html', icon: 'check', points: [
         'Opened from the Approve / Disapprove (or Yea / Nay, etc.) buttons in a vote announcement email.',
         'No login needed: the owner picks the choice and slips, then presses Confirm.',
@@ -388,7 +393,8 @@
         'Add and edit meetings, notices, social events, votes and games; Activate / Deactivate or Delete them.',
         'Votes: ballot type (Yea / Nay, Yea / Nay / Abstain, Approve / Disapprove or custom), open and close times, who sees results, the counting committee email.',
         'Test vote: its ballots can be cleared or it can be deleted with its ballots. Real votes can’t be deleted once anyone has voted.',
-        'Mark slips ineligible, attach documents, run sign-up sheets, and see Results.'] },
+        'Mark slips ineligible, attach documents, run sign-up sheets, and see Results.',
+        'Game events: choose the 5 Card Poker Run (five game days) or Harbor Hunt against the computer (optional start and end times; playable as often as people like while it’s open).'] },
       { name: 'Documents', url: 'admin.html', icon: 'doc', points: [
         'Upload marina documents into sections (bylaws, rules, minutes, financials, board and more).',
         'Choose Public or members-only; Board documents are only for the board.',
@@ -498,7 +504,7 @@
     'public:Walk the Docks in 3D': [1010, 1185, -6, '3d'],
     'members:Member Portal': [1300, 430, -2, 'portal'], 'members:Event page': [1505, 250, 3, 'event'], 'members:Poker Run': [1715, 345, -4, 'cards'],
     'members:Cast Your Vote': [1640, 545, 5, 'vote'], 'members:Reset Password': [1190, 190, -6, 'form'], 'members:Email link opener': [1435, 620, 2, 'link'],
-    'members:Document Review': [1840, 170, 4, 'docs'], 'members:Gallery': [1860, 470, -3, 'gallery'], 'members:Marina Chat': [1220, 600, 3, 'text'],
+    'members:Document Review': [1840, 170, 4, 'docs'], 'members:Gallery': [1860, 470, -3, 'gallery'], 'members:Marina Chat': [1220, 600, 3, 'text'], 'members:Harbor Hunt vs. the Computer': [1905, 365, -3, 'cards'],
     'admin:Current Events': [1345, 885, -1, 'dash'], 'admin:Documents': [1545, 825, 4, 'docs'], 'admin:Gallery': [1735, 885, -3, 'gallery'], 'admin:Gallery Review': [1935, 860, 4, 'gallery'],
     'admin:Members': [1300, 1095, 3, 'table'], 'admin:Email Members': [1515, 1075, -2, 'email'], 'admin:Activity Log': [1725, 1120, 2, 'log'],
     'admin:Visit Replay': [1885, 1010, -5, 'replay'], 'admin:Help': [1150, 965, 4, 'help'], 'admin:Development Setup': [1120, 1140, -3, 'text'],
@@ -527,7 +533,7 @@
   };
   // Where each island sits, how big it is (half its longest side), and where its name goes.
   var PLACE = {
-    public: { x: 760, y: 800, size: 640, lab: 'above' }, members: { x: 2130, y: 460, size: 560, lab: 'below' },
+    public: { x: 760, y: 800, size: 640, lab: 'above' }, members: { x: 2160, y: 470, size: 640, lab: 'below' },
     admin: { x: 2150, y: 1440, size: 640, lab: [0.32, 0.3] }, board: { x: 400, y: 1660, size: 235, lab: 'above' }, islet: { x: 1235, y: 1650, size: 140 }
   };
   ISLES.forEach(function (c) {
@@ -600,7 +606,7 @@
     ['members:Event page', 'members:Poker Run'], ['members:Reset Password', 'members:Member Portal'], ['members:Email link opener', 'members:Event page'],
     ['admin:Email Members', 'members:Email link opener'], ['admin:Email Members', 'members:Cast Your Vote'], ['members:Cast Your Vote', 'members:Event page'],
     ['admin:Documents', 'members:Document Review'], ['members:Member Portal', 'admin:Current Events'], ['admin:Activity Log', 'admin:Visit Replay'],
-    ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Gallery', 'admin:Gallery Review'], ['members:Gallery', 'admin:Gallery Review'], ['public:Gallery', 'members:Gallery'], ['members:Member Portal', 'members:Marina Chat'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
+    ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Gallery', 'admin:Gallery Review'], ['members:Gallery', 'admin:Gallery Review'], ['public:Gallery', 'members:Gallery'], ['members:Member Portal', 'members:Marina Chat'], ['members:Member Portal', 'members:Harbor Hunt vs. the Computer'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
     ['admin:Email Members', 'admin:Activity Log'], ['admin:Members', 'admin:Help'], ['admin:Help', 'admin:Development Setup'], ['members:Member Portal', 'board:Board'], ['board:Board', 'board:Minutes Editor']
   ];
   var L = function (cls) { return '<div class="w-ln' + (cls ? ' ' + cls : '') + '"></div>'; };
@@ -936,6 +942,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611261728"></script>
+<script src="member-login.js?v=202611261742"></script>
 </body>
 </html>

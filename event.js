@@ -49,7 +49,7 @@
     facts += '<dt>Type</dt><dd>' + D.eventTypeLabel(ev.event_type) + (ev.active ? '' : ' (inactive: only admins can see this)') + '</dd>';
     $('evFacts').innerHTML = facts;
     if (ev.summary) { $('evSummaryText').textContent = ev.summary; $('evSummaryText').hidden = false; }
-    $('evDetailsText').innerHTML = (ev.event_type === 'game' ? '<p><a class="btn btn-gold" href="game.html?id=' + ev.id + '">Go to the game &rsaquo;</a></p>' : '') +
+    $('evDetailsText').innerHTML = (ev.event_type === 'game' ? '<p><a class="btn btn-gold" href="' + D.gamePage(ev) + '">' + (ev.game_kind === 'harbor_hunt' ? 'Play Harbor Hunt' : 'Go to the game') + ' &rsaquo;</a></p>' : '') +
       (ev.details ? D.richText(ev.details) : '');
     $('evStatus').hidden = true;
     $('evBody').hidden = false;

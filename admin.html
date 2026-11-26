@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611261728">
+<link rel="stylesheet" href="style.css?v=202611261742">
 </head>
 <body data-member-portal>
 
@@ -147,7 +147,7 @@
                 <label>Prize (optional)
                   <input type="text" id="evGamePrize" maxlength="500" placeholder="e.g. $50 gift card to the ship store">
                 </label>
-                <div class="full game-days">
+                <div class="full game-days pr-only">
                   <span class="an-label">The five game days</span>
                   <div class="game-day-inputs">
                     <label>Day 1 <input type="date" class="ev-gday"></label>
@@ -158,10 +158,10 @@
                   </div>
                   <button type="button" class="btn-sm" id="evGameWeek">Next Monday&ndash;Friday</button>
                 </div>
-                <label>Game ends on day 5 at
+                <label class="pr-only">Game ends on day 5 at
                   <input type="time" id="evGameEndTime" value="20:00">
                 </label>
-                <label class="check" style="align-self:end"><input type="checkbox" id="evGamePractice"> Practice mode (admins move the game day by day; keep the event inactive while practicing)</label>
+                <label class="check pr-only" style="align-self:end"><input type="checkbox" id="evGamePractice"> Practice mode (admins move the game day by day; keep the event inactive while practicing)</label>
                 <div class="full an-docks">
                   <span class="an-label">Who can play</span>
                   <div class="an-dock-boxes" id="evGamePlayers">
@@ -172,7 +172,8 @@
                   </div>
                 </div>
               </div>
-              <p class="note" style="margin:10px 0 0">Each game day runs midnight to midnight (Eastern), except day 5, which ends at the time above. Players can join until the end of day 2. Anyone who can play can also see it; you can tick more groups under "Who can see this" to let them follow along without playing.</p>
+              <p class="note" id="evSoloNote" style="margin:10px 0 0" hidden>Harbor Hunt is played one-on-one against the computer, as often as people like. It&rsquo;s playable from the Starts time above (or right away if left blank) until the Ends time (or until you turn the event off, if left blank). Each player picks how strong the computer captain is.</p>
+              <p class="note pr-only" style="margin:10px 0 0">Each game day runs midnight to midnight (Eastern), except day 5, which ends at the time above. Players can join until the end of day 2. Anyone who can play can also see it; you can tick more groups under "Who can see this" to let them follow along without playing.</p>
             </fieldset>
             <fieldset class="full ballot-box" id="evBallot" hidden>
               <legend>Ballot</legend>
@@ -726,9 +727,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611261728"></script>
-<script src="member-data.js?v=202611261728"></script>
-<script src="video-utils.js?v=202611261728"></script>
-<script src="admin.js?v=202611261728"></script>
+<script src="member-login.js?v=202611261742"></script>
+<script src="member-data.js?v=202611261742"></script>
+<script src="video-utils.js?v=202611261742"></script>
+<script src="admin.js?v=202611261742"></script>
 </body>
 </html>

@@ -2042,3 +2042,17 @@ footer.site-footer {
   .hh-boat.afloat .hh-boat-in, .hh-grid::before, .smk, .hh-slick, .hh-wake { animation: none !important; }
   .hh-grid:has(.fx-hit.new), .hh-grid.tilt.tilt-in { animation: none !important; }
 }
+
+/* Harbor Hunt against the computer (harbor-solo.html) */
+.hs-section { padding-top: 26px; }
+.hs-card { padding: 0; overflow: hidden; max-width: 860px; margin: 0 auto; }
+.hs-card .hh-head h2 { font-size: 1.2rem; }
+a.hh-x { text-decoration: none; display: inline-block; }
+.hs-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 8px; }
+.hs-level { text-align: left; background: #fff; border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; font: inherit; color: var(--navy); display: flex; flex-direction: column; gap: 3px; }
+.hs-level strong { font-size: 1.02rem; }
+.hs-level span { font-size: .86rem; color: var(--muted); }
+.hs-level em { font-size: .8rem; font-style: normal; color: #1f6b33; }
+.hs-level.sel { border-color: var(--gold); background: #fff8e8; box-shadow: 0 0 0 3px rgba(201,161,90,.2); }
+.hs-think { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 50%; border: 2px solid #c9d6e0; border-top-color: var(--navy); vertical-align: -1px; animation: hhspin .8s linear infinite; }
+.hh-boat.reveal { opacity: .75; }

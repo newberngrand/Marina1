@@ -14,7 +14,8 @@
 
   // Games that can be run as a Game event (each one gets its own play screen).
   var GAMES = [
-    { id: 'poker_run', label: '5 Card Poker Run' }
+    { id: 'poker_run', label: '5 Card Poker Run', page: 'game.html' },
+    { id: 'harbor_hunt', label: 'Harbor Hunt (play against the computer)', page: 'harbor-solo.html' }
   ];
 
   var CLASS_LABELS = [
@@ -223,6 +224,8 @@
     ballotChoices: ballotChoices, voteState: voteState, voteWindowText: voteWindowText,
     EVENT_TYPES: EVENT_TYPES, DOC_CATEGORIES: DOC_CATEGORIES, GAMES: GAMES,
     gameLabel: function (id) { return label(GAMES, id); },
+    // The page a game event opens: the Poker Run board, or Harbor Hunt against the computer.
+    gamePage: function (ev) { var g = GAMES.filter(function (x) { return x.id === (ev && ev.game_kind); })[0]; return (g ? g.page : 'game.html') + '?id=' + (ev ? ev.id : ''); },
     classLabel: function (id) { return label(CLASS_LABELS, id); },
     eventTypeLabel: function (id) { return label(EVENT_TYPES, id); },
     categoryLabel: function (id) { return label(DOC_CATEGORIES, id); },

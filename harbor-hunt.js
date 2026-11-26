@@ -27,7 +27,9 @@
   function label(i) { return ROWS[Math.floor(i / 8)] + (i % 8 + 1); }
   function short(n) { return String(n || '').replace(/\s*\(.*\)\s*$/, '') || n; }
 
-  window.HarborHunt = { init: init };
+  // The artwork (boats, water, flames, splashes) is shared with Harbor Hunt against the computer (harbor-solo.js).
+  window.HarborHunt = { init: init, art: { svgDefs: svgDefs, boatSvg: boatSvg, boatHtml: boatHtml, fxHtml: fxHtml, gridHtml: gridHtml,
+    sunkCells: sunkCells, FLEET: FLEET, NAMES: NAMES, label: label } };
 
   function init(c) {
     if (ctx) return;
