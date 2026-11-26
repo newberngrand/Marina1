@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Development Setup | New Bern Grand Marina</title>
+<meta name="description" content="How the New Bern Grand Marina website is built and hosted, and how to set up a development computer.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="style.css?v=202611261210">
+<style>
+  .dv-wrap { max-width: 900px; }
+  .dv-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .dv-btn-outline { background: transparent; color: var(--navy); border: 1px solid var(--navy); cursor: pointer; }
+  .dv-toc h2 { margin: 0 0 8px; font-size: 1.2rem; color: var(--navy); }
+  .dv-toc ol { columns: 2; column-gap: 32px; margin: 0; padding-left: 22px; line-height: 1.8; }
+  .dv-part { margin: 36px 0 0; scroll-margin-top: 90px; }
+  .dv-part h2 { display: flex; align-items: center; gap: 12px; color: var(--navy); font-size: 1.55rem; border-bottom: 2px solid var(--line); padding-bottom: 8px; margin: 0 0 14px; }
+  .dv-part h3 { color: var(--navy); font-size: 1.12rem; margin: 20px 0 6px; }
+  .dv-part p, .dv-part li { line-height: 1.6; }
+  .dv-part li { margin: 4px 0; }
+  .dv-num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--navy); color: #fff; display: grid; place-items: center; font-size: 1rem; }
+  .dv-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 14px 0; }
+  .dv-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: #fff; }
+  .dv-card h3 { margin: 0 0 4px; }
+  .dv-card p { margin: 0; font-size: .95rem; }
+  .dv-table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: .94rem; background: #fff; }
+  .dv-scroll { overflow-x: auto; margin: 10px 0 14px; }
+  .dv-scroll .dv-table { margin: 0; min-width: 560px; }
+  .dv-table th, .dv-table td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; overflow-wrap: break-word; }
+  .dv-table thead th, .dv-table tbody th { background: #f1f4f7; color: var(--navy); }
+  .dv-part code, .dv-part pre { font-family: Consolas, "Courier New", monospace; font-size: .88em; background: #f1f4f7; border-radius: 4px; }
+  .dv-part code { padding: 1px 5px; word-break: break-word; }
+  .dv-part pre { padding: 12px 14px; overflow-x: auto; }
+  .dv-part pre code { background: none; padding: 0; }
+  .dv-tip { background: #fff6dd; border-left: 4px solid #e8b648; border-radius: 6px; padding: 10px 14px; }
+  @media (max-width: 640px) { .dv-toc ol { columns: 1; } .dv-table { font-size: .86rem; } }
+  @media print {
+    .topbar, .site-header, .site-footer, .mobile-action-bar, .dv-noprint, .member-bar, #memberBar { display: none !important; }
+    body { background: #fff; font-size: 11pt; }
+    .dv-hero { background: none !important; color: var(--navy) !important; padding: 0 0 10px !important; }
+    .dv-hero h1, .dv-hero p, .dv-hero .eyebrow { color: var(--navy) !important; }
+    .dv-section { padding: 0 !important; }
+    .container { max-width: none !important; padding: 0 !important; }
+    .portal-card { box-shadow: none !important; }
+    .dv-part { break-before: page; margin-top: 0; }
+    #overview { break-before: avoid; }
+    .dv-table, .dv-card, .dv-tip, pre { break-inside: avoid; }
+    .dv-scroll { overflow: visible; }
+    .dv-scroll .dv-table { min-width: 0; }
+    .dv-part h2, .dv-part h3 { break-after: avoid; }
+    a { color: inherit; text-decoration: none; }
+    @page { margin: 16mm 14mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container">
+    <div>134 Craven St, New Bern, NC 28560 &nbsp;<span class="sep">|</span>&nbsp; Open Daily 8:30 AM &ndash; 5:00 PM</div>
+    <div><a href="tel:+12526380318">(252) 638-0318</a> <span class="sep">|</span> <a href="mailto:newberngrand@f3marina.com">newberngrand@f3marina.com</a></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a href="index.html" class="brand">
+      <img src="images/logo.png" alt="New Bern Grand Marina logo">
+      <span class="brand-text">
+        <span class="name">New Bern Grand Marina</span>
+        <span class="tag">Downtown New Bern, NC</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.main-nav').classList.toggle('open')">&#9776;</button>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="rates.html">Rates &amp; Amenities</a>
+      <a href="marina-map.html">Marina Map</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="documents.html">Documents</a>
+      <a href="contact.html">Contact</a>
+      <a href="member-portal.html" id="memberLoginTrigger" class="member-login-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Marina Login
+      </a>
+      <a href="https://customer.marinago.com/fss2zz08/public" class="btn btn-gold nav-cta" target="_blank" rel="noopener">Reserve a Slip</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page-hero dv-hero">
+  <div class="container">
+    <div class="eyebrow">Help</div>
+    <h1>Website Development Setup</h1>
+    <p>How the website is built and hosted, and how to set up a computer to work on it: Claude, GitHub, Supabase, Resend and the DreamHost domain settings.</p>
+    <p class="dv-noprint"><a href="admin.html#help" style="color:inherit;">&larr; Back to Help</a></p>
+  </div>
+</div>
+
+<section class="dv-section">
+  <div class="container dv-wrap">
+    <div class="dv-actions dv-noprint">
+      <a class="btn btn-gold" href="dev-setup.pdf" download>Download PDF</a>
+      <button type="button" class="btn dv-btn-outline" onclick="window.print()">Print</button>
+    </div>
+
+    <nav class="portal-card dv-toc" aria-label="Contents">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#overview">Overview: how the pieces fit</a></li>
+        <li><a href="#accounts">Accounts and access you need</a></li>
+        <li><a href="#claude">Find and install Claude</a></li>
+        <li><a href="#tools">Other tools for the computer</a></li>
+        <li><a href="#github">Connect to GitHub (code and hosting)</a></li>
+        <li><a href="#supabase">Supabase (database, logins, files)</a></li>
+        <li><a href="#resend">Resend (email)</a></li>
+        <li><a href="#dns">DreamHost DNS (the domain name)</a></li>
+        <li><a href="#domains">Pointing other domain names to the site</a></li>
+        <li><a href="#workflow">Making a change, start to finish</a></li>
+        <li><a href="#safety">Backups, security and good habits</a></li>
+        <li><a href="#trouble">Troubleshooting</a></li>
+        <li><a href="#reference">Quick reference</a></li>
+      </ol>
+    </nav>
+
+    <!-- 1 -->
+    <article class="dv-part" id="overview">
+      <h2><span class="dv-num">1</span>Overview: how the pieces fit</h2>
+      <p>The website is a set of plain web pages (HTML, CSS and JavaScript files). There is no web server of our own to look after. Five outside services each do one job:</p>
+      <div class="dv-cards">
+        <div class="dv-card"><h3>DreamHost</h3><p>Where the domain name <strong>newberngrand.com</strong> is registered and where its <strong>DNS</strong> lives. DNS is the address book that tells the internet where the website is and where email goes.</p></div>
+        <div class="dv-card"><h3>GitHub</h3><p>Holds every file of the website, with the full history of every change, in the repository <strong>newberngrand/Marina1</strong>. <strong>GitHub Pages</strong> hosts the site for free, straight from that repository.</p></div>
+        <div class="dv-card"><h3>Supabase</h3><p>The <strong>database</strong> and back office: member logins, events and votes, documents and photos (file storage), the activity log, and small server programs (<em>Edge Functions</em>) that send email.</p></div>
+        <div class="dv-card"><h3>Resend</h3><p>Sends the website&rsquo;s <strong>email</strong>: announcements, vote receipts, password resets, help-request notices and review invitations, from an @newberngrand.com address.</p></div>
+        <div class="dv-card"><h3>Claude / Claude Code</h3><p>The <strong>development tool</strong>. You describe a change in plain words; Claude edits the files, tests them on your computer, updates the database when needed and publishes to GitHub when you approve.</p></div>
+        <div class="dv-card"><h3>Google Workspace</h3><p>The regular staff mailboxes (for example newberngrand@&hellip;). Not part of the website itself, but its DNS records sit beside the website&rsquo;s at DreamHost, so they must be left alone when DNS is changed.</p></div>
+      </div>
+      <h3>What happens when someone visits</h3>
+      <ol>
+        <li>Their browser asks DNS (at DreamHost) where newberngrand.com is. DNS answers with GitHub&rsquo;s addresses.</li>
+        <li>GitHub Pages sends the pages, pictures and scripts from the repository.</li>
+        <li>When a member logs in, votes or opens a document, the page talks directly to Supabase. Database rules decide what each person may see or change.</li>
+        <li>When the site needs to send email, a Supabase Edge Function hands it to Resend, which delivers it.</li>
+      </ol>
+      <h3>What happens when we make a change</h3>
+      <ol>
+        <li>Claude edits the files in the project folder on your computer and checks them in a local preview.</li>
+        <li>Database changes are tested first in a trial run that is undone, then applied to Supabase only after you say &ldquo;make it live&rdquo;.</li>
+        <li>The files are committed and pushed to GitHub. About a minute later GitHub Pages has rebuilt the site and the change is live. Open pages notice the new version and reload themselves.</li>
+      </ol>
+    </article>
+
+    <!-- 2 -->
+    <article class="dv-part" id="accounts">
+      <h2><span class="dv-num">2</span>Accounts and access you need</h2>
+      <p>Before setting up a new computer or a new person, make sure they have these. Use an organization email where possible, so access isn&rsquo;t lost when a person changes.</p>
+      <div class="dv-scroll"><table class="dv-table">
+        <thead><tr><th>Service</th><th>What&rsquo;s needed</th><th>Who grants it</th></tr></thead>
+        <tbody>
+          <tr><td>Claude</td><td>A Claude account with a paid plan that includes Claude Code (Pro, Max, Team or Enterprise).</td><td>Sign up at claude.ai</td></tr>
+          <tr><td>GitHub</td><td>A GitHub account added to the <strong>newberngrand</strong> account / repository with write access.</td><td>An existing owner of newberngrand on GitHub</td></tr>
+          <tr><td>Supabase</td><td>A Supabase account invited to the organization that owns the marina project.</td><td>An existing Supabase organization owner</td></tr>
+          <tr><td>Resend</td><td>A Resend account added to the team that owns the newberngrand.com sending domain.</td><td>An existing Resend team owner</td></tr>
+          <tr><td>DreamHost</td><td>The DreamHost panel login (or a user added to the account) for DNS changes.</td><td>The DreamHost account holder</td></tr>
+        </tbody>
+      </table></div>
+      <p class="dv-tip"><strong>Tip:</strong> turn on two-step sign-in (2FA) for every one of these accounts and keep the logins in a password manager. Whoever controls GitHub, Supabase and DreamHost controls the website.</p>
+    </article>
+
+    <!-- 3 -->
+    <article class="dv-part" id="claude">
+      <h2><span class="dv-num">3</span>Find and install Claude</h2>
+      <p>Claude is made by Anthropic. We use it in two forms that work the same way; most people only need the first.</p>
+      <h3>Option A: the Claude desktop app (recommended)</h3>
+      <ol>
+        <li>Go to <strong>claude.ai/download</strong> and download the Claude app for Windows (or Mac).</li>
+        <li>Install it and sign in with your Claude account.</li>
+        <li>Open the <strong>Code</strong> tab. Choose the project folder (see <a href="#github">step 5</a> for getting the files), for example <code>Documents\Marina1</code>.</li>
+        <li>Type what you want changed. Claude reads the files, explains what it will do, edits, previews the pages in its built-in browser and asks before anything goes live.</li>
+      </ol>
+      <h3>Option B: Claude Code in a terminal</h3>
+      <ol>
+        <li>Follow the install steps at <strong>claude.com/claude-code</strong> (Anthropic&rsquo;s official page). On Windows this is a one-line install in PowerShell.</li>
+        <li>Open PowerShell in the project folder and type <code>claude</code>. Sign in when asked.</li>
+      </ol>
+      <h3>Connect Claude to the other services</h3>
+      <ul>
+        <li><strong>GitHub:</strong> Claude uses the Git and GitHub command-line tools on your computer (<a href="#tools">step 4</a>), signed in as you.</li>
+        <li><strong>Supabase:</strong> in Claude, open <strong>Settings &rarr; Connectors</strong>, add the <strong>Supabase</strong> connector and authorize it with your Supabase account. Claude can then read the database, test changes and, with your OK, apply migrations and deploy Edge Functions.</li>
+        <li><strong>Project settings:</strong> the folder <code>.claude</code> in the project holds <code>launch.json</code>, which tells Claude how to start the local preview (a small Python web server on port 8765). It stays on your computer and is never published.</li>
+      </ul>
+      <p class="dv-tip"><strong>How to work with Claude:</strong> say what you want in everyday words (&ldquo;add a Help Desk button to the email&rdquo;). Claude will ask before anything that affects the live site, the database or email. Saying <strong>&ldquo;make it live&rdquo;</strong> is the go-ahead to publish.</p>
+    </article>
+
+    <!-- 4 -->
+    <article class="dv-part" id="tools">
+      <h2><span class="dv-num">4</span>Other tools for the computer</h2>
+      <p>Install these once. On Windows the quickest way is <strong>winget</strong> in PowerShell (or download each from its website).</p>
+      <div class="dv-scroll"><table class="dv-table">
+        <thead><tr><th>Tool</th><th>Why</th><th>Install</th></tr></thead>
+        <tbody>
+          <tr><td>Git for Windows</td><td>Keeps track of changes and sends them to GitHub. Also gives Claude a Bash shell.</td><td><code>winget install Git.Git</code> or git-scm.com</td></tr>
+          <tr><td>GitHub CLI (<code>gh</code>)</td><td>Signs in to GitHub and checks that publishing finished.</td><td><code>winget install GitHub.cli</code> or cli.github.com</td></tr>
+          <tr><td>Python 3</td><td>Runs the local preview of the website (<code>python -m http.server</code>).</td><td>python.org, or <code>winget search Python.Python</code> and install the newest</td></tr>
+          <tr><td>Node.js (optional)</td><td>Lets Claude quickly check scripts for mistakes.</td><td><code>winget install OpenJS.NodeJS.LTS</code></td></tr>
+          <tr><td>A text editor (optional)</td><td>For looking at files yourself, e.g. Visual Studio Code.</td><td><code>winget install Microsoft.VisualStudioCode</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>Close and reopen PowerShell after installing, then check with <code>git --version</code>, <code>gh --version</code> and <code>python --version</code>.</p>
+    </article>
+
+    <!-- 5 -->
+    <article class="dv-part" id="github">
+      <h2><span class="dv-num">5</span>Connect to GitHub (code and hosting)</h2>
+      <h3>Sign in and get the files</h3>
+      <ol>
+        <li>In PowerShell: <code>gh auth login</code> &rarr; choose <em>GitHub.com</em>, <em>HTTPS</em>, and sign in with the browser. Say yes to using it for Git.</li>
+        <li>Tell Git who you are (shown on each change):<br><code>git config --global user.name "Your Name"</code><br><code>git config --global user.email "you@example.com"</code></li>
+        <li>Go to your Documents folder and copy the website down:<br><code>cd $HOME\Documents</code><br><code>gh repo clone newberngrand/Marina1</code></li>
+        <li>Open that <code>Marina1</code> folder in Claude&rsquo;s Code tab.</li>
+      </ol>
+      <h3>How the repository is set up</h3>
+      <ul>
+        <li><strong>Repository:</strong> github.com/newberngrand/Marina1 (public). Main branch: <code>master</code>.</li>
+        <li><strong>Pages:</strong> Settings &rarr; Pages &rarr; <em>Deploy from a branch</em>, branch <code>master</code>, folder <code>/ (root)</code>.</li>
+        <li><strong>Custom domain:</strong> <code>newberngrand.com</code>, with <em>Enforce HTTPS</em> on. The file <code>CNAME</code> in the repository holds the domain name; don&rsquo;t delete it. GitHub provides the HTTPS certificate automatically (covering newberngrand.com and www).</li>
+        <li><strong>Folders:</strong> the pages and scripts are in the top folder; pictures in <code>images</code>; database changes in <code>supabase/migrations</code> (numbered in order); server programs in <code>supabase/functions</code>.</li>
+        <li><strong>Version number:</strong> <code>bump-version.ps1</code> stamps every page with a new version (in <code>version.json</code> and on each script link) so browsers load the new files and open pages refresh themselves.</li>
+      </ul>
+      <h3>Publishing</h3>
+      <pre><code>.\bump-version.ps1
+git add &lt;the changed files&gt;
+git commit -m "What changed"
+git push origin master</code></pre>
+      <p>GitHub then runs <em>pages build and deployment</em> (see the repository&rsquo;s <strong>Actions</strong> tab, or <code>gh run list</code>). When it shows a green check, usually within a minute, the change is live. Claude does all of this for you when you approve.</p>
+      <p class="dv-tip"><strong>Never publish secrets.</strong> The repository is public. The only key in the website files is Supabase&rsquo;s <em>publishable</em> key, which is meant to be public; the database rules protect the data. Private keys (Supabase service role, Resend API key) live only in Supabase&rsquo;s secret settings.</p>
+    </article>
+
+    <!-- 6 -->
+    <article class="dv-part" id="supabase">
+      <h2><span class="dv-num">6</span>Supabase (database, logins, files)</h2>
+      <p>Sign in at <strong>supabase.com/dashboard</strong> and open the marina project. Project ID <code>afejychfqezorwyqfcsh</code>; address <code>https://afejychfqezorwyqfcsh.supabase.co</code>.</p>
+      <h3>What&rsquo;s in it</h3>
+      <ul>
+        <li><strong>Database (Table Editor / SQL Editor):</strong> members and slips, events and votes, ballots, documents, gallery photos and videos, gallery uploads waiting for review, announcements and who received them, help requests, minutes and reviews, site settings, and the activity log. Row Level Security rules decide who can read or change each table.</li>
+        <li><strong>Authentication:</strong> each slip logs in with its slip number and password. Behind the scenes the login is an account named <code>slip-&lt;slip&gt;@members.newberngrand.com</code>; these are not real mailboxes.</li>
+        <li><strong>Storage:</strong> buckets <code>marina-docs</code> (private documents), <code>gallery</code> (public photos), <code>gallery-videos</code> (public approved videos) and <code>gallery-pending</code> (private uploads waiting for review).</li>
+        <li><strong>Edge Functions</strong> (small server programs):
+          <ul>
+            <li><code>announce</code> &ndash; sends Email Members announcements, tests and attachments</li>
+            <li><code>vote-email</code> &ndash; vote receipts and the counting-committee notice</li>
+            <li><code>help-email</code> &ndash; tells the office about a new help request</li>
+            <li><code>review</code> &ndash; document review invitations and responses</li>
+            <li><code>request-password-reset</code> &ndash; password reset emails</li>
+            <li><code>admin-members</code> &ndash; admin tools for member logins (set a password, create a slip login)</li>
+          </ul>
+        </li>
+        <li><strong>Secrets</strong> (Edge Functions &rarr; Secrets): <code>RESEND_API_KEY</code>, <code>MAIL_FROM</code> (the sender name and address), <code>RESET_FROM</code>, <code>SITE_URL</code>. <code>SUPABASE_URL</code> and the service role key are provided automatically.</li>
+        <li><strong>Database extensions:</strong> <code>pg_net</code> lets the database call an Edge Function right after a vote or help request is saved.</li>
+      </ul>
+      <h3>How database changes are made</h3>
+      <ol>
+        <li>Each change is written as a numbered file in <code>supabase/migrations</code> (for example <code>050_gallery_submissions.sql</code>), so the repository is a complete record of how the database was built.</li>
+        <li>Claude first runs it inside a trial transaction that is rolled back, testing it as a member, an admin and a visitor.</li>
+        <li>After you say &ldquo;make it live&rdquo;, Claude applies it through the Supabase connector. The file is committed with the website change.</li>
+      </ol>
+      <p class="dv-tip"><strong>Settings to know:</strong> Authentication &rarr; URL Configuration should list <code>https://newberngrand.com</code> as the Site URL. If the domain ever changes, update it there and in the <code>SITE_URL</code> secret.</p>
+    </article>
+
+    <!-- 7 -->
+    <article class="dv-part" id="resend">
+      <h2><span class="dv-num">7</span>Resend (email)</h2>
+      <p>Sign in at <strong>resend.com</strong>. Resend sends mail on behalf of newberngrand.com; it doesn&rsquo;t receive mail (replies go to the Reply-To address, for example the office or the member).</p>
+      <ul>
+        <li><strong>Domain:</strong> under <em>Domains</em>, <code>newberngrand.com</code> must show <em>Verified</em>. Verification depends on DNS records at DreamHost (see <a href="#dns">step 8</a>): a DKIM record <code>resend._domainkey</code> and the <code>send</code> sub-domain records for bounces and SPF.</li>
+        <li><strong>API key:</strong> under <em>API Keys</em>. The key is stored only as the Supabase secret <code>RESEND_API_KEY</code>. To replace it: create a new key in Resend (sending access), paste it into Supabase &rarr; Edge Functions &rarr; Secrets, check that a test email works, then delete the old key in Resend.</li>
+        <li><strong>Sender:</strong> the From name and address come from the <code>MAIL_FROM</code> secret and must be an address at the verified domain.</li>
+        <li><strong>Logs:</strong> <em>Emails</em> shows every message, whether it was delivered, bounced or marked as spam. Check here first when someone says they didn&rsquo;t get an email.</li>
+        <li><strong>Limits:</strong> each Resend plan has daily and monthly sending limits. If an announcement reaches the limit, Email Members pauses it and offers <em>Resume</em> later. Every member gets their own separate email; addresses are never copied to other members.</li>
+      </ul>
+    </article>
+
+    <!-- 8 -->
+    <article class="dv-part" id="dns">
+      <h2><span class="dv-num">8</span>DreamHost DNS (the domain name)</h2>
+      <p>newberngrand.com uses DreamHost&rsquo;s name servers (<code>ns1.dreamhost.com</code>, <code>ns2.dreamhost.com</code>, <code>ns3.dreamhost.com</code>). The DNS records are edited in the DreamHost panel: <strong>Websites &rarr; Manage Websites</strong> (or <em>Domains</em>), choose newberngrand.com, then <strong>DNS</strong> / custom records. The domain should be set to <em>DNS only</em> at DreamHost (not hosted there), because GitHub hosts the site.</p>
+      <h3>The records and what each does</h3>
+      <div class="dv-scroll"><table class="dv-table dv-dns">
+        <thead><tr><th>Name</th><th>Type</th><th>Value</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>newberngrand.com</td><td>A</td><td>185.199.108.153<br>185.199.109.153<br>185.199.110.153<br>185.199.111.153</td><td>The website, on GitHub Pages (all four).</td></tr>
+          <tr><td>www</td><td>CNAME</td><td>newberngrand.github.io</td><td>www.newberngrand.com also opens the site (GitHub forwards it to newberngrand.com).</td></tr>
+          <tr><td>newberngrand.com</td><td>MX</td><td>ASPMX.L.GOOGLE.COM (1), ALT1 / ALT2.ASPMX.L.GOOGLE.COM (5), ALT3 / ALT4.ASPMX.L.GOOGLE.COM (10)</td><td>Staff mailboxes at Google Workspace. Don&rsquo;t change.</td></tr>
+          <tr><td>newberngrand.com</td><td>TXT</td><td>v=spf1 include:_spf.google.com ~all</td><td>Says Google may send mail for the domain.</td></tr>
+          <tr><td>newberngrand.com</td><td>TXT</td><td>google-site-verification=&hellip; (two)</td><td>Proves domain ownership to Google.</td></tr>
+          <tr><td>resend._domainkey</td><td>TXT</td><td>p=MIGf&hellip; (long key from Resend)</td><td>DKIM signature for website email sent by Resend.</td></tr>
+          <tr><td>send</td><td>As listed by Resend (currently a CNAME to send.forge.rmta.net)</td><td>Supplies the bounce mail server and SPF value Resend needs</td><td>Bounce handling and SPF for Resend.</td></tr>
+          <tr><td>_dmarc</td><td>TXT</td><td>v=DMARC1; p=none;</td><td>Email policy; helps delivery.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Optional: GitHub also offers IPv6 addresses (AAAA records <code>2606:50c0:8000::153</code>, <code>2606:50c0:8001::153</code>, <code>2606:50c0:8002::153</code>, <code>2606:50c0:8003::153</code>). They aren&rsquo;t required.</p>
+      <p class="dv-tip"><strong>Before changing DNS:</strong> take a screenshot of the current records. Changes can take from a few minutes to a few hours to reach everyone. Check with <code>nslookup newberngrand.com</code> or an online DNS checker. Never remove the MX, SPF or Resend records unless you mean to change email.</p>
+    </article>
+
+    <!-- 9 -->
+    <article class="dv-part" id="domains">
+      <h2><span class="dv-num">9</span>Pointing other domain names to the site</h2>
+      <p>GitHub Pages serves a site under <strong>one</strong> custom domain (newberngrand.com, plus its www). Other names the marina owns (for example a .net or a longer spelling) should <strong>forward</strong> visitors to https://newberngrand.com rather than being pointed at GitHub directly. If another domain&rsquo;s A records point at GitHub&rsquo;s addresses without being the Pages domain, visitors get a GitHub &ldquo;404 Site not found&rdquo; page.</p>
+      <h3>If the other domain is at DreamHost</h3>
+      <ol>
+        <li>In the DreamHost panel, add (or manage) the domain and choose <strong>Redirect</strong>.</li>
+        <li>Redirect to <code>https://newberngrand.com</code>. Choose a permanent (301) redirect if offered.</li>
+        <li>Turn on the free HTTPS certificate (Let&rsquo;s Encrypt) for that domain so https:// links to it work too.</li>
+        <li>Wait for it to take effect, then test both <code>http://</code> and <code>https://</code>, with and without <code>www</code>.</li>
+      </ol>
+      <h3>If the other domain is registered somewhere else</h3>
+      <ul>
+        <li>Easiest: use that registrar&rsquo;s own <em>domain forwarding</em> to https://newberngrand.com, <strong>or</strong></li>
+        <li>change its name servers to <code>ns1/ns2/ns3.dreamhost.com</code>, add it to DreamHost and set up the redirect above. If the domain has email, copy its MX records over first.</li>
+        <li>You can also transfer the registration to DreamHost so everything is in one place.</li>
+      </ul>
+      <h3>If the main domain itself ever changes</h3>
+      <ol>
+        <li>Put the new name in the <code>CNAME</code> file and in GitHub &rarr; Settings &rarr; Pages &rarr; Custom domain.</li>
+        <li>Create the A and www records above for the new name, and turn the old one into a redirect.</li>
+        <li>Update Supabase (Authentication &rarr; URL Configuration and the <code>SITE_URL</code> secret), verify the new domain in Resend, and ask Claude to update links to newberngrand.com in the pages and email functions.</li>
+      </ol>
+    </article>
+
+    <!-- 10 -->
+    <article class="dv-part" id="workflow">
+      <h2><span class="dv-num">10</span>Making a change, start to finish</h2>
+      <ol>
+        <li>Open Claude, <strong>Code</strong> tab, in the <code>Marina1</code> folder. If others may have made changes, ask Claude to get the latest files first (<code>git pull</code>).</li>
+        <li>Describe the change. Be specific about the page and the wording.</li>
+        <li>Claude makes the edit and shows it in the built-in browser preview (the local server on port 8765), on a desktop and phone-sized screen.</li>
+        <li>If the database or an Edge Function must change, Claude tests it without keeping anything and then asks.</li>
+        <li>Say <strong>&ldquo;make it live&rdquo;</strong>. Claude applies database changes, runs <code>bump-version.ps1</code>, commits, pushes and waits for GitHub to finish.</li>
+        <li>Check the live page. If something is wrong, tell Claude; every earlier version is kept on GitHub and can be restored.</li>
+        <li>Update the Site Map (Help) when a page or feature is added, so the help stays accurate.</li>
+      </ol>
+    </article>
+
+    <!-- 11 -->
+    <article class="dv-part" id="safety">
+      <h2><span class="dv-num">11</span>Backups, security and good habits</h2>
+      <ul>
+        <li><strong>Website files:</strong> GitHub keeps every version. Any change can be undone, and the whole site can be copied down again with <code>gh repo clone</code>.</li>
+        <li><strong>Database:</strong> Supabase makes automatic backups (how long they are kept depends on the plan). Before big changes, ask Claude to export the important tables. The migration files rebuild the structure, but not the data.</li>
+        <li><strong>Documents and photos</strong> live in Supabase Storage; download copies of anything irreplaceable.</li>
+        <li><strong>Keys:</strong> never paste a private key (service role, Resend) into a page, a chat or an email. If one leaks, replace it at once (Supabase &rarr; Settings &rarr; API keys; Resend &rarr; API Keys).</li>
+        <li><strong>People:</strong> keep at least two owners on GitHub, Supabase, Resend and DreamHost so the marina is never locked out. Remove access when someone leaves.</li>
+        <li><strong>Renewals:</strong> keep the domain on auto-renew at DreamHost with a current payment card. An expired domain takes the website and the email down.</li>
+      </ul>
+    </article>
+
+    <!-- 12 -->
+    <article class="dv-part" id="trouble">
+      <h2><span class="dv-num">12</span>Troubleshooting</h2>
+      <div class="dv-scroll"><table class="dv-table">
+        <thead><tr><th>Problem</th><th>Where to look</th></tr></thead>
+        <tbody>
+          <tr><td>A change isn&rsquo;t showing</td><td>GitHub &rarr; Actions: did <em>pages build and deployment</em> finish green? Was <code>bump-version.ps1</code> run? Reload the page.</td></tr>
+          <tr><td>The site doesn&rsquo;t open at all</td><td>GitHub &rarr; Settings &rarr; Pages (custom domain still set, certificate OK); DreamHost DNS records; domain renewal.</td></tr>
+          <tr><td>&ldquo;Not secure&rdquo; warning</td><td>GitHub &rarr; Settings &rarr; Pages &rarr; Enforce HTTPS. After DNS changes the certificate can take up to a day.</td></tr>
+          <tr><td>Someone can&rsquo;t log in</td><td>Admin page &rarr; Members (is the slip active? set a new password). Supabase &rarr; Authentication &rarr; Users.</td></tr>
+          <tr><td>Emails not arriving</td><td>Resend &rarr; Emails (delivered, bounced, spam?) and Domains (still verified?). Supabase &rarr; Edge Functions &rarr; the function &rarr; Logs.</td></tr>
+          <tr><td>An error on a page</td><td>Tell Claude what you clicked and what you saw; it can open the page, read the browser console and the Supabase logs.</td></tr>
+        </tbody>
+      </table></div>
+    </article>
+
+    <!-- 13 -->
+    <article class="dv-part" id="reference">
+      <h2><span class="dv-num">13</span>Quick reference</h2>
+      <div class="dv-scroll"><table class="dv-table">
+        <tbody>
+          <tr><th>Website</th><td>https://newberngrand.com</td></tr>
+          <tr><th>GitHub repository</th><td>github.com/newberngrand/Marina1 &middot; branch <code>master</code></td></tr>
+          <tr><th>GitHub Pages address</th><td>newberngrand.github.io (reached through newberngrand.com)</td></tr>
+          <tr><th>Supabase project</th><td>afejychfqezorwyqfcsh &middot; https://afejychfqezorwyqfcsh.supabase.co</td></tr>
+          <tr><th>Resend sending domain</th><td>newberngrand.com</td></tr>
+          <tr><th>DNS</th><td>DreamHost &middot; ns1 / ns2 / ns3.dreamhost.com</td></tr>
+          <tr><th>Staff email</th><td>Google Workspace (MX records at DreamHost)</td></tr>
+          <tr><th>Local preview</th><td>http://localhost:8765 (started by Claude from <code>.claude/launch.json</code>)</td></tr>
+          <tr><th>Publish</th><td><code>.\bump-version.ps1</code> &rarr; commit &rarr; <code>git push origin master</code></td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Last reviewed November 2026. Ask Claude to update this page whenever a service or setting changes.</p>
+    </article>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <h4>New Bern Grand Marina</h4>
+      <p>134 Craven St, New Bern, NC 28560<br>Marina location: 134 Craven St</p>
+      <p>Open Daily 8:30 AM &ndash; 5:00 PM</p>
+    </div>
+    <div>
+      <h4>Quick Links</h4>
+      <a class="flink" href="about.html">About</a>
+      <a class="flink" href="rates.html">Rates &amp; Amenities</a>
+      <a class="flink" href="amenities.html">Docks &amp; Amenities</a>
+      <a class="flink" href="marina-map.html">Marina Map</a>
+      <a class="flink" href="gallery.html">Gallery</a>
+      <a class="flink" href="documents.html">Documents</a>
+      <a class="flink" href="reservations.html">Reservations</a>
+      <a class="flink" href="contact.html">Contact Us</a>
+    </div>
+    <div>
+      <h4>Get In Touch</h4>
+      <a class="flink" href="tel:+12526380318">(252) 638-0318</a>
+      <a class="flink" href="mailto:newberngrand@f3marina.com">newberngrand@f3marina.com</a>
+      <a class="flink" href="https://visitnewbern.com/" target="_blank" rel="noopener">Explore New Bern</a>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <div>&copy; <span id="year"></span> New Bern Grand Marina. All rights reserved.</div>
+    <div>Site content last updated 2026.</div>
+  </div>
+</footer>
+
+<nav class="mobile-action-bar" aria-label="Quick actions">
+  <a href="tel:+12526380318">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    <span>Call</span>
+  </a>
+  <a href="marina-map.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    <span>Map</span>
+  </a>
+  <a href="index.html#bridge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 7.76a6 6 0 0 0 0 8.49M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    <span>Bridge</span>
+  </a>
+  <a href="https://customer.marinago.com/fss2zz08/public" class="primary" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>
+    <span>Reserve</span>
+  </a>
+</nav>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="member-login.js?v=202611261210"></script>
+</body>
+</html>

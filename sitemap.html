@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611261154">
+<link rel="stylesheet" href="style.css?v=202611261210">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -406,7 +406,13 @@
         { name: 'Visit Replay', url: 'replay.html', icon: 'play', points: [
           'Steps through one slip’s activity on one day, showing the page they were on.'] }] },
       { name: 'Help', url: 'admin.html#help', icon: 'help', points: [
-        'Help for admins, starting with this site map.'] }
+        'Help for admins: this site map and the development setup guide.'], children: [
+        { name: 'Development Setup', url: 'dev-setup.html', icon: 'doc', points: [
+          'How the website fits together: DreamHost for the domain and DNS, GitHub for the files and hosting (GitHub Pages), Supabase for the database, logins and files, Resend for email, and Claude / Claude Code for making changes.',
+          'Step by step: accounts needed, installing Claude and the other tools, connecting to GitHub, Supabase and Resend.',
+          'The DreamHost DNS records and what each does, how to point other domain names at the site, and what to change if the main domain ever changes.',
+          'Making a change from start to finish, backups and security, troubleshooting and a quick reference.',
+          'Download PDF and Print buttons for a paper copy.'] }] }
     ] },
     { id: 'board', title: 'Board of Directors', note: 'Board members only. Shown here only when a board member is logged in.', boardOnly: true, pages: [
       { name: 'Board', url: 'board.html', icon: 'shield', points: [
@@ -485,7 +491,7 @@
     'members:Document Review': [1840, 170, 4, 'docs'], 'members:Gallery': [1860, 470, -3, 'gallery'],
     'admin:Current Events': [1345, 885, -1, 'dash'], 'admin:Documents': [1545, 825, 4, 'docs'], 'admin:Gallery': [1735, 885, -3, 'gallery'], 'admin:Gallery Review': [1935, 860, 4, 'gallery'],
     'admin:Members': [1300, 1095, 3, 'table'], 'admin:Email Members': [1515, 1075, -2, 'email'], 'admin:Activity Log': [1725, 1120, 2, 'log'],
-    'admin:Visit Replay': [1885, 1010, -5, 'replay'], 'admin:Help': [1150, 965, 4, 'help'],
+    'admin:Visit Replay': [1885, 1010, -5, 'replay'], 'admin:Help': [1150, 965, 4, 'help'], 'admin:Development Setup': [1120, 1140, -3, 'text'],
     'board:Board': [330, 1125, -3, 'board'], 'board:Minutes Editor': [560, 1180, 4, 'editor']
   };
   var ISLES = [
@@ -585,7 +591,7 @@
     ['admin:Email Members', 'members:Email link opener'], ['admin:Email Members', 'members:Cast Your Vote'], ['members:Cast Your Vote', 'members:Event page'],
     ['admin:Documents', 'members:Document Review'], ['members:Member Portal', 'admin:Current Events'], ['admin:Activity Log', 'admin:Visit Replay'],
     ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Gallery', 'admin:Gallery Review'], ['members:Gallery', 'admin:Gallery Review'], ['public:Gallery', 'members:Gallery'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
-    ['admin:Email Members', 'admin:Activity Log'], ['admin:Members', 'admin:Help'], ['members:Member Portal', 'board:Board'], ['board:Board', 'board:Minutes Editor']
+    ['admin:Email Members', 'admin:Activity Log'], ['admin:Members', 'admin:Help'], ['admin:Help', 'admin:Development Setup'], ['members:Member Portal', 'board:Board'], ['board:Board', 'board:Minutes Editor']
   ];
   var L = function (cls) { return '<div class="w-ln' + (cls ? ' ' + cls : '') + '"></div>'; };
   var WIRE = {
@@ -920,6 +926,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611261154"></script>
+<script src="member-login.js?v=202611261210"></script>
 </body>
 </html>
