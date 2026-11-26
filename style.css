@@ -1913,7 +1913,7 @@ footer.site-footer {
   background-size: 240px 240px, 300px 300px, 100% 100%;
   animation: hhsea 38s linear infinite; box-shadow: inset 0 0 18px rgba(5, 30, 45, .45); }
 @keyframes hhsea { from { background-position: 0 0, 0 0, 0 0; } to { background-position: 240px 120px, -300px 150px, 0 0; } }
-.hh-cell { position: relative; z-index: 1; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); border-radius: 3px; }
+.hh-cell { position: relative; z-index: 1; background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 .5px rgba(8,45,65,.35); border-radius: 3px; }
 .hh-cell.called { background: rgba(10, 40, 60, .12); }
 .hh-grid.active .hh-cell:not(:disabled):hover { background: rgba(243, 215, 155, .55); }
 .hh-grid.target.active .hh-cell:not(:disabled) { cursor: crosshair; }
@@ -2020,21 +2020,24 @@ footer.site-footer {
 @keyframes hhshake { 0%, 100% { transform: none; } 20% { transform: translate(-3px, 1px); } 40% { transform: translate(3px, -2px); } 60% { transform: translate(-2px, 2px); } 80% { transform: translate(1px, -1px); } }
 @keyframes hhshake3d { 0%, 100% { transform: rotateX(34deg); } 20% { transform: rotateX(35deg) translate(-3px, 1px); } 40% { transform: rotateX(33deg) translate(3px, -2px); } 60% { transform: rotateX(34.5deg) translate(-2px, 2px); } 80% { transform: rotateX(34deg) translate(1px, -1px); } }
 /* Miss: a column of water, a crown of spray, droplets falling back, rings spreading; a ring stays */
-.ring { left: 50%; top: 50%; width: 46%; height: 46%; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid rgba(255,255,255,.85); box-shadow: 0 0 0 3px rgba(255,255,255,.2), inset 0 0 6px rgba(255,255,255,.4); }
+.ring { left: 50%; top: 50%; width: 54%; height: 54%; transform: translate(-50%, -50%); border-radius: 50%; border: 2.5px solid rgba(255,255,255,.95); box-shadow: 0 0 0 4px rgba(255,255,255,.28), 0 0 10px rgba(255,255,255,.55), inset 0 0 8px rgba(255,255,255,.55);
+  background: radial-gradient(circle, rgba(255,255,255,.35), rgba(255,255,255,.12) 60%, rgba(255,255,255,0) 72%); }
 .ring::after { content: ""; position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(255,255,255,.9); }
 .fx-miss.new .ring { animation: hhplop .7s ease-out .25s both; }
 @keyframes hhplop { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 60% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); } }
-.rip { left: 50%; top: 50%; width: 90%; height: 90%; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.95); transform: translate(-50%, -50%) scale(.2); opacity: 0; animation: hhripple 1.3s ease-out forwards; }
+.rip { left: 50%; top: 50%; width: 90%; height: 90%; border-radius: 50%; border: 3.5px solid rgba(255,255,255,1); box-shadow: 0 0 6px rgba(255,255,255,.7); transform: translate(-50%, -50%) scale(.2); opacity: 0; animation: hhripple 1.3s ease-out forwards; }
 .rip.r2 { animation-delay: .25s; } .rip.r3 { animation-delay: .5s; border-width: 1.5px; }
-@keyframes hhripple { 0% { transform: translate(-50%, -50%) scale(.2); opacity: .95; } 100% { transform: translate(-50%, -50%) scale(2.3); opacity: 0; } }
-.fx-miss.new .column { left: 50%; bottom: 46%; width: 28%; height: 0; transform: translateX(-50%); border-radius: 50% 50% 20% 20%;
+@keyframes hhripple { 0% { transform: translate(-50%, -50%) scale(.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; } }
+.fx-miss.new .column { left: 50%; bottom: 46%; width: 40%; height: 0; transform: translateX(-50%); border-radius: 50% 50% 20% 20%;
   background: linear-gradient(to top, rgba(255,255,255,.35), rgba(255,255,255,.95) 40%, rgba(235,248,255,.9)); box-shadow: 0 0 6px rgba(255,255,255,.8); animation: hhcolumn .9s cubic-bezier(.2, .7, .4, 1) forwards; }
-@keyframes hhcolumn { 0% { height: 0; opacity: 1; } 40% { height: 150%; opacity: 1; } 100% { height: 30%; opacity: 0; } }
-.fx-miss.new .crown { left: 50%; bottom: 44%; width: 30%; height: 12%; transform: translateX(-50%); border: 3px solid rgba(255,255,255,.95); border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+@keyframes hhcolumn { 0% { height: 0; opacity: 1; } 35% { height: 230%; opacity: 1; } 70% { opacity: .9; } 100% { height: 40%; opacity: 0; } }
+.fx-miss.new .column.c2 { width: 22%; margin-left: -22%; animation-delay: .06s; animation-duration: .8s; }
+.fx-miss.new .column.c3 { width: 18%; margin-left: 20%; animation-delay: .1s; animation-duration: .75s; }
+.fx-miss.new .crown { left: 50%; bottom: 44%; width: 30%; height: 12%; transform: translateX(-50%); border: 4px solid rgba(255,255,255,.98); filter: drop-shadow(0 0 3px rgba(255,255,255,.9)); border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0;
   animation: hhcrown .8s ease-out forwards; }
-@keyframes hhcrown { 0% { width: 20%; height: 6%; opacity: 1; } 100% { width: 110%; height: 40%; opacity: 0; } }
-.drop { width: 4px; height: 6px; margin: -3px -2px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #f2fbff; box-shadow: 0 0 3px rgba(255,255,255,.95);
-  animation: hharc calc(1s * var(--d)) cubic-bezier(.2, .6, .5, 1) calc(.1s + var(--t)) both; --dist: calc(var(--s) * .75 * var(--d)); }
+@keyframes hhcrown { 0% { width: 20%; height: 6%; opacity: 1; } 60% { opacity: 1; } 100% { width: 150%; height: 60%; opacity: 0; } }
+.drop { width: 5px; height: 7px; margin: -3.5px -2.5px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #f2fbff; box-shadow: 0 0 3px rgba(255,255,255,.95);
+  animation: hharc calc(1.1s * var(--d)) cubic-bezier(.2, .6, .5, 1) calc(.1s + var(--t)) both; --dist: calc(var(--s) * 1.05 * var(--d)); }
 @media (prefers-reduced-motion: reduce) {
   .hh-boat.afloat .hh-boat-in, .hh-grid::before, .smk, .hh-slick, .hh-wake { animation: none !important; }
   .hh-grid:has(.fx-hit.new), .hh-grid.tilt.tilt-in { animation: none !important; }

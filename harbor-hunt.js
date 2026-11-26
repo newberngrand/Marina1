@@ -333,7 +333,7 @@
     }
     if (kind === 'miss') {
       plane = '<i class="ring"></i>';
-      if (isNewShot) { plane += '<i class="rip"></i><i class="rip r2"></i><i class="rip r3"></i>'; up = '<span class="crown"></span><span class="column"></span>' + bits('drop', 10, 0.8); }
+      if (isNewShot) { plane += '<i class="spray"></i><i class="rip"></i><i class="rip r2"></i><i class="rip r3"></i>'; up = '<span class="crown"></span><span class="column"></span><span class="column c2"></span><span class="column c3"></span>' + bits('drop', 18, 0.9); }
     } else {
       var out = / out/.test(' ' + kind);
       plane = '<i class="scorch"></i>';
