@@ -259,7 +259,7 @@
 
   function eventItem(ev, past, voted, isAdmin) {
     return '<li class="event-item' + (past ? ' past' : '') + '">' +
-      '<a class="badge badge-' + ev.event_type + '" href="' + (ev.event_type === 'game' ? D.gamePage(ev) : 'event.html?id=' + ev.id) + (ev.event_type === 'vote' ? '#ballot' : '') + '">' + D.eventTypeLabel(ev.event_type) + '</a>' +
+      '<a class="badge badge-' + ev.event_type + '" href="' + 'event.html?id=' + ev.id + (ev.event_type === 'vote' ? '#ballot' : '') + '">' + D.eventTypeLabel(ev.event_type) + '</a>' +
       '<div><a class="event-title" href="event.html?id=' + ev.id + '">' + D.esc(ev.title) + '</a>' +
       (ev.starts_at ? '<div class="event-when">' + D.esc(D.fmtWhen(ev.starts_at, ev.ends_at)) + (ev.location ? ' &middot; ' + D.esc(ev.location) : '') + '</div>' : '') +
       voteTag(ev, voted, isAdmin) +
