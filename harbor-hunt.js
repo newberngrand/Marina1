@@ -243,11 +243,17 @@
       ' L' + (x0 + 6) + ',' + y1 + ' Q' + x0 + ',' + y1 + ' ' + x0 + ',' + (y1 - 6) + ' L' + x0 + ',' + (y0 + 6) + ' Q' + x0 + ',' + y0 + ' ' + (x0 + 6) + ',' + y0 + ' Z';
   }
   function cleat(x, y) { return '<rect x="' + (x - 4) + '" y="' + (y - 1.5) + '" width="8" height="3" rx="1.5" fill="url(#hhChrome)" stroke="#5b6670" stroke-width=".6"/>'; }
-  function boatSvg(type, len) {
+  function boatSvg(type, len, vertical) {
     var W = len * 100, sx = type === 'skiff' ? 14 : 4, h = '<svg viewBox="0 0 ' + W + ' 100" preserveAspectRatio="none" aria-hidden="true">';
     // Wake and foam where the hull meets the water.
     h += '<g class="hh-wake"><path d="M' + (sx + 2) + ',30 Q' + (sx - 26) + ',14 ' + (sx - 60) + ',6 M' + (sx + 2) + ',70 Q' + (sx - 26) + ',86 ' + (sx - 60) + ',94" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="4" stroke-linecap="round" filter="url(#hhBlurS)"/>' +
       '<ellipse cx="' + (sx - 6) + '" cy="50" rx="16" ry="22" fill="rgba(255,255,255,.4)" filter="url(#hhBlur)"/></g>';
+    // The hull's side, seen because the boat sits up out of the water (offset toward the viewer).
+    var sideCol = { yacht: '#8a7650', sailboat: '#0b2540', trawler: '#12301f', skiff: '#5a1f12' }[type];
+    var off = vertical ? '8,0' : '0,8';
+    h += '<path d="' + hull(W, 0, sx) + '" transform="translate(' + off + ')" fill="' + sideCol + '"/>' +
+      '<path d="' + hull(W, 0, sx) + '" transform="translate(' + off + ')" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="2"/>' +
+      '<path d="' + hull(W, -1, sx) + '" transform="translate(' + (vertical ? '9,0' : '0,9') + ')" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="3" filter="url(#hhBlurS)"/>';
     h += '<path d="' + hull(W, -2, sx) + '" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5" filter="url(#hhBlurS)"/>';
     var body = { yacht: 'hhCream', sailboat: 'hhWhite', trawler: 'hhGreen', skiff: 'hhRed' }[type];
     var edge = { yacht: '#7d6a45', sailboat: '#0b2540', trawler: '#0f2a1d', skiff: '#5a1f12' }[type];
@@ -316,7 +322,7 @@
     return '<div class="hh-boat b-' + type + ' ' + (state || 'afloat') + (v ? ' v' : '') + '" style="grid-column:' + (c + 2) + ' / span ' + (v ? 1 : len) +
       ';grid-row:' + (r + 2) + ' / span ' + (v ? len : 1) + ';--len:' + len + '">' +
       (down ? '<span class="hh-slick"></span>' : '') +
-      '<div class="hh-boat-rot"><div class="hh-boat-in">' + boatSvg(type, len) + '</div>' +
+      '<div class="hh-boat-rot"><div class="hh-boat-in">' + boatSvg(type, len, v) + '</div>' +
       (/sinking/.test(state) ? '<span class="hh-bubbles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="hh-churn"></span>' : '') +
       (down ? '<span class="hh-debris"><i></i><i></i><i></i></span>' : '') + '</div></div>';
   }
@@ -335,17 +341,22 @@
     }
     if (kind === 'miss') {
       plane = '<i class="ring"></i>';
-      if (isNewShot) { plane += '<i class="spray"></i><i class="rip"></i><i class="rip r2"></i><i class="rip r3"></i>'; up = '<span class="crown"></span><span class="column"></span><span class="column c2"></span><span class="column c3"></span>' + bits('drop', 18, 0.9); }
+      if (isNewShot) {
+        plane += '<i class="spray"></i><i class="foam"></i><i class="rip"></i><i class="rip r2"></i><i class="rip r3"></i><i class="rip r4"></i>';
+        up = '<span class="crown"></span><span class="crown k2"></span><span class="column"></span><span class="column c2"></span><span class="column c3"></span>' +
+          '<span class="mini m1"></span><span class="mini m2"></span><span class="mini m3"></span><span class="mist"></span>' + bits('drop', 24, 1);
+      }
     } else {
       var out = / out/.test(' ' + kind);
       plane = '<i class="scorch"></i>';
       up = out ? '<em class="smk"></em><em class="smk s2"></em>' : flameSvg() + '<em class="smk"></em><em class="smk s2"></em><em class="smk s3"></em>';
       if (isNewShot) {
-        plane += '<i class="shock"></i><i class="spray"></i>';
+        plane += '<i class="shock"></i><i class="shock s2"></i><i class="spray"></i><i class="foam"></i>';
         up += '<i class="flash"></i><span class="fball"><svg viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#hhBillow)"><circle cx="50" cy="50" r="40" fill="url(#hhBoom)"/>' +
           '<circle cx="34" cy="40" r="22" fill="url(#hhBoom)"/><circle cx="66" cy="44" r="20" fill="url(#hhBoom)"/></g></svg></span>' +
-          '<span class="plume"><svg viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#hhBillow)"><circle cx="50" cy="55" r="34" fill="url(#hhSmoke)"/><circle cx="36" cy="40" r="24" fill="url(#hhSmoke)"/><circle cx="62" cy="38" r="26" fill="url(#hhSmoke)"/></g></svg></span>' +
-          bits('spk', 12, 0.9) + bits('deb', 6, 0.6);
+          '<span class="fball f2"><svg viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#hhBillow)"><circle cx="50" cy="50" r="38" fill="url(#hhBoom)"/></g></svg></span>' +
+          '<span class="geyser"></span><span class="plume"><svg viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#hhBillow)"><circle cx="50" cy="55" r="34" fill="url(#hhSmoke)"/><circle cx="36" cy="40" r="24" fill="url(#hhSmoke)"/><circle cx="62" cy="38" r="26" fill="url(#hhSmoke)"/></g></svg></span>' +
+          bits('spk', 16, 0.9) + bits('deb', 9, 0.7) + bits('emb', 8, 0.5) + bits('drop', 10, 0.8);
       }
     }
     return '<div class="hh-fx fx-' + kind + (isNewShot ? ' new' : '') + '" style="grid-column:' + (c + 2) + ';grid-row:' + (r + 2) + '">' +

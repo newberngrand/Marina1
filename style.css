@@ -1919,10 +1919,10 @@ footer.site-footer {
 .hh-grid.target.active .hh-cell:not(:disabled) { cursor: crosshair; }
 .hh-colh, .hh-rowh, .hh-corner { z-index: 1; }
 /* Their harbor tilts back into the third dimension when play starts */
-.hh-tilt { perspective: 760px; perspective-origin: 50% -20%; padding: 0; margin: -34px 0 -2px; }
-.hh-grid.tilt { transform: rotateX(34deg); transform-origin: 50% 100%; transform-style: preserve-3d; }
+.hh-tilt { perspective: 520px; perspective-origin: 50% -45%; padding: 0; margin: -22px 0 -4px; }
+.hh-grid.tilt { transform: rotateX(52deg); transform-origin: 50% 100%; transform-style: preserve-3d; }
 .hh-grid.tilt.tilt-in { animation: hhtilt 1.7s cubic-bezier(.3, .1, .2, 1) both; }
-@keyframes hhtilt { 0% { transform: rotateX(0); } 70% { transform: rotateX(39deg); } 100% { transform: rotateX(34deg); } }
+@keyframes hhtilt { 0% { transform: rotateX(0); } 70% { transform: rotateX(58deg); } 100% { transform: rotateX(52deg); } }
 .hh-grid.tilt .hh-fx { transform-style: preserve-3d; }
 .hh-grid.target.tilt.active { outline-offset: 2px; }
 /* Boats */
@@ -1975,7 +1975,7 @@ footer.site-footer {
 /* Shots: a flat layer on the water (scorch, rings, shock wave) and an upright layer (flames, smoke, fireball, spray) */
 .hh-fx { z-index: 3; }
 .hh-plane, .hh-up { position: absolute; inset: 0; }
-.hh-grid.tilt .hh-up { transform: rotateX(-34deg); transform-origin: 50% 72%; }
+.hh-grid.tilt .hh-up { transform: rotateX(-52deg); transform-origin: 50% 72%; }
 .hh-plane i, .hh-up i, .hh-up em, .hh-up span, .hh-up svg { position: absolute; display: block; }
 .scorch { inset: 22%; border-radius: 50%; background: radial-gradient(circle, rgba(25,15,8,.55) 0 22%, rgba(40,25,15,.28) 50%, rgba(40,25,15,0) 72%); }
 .fx-hit.out .scorch { inset: 28%; opacity: .55; }
@@ -1989,55 +1989,55 @@ footer.site-footer {
 @keyframes hhsmoke { 0% { transform: translate(0, 30%) scale(.45); opacity: 0; } 20% { opacity: .85; } 100% { transform: translate(18%, -170%) scale(2); opacity: 0; } }
 /* The explosion */
 .fx-hit.new .flash { left: 50%; top: 50%; width: 260%; height: 260%; transform: translate(-50%, -50%); border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,240,1), rgba(255,230,160,.6) 25%, rgba(255,200,120,0) 60%); animation: hhflash .32s ease-out forwards; z-index: 4; }
+  background: radial-gradient(circle, rgba(255,255,240,1), rgba(255,230,160,.6) 25%, rgba(255,200,120,0) 60%); animation: hhflash .55s ease-out forwards; z-index: 4; }
 @keyframes hhflash { from { opacity: 1; } to { opacity: 0; } }
-.fx-hit.new .fball { left: 50%; top: 50%; width: 170%; height: 170%; transform: translate(-50%, -55%) scale(.1); animation: hhfball 1s cubic-bezier(.15, .7, .3, 1) forwards; z-index: 3; }
+.fx-hit.new .fball { left: 50%; top: 50%; width: 170%; height: 170%; transform: translate(-50%, -55%) scale(.1); animation: hhfball 1.7s cubic-bezier(.15, .7, .3, 1) forwards; z-index: 3; }
 .fx-hit.new .fball svg { inset: 0; width: 100%; height: 100%; }
 @keyframes hhfball { 0% { transform: translate(-50%, -50%) scale(.1); opacity: 1; } 45% { opacity: 1; } 100% { transform: translate(-50%, -95%) scale(1.5); opacity: 0; } }
-.fx-hit.new .plume { left: 50%; top: 50%; width: 190%; height: 190%; transform: translate(-50%, -60%) scale(.3); opacity: 0; animation: hhplume 2.6s ease-out .3s forwards; z-index: 2; }
+.fx-hit.new .plume { left: 50%; top: 50%; width: 190%; height: 190%; transform: translate(-50%, -60%) scale(.3); opacity: 0; animation: hhplume 3.8s ease-out .45s forwards; z-index: 2; }
 .fx-hit.new .plume svg { inset: 0; width: 100%; height: 100%; }
 @keyframes hhplume { 0% { transform: translate(-50%, -60%) scale(.3); opacity: 0; } 20% { opacity: .9; } 100% { transform: translate(-40%, -190%) scale(1.9); opacity: 0; } }
-.fx-hit.new .hh-flame { opacity: 0; animation: hhfadein .4s ease-out .55s forwards; }
+.fx-hit.new .hh-flame { opacity: 0; animation: hhfadein .6s ease-out 1s forwards; }
 @keyframes hhfadein { to { opacity: 1; } }
 .spk, .deb, .drop { left: 50%; top: 50%; }
 .spk { width: 3px; height: 3px; margin: -1.5px; border-radius: 50%; background: #fff3b0; box-shadow: 0 0 4px #ffb020, 0 0 8px #ff7a00; z-index: 5;
-  animation: hharc calc(.9s * var(--d)) cubic-bezier(.2, .6, .4, 1) var(--t) forwards; --dist: calc(var(--s) * 1.1 * var(--d)); }
+  animation: hharc calc(1.5s * var(--d)) cubic-bezier(.2, .6, .4, 1) var(--t) forwards; --dist: calc(var(--s) * 1.2 * var(--d)); }
 .deb { width: 4px; height: 3px; margin: -1.5px; border-radius: 1px; background: #2b2420; z-index: 5;
-  animation: hharc calc(1.3s * var(--d)) cubic-bezier(.25, .5, .5, 1) var(--t) forwards; --dist: calc(var(--s) * .8 * var(--d)); }
+  animation: hharc calc(2.1s * var(--d)) cubic-bezier(.25, .5, .5, 1) var(--t) forwards; --dist: calc(var(--s) * .95 * var(--d)); }
 @keyframes hharc {
   0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
   55% { transform: translate(calc(cos(var(--a)) * var(--dist) * .75), calc(sin(var(--a)) * var(--dist) * .75 - var(--s) * .35)) rotate(220deg); opacity: 1; }
   100% { transform: translate(calc(cos(var(--a)) * var(--dist)), calc(sin(var(--a)) * var(--dist) + var(--s) * .45)) rotate(400deg); opacity: 0; }
 }
 .fx-hit.new .shock { left: 50%; top: 50%; width: 100%; height: 100%; border-radius: 50%; transform: translate(-50%, -50%) scale(.2); border: 2px solid rgba(255,255,255,.85);
-  box-shadow: 0 0 8px rgba(255,255,255,.7); animation: hhshock .7s ease-out forwards; }
+  box-shadow: 0 0 8px rgba(255,255,255,.7); animation: hhshock 1.2s ease-out forwards; }
 @keyframes hhshock { 0% { transform: translate(-50%, -50%) scale(.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; } }
 .fx-hit.new .spray, .fx-miss.new .spray { left: 50%; top: 50%; width: 150%; height: 150%; border-radius: 50%; transform: translate(-50%, -50%) scale(.3);
-  background: radial-gradient(circle, rgba(255,255,255,.75), rgba(255,255,255,0) 65%); animation: hhspray 1s ease-out forwards; }
+  background: radial-gradient(circle, rgba(255,255,255,.75), rgba(255,255,255,0) 65%); animation: hhspray 1.7s ease-out forwards; }
 @keyframes hhspray { 0% { transform: translate(-50%, -50%) scale(.3); opacity: .9; } 100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; } }
-.hh-grid:has(.fx-hit.new) { animation: hhshake .5s ease-out; }
-.hh-grid.tilt:has(.fx-hit.new) { animation: hhshake3d .5s ease-out; }
+.hh-grid:has(.fx-hit.new) { animation: hhshake .8s ease-out; }
+.hh-grid.tilt:has(.fx-hit.new) { animation: hhshake3d .8s ease-out; }
 @keyframes hhshake { 0%, 100% { transform: none; } 20% { transform: translate(-3px, 1px); } 40% { transform: translate(3px, -2px); } 60% { transform: translate(-2px, 2px); } 80% { transform: translate(1px, -1px); } }
-@keyframes hhshake3d { 0%, 100% { transform: rotateX(34deg); } 20% { transform: rotateX(35deg) translate(-3px, 1px); } 40% { transform: rotateX(33deg) translate(3px, -2px); } 60% { transform: rotateX(34.5deg) translate(-2px, 2px); } 80% { transform: rotateX(34deg) translate(1px, -1px); } }
+@keyframes hhshake3d { 0%, 100% { transform: rotateX(52deg); } 20% { transform: rotateX(53deg) translate(-3px, 1px); } 40% { transform: rotateX(51deg) translate(3px, -2px); } 60% { transform: rotateX(52.5deg) translate(-2px, 2px); } 80% { transform: rotateX(52deg) translate(1px, -1px); } }
 /* Miss: a column of water, a crown of spray, droplets falling back, rings spreading; a ring stays */
 .ring { left: 50%; top: 50%; width: 54%; height: 54%; transform: translate(-50%, -50%); border-radius: 50%; border: 2.5px solid rgba(255,255,255,.95); box-shadow: 0 0 0 4px rgba(255,255,255,.28), 0 0 10px rgba(255,255,255,.55), inset 0 0 8px rgba(255,255,255,.55);
   background: radial-gradient(circle, rgba(255,255,255,.35), rgba(255,255,255,.12) 60%, rgba(255,255,255,0) 72%); }
 .ring::after { content: ""; position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(255,255,255,.9); }
-.fx-miss.new .ring { animation: hhplop .7s ease-out .25s both; }
+.fx-miss.new .ring { animation: hhplop 1s ease-out 1.1s both; }
 @keyframes hhplop { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 60% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); } }
-.rip { left: 50%; top: 50%; width: 90%; height: 90%; border-radius: 50%; border: 3.5px solid rgba(255,255,255,1); box-shadow: 0 0 6px rgba(255,255,255,.7); transform: translate(-50%, -50%) scale(.2); opacity: 0; animation: hhripple 1.3s ease-out forwards; }
-.rip.r2 { animation-delay: .25s; } .rip.r3 { animation-delay: .5s; border-width: 1.5px; }
+.rip { left: 50%; top: 50%; width: 90%; height: 90%; border-radius: 50%; border: 3.5px solid rgba(255,255,255,1); box-shadow: 0 0 6px rgba(255,255,255,.7); transform: translate(-50%, -50%) scale(.2); opacity: 0; animation: hhripple 2.1s ease-out forwards; }
+.rip.r2 { animation-delay: .4s; } .rip.r3 { animation-delay: .8s; border-width: 2px; } .rip.r4 { animation-delay: 1.2s; border-width: 1.5px; opacity: 0; }
 @keyframes hhripple { 0% { transform: translate(-50%, -50%) scale(.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; } }
 .fx-miss.new .column { left: 50%; bottom: 46%; width: 40%; height: 0; transform: translateX(-50%); border-radius: 50% 50% 20% 20%;
-  background: linear-gradient(to top, rgba(255,255,255,.35), rgba(255,255,255,.95) 40%, rgba(235,248,255,.9)); box-shadow: 0 0 6px rgba(255,255,255,.8); animation: hhcolumn .9s cubic-bezier(.2, .7, .4, 1) forwards; }
+  background: linear-gradient(to top, rgba(255,255,255,.35), rgba(255,255,255,.95) 40%, rgba(235,248,255,.9)); box-shadow: 0 0 6px rgba(255,255,255,.8); animation: hhcolumn 1.5s cubic-bezier(.2, .7, .4, 1) forwards; }
 @keyframes hhcolumn { 0% { height: 0; opacity: 1; } 35% { height: 230%; opacity: 1; } 70% { opacity: .9; } 100% { height: 40%; opacity: 0; } }
-.fx-miss.new .column.c2 { width: 22%; margin-left: -22%; animation-delay: .06s; animation-duration: .8s; }
-.fx-miss.new .column.c3 { width: 18%; margin-left: 20%; animation-delay: .1s; animation-duration: .75s; }
+.fx-miss.new .column.c2 { width: 22%; margin-left: -22%; animation-delay: .1s; animation-duration: 1.3s; }
+.fx-miss.new .column.c3 { width: 18%; margin-left: 20%; animation-delay: .16s; animation-duration: 1.25s; }
 .fx-miss.new .crown { left: 50%; bottom: 44%; width: 30%; height: 12%; transform: translateX(-50%); border: 4px solid rgba(255,255,255,.98); filter: drop-shadow(0 0 3px rgba(255,255,255,.9)); border-bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-  animation: hhcrown .8s ease-out forwards; }
+  animation: hhcrown 1.3s ease-out forwards; }
 @keyframes hhcrown { 0% { width: 20%; height: 6%; opacity: 1; } 60% { opacity: 1; } 100% { width: 150%; height: 60%; opacity: 0; } }
 .drop { width: 5px; height: 7px; margin: -3.5px -2.5px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #f2fbff; box-shadow: 0 0 3px rgba(255,255,255,.95);
-  animation: hharc calc(1.1s * var(--d)) cubic-bezier(.2, .6, .5, 1) calc(.1s + var(--t)) both; --dist: calc(var(--s) * 1.05 * var(--d)); }
+  animation: hharc calc(1.7s * var(--d)) cubic-bezier(.2, .6, .5, 1) calc(.15s + var(--t)) both; --dist: calc(var(--s) * 1.1 * var(--d)); }
 @media (prefers-reduced-motion: reduce) {
   .hh-boat.afloat .hh-boat-in, .hh-grid::before, .smk, .hh-slick, .hh-wake { animation: none !important; }
   .hh-grid:has(.fx-hit.new), .hh-grid.tilt.tilt-in { animation: none !important; }
@@ -2141,3 +2141,31 @@ a.hh-x { text-decoration: none; display: inline-block; }
   .he-overlay *, .he-overlay { animation: none !important; }
   .he-fx { display: none; }
 }
+
+/* Harbor Hunt: extra detail in explosions and splashes */
+.fx-hit.new .fball.f2 { width: 110%; height: 110%; margin-left: 22%; margin-top: -12%; animation-delay: .28s; animation-duration: 1.4s; }
+.fx-hit.new .geyser { left: 50%; bottom: 44%; width: 46%; height: 0; transform: translateX(-50%); border-radius: 50% 50% 25% 25%; z-index: 1;
+  background: linear-gradient(to top, rgba(255,255,255,.3), rgba(240,250,255,.95) 45%, rgba(255,255,255,.85)); box-shadow: 0 0 8px rgba(255,255,255,.8);
+  animation: hhgeyser 1.9s cubic-bezier(.2, .7, .4, 1) .05s forwards; }
+@keyframes hhgeyser { 0% { height: 0; opacity: 1; } 35% { height: 240%; opacity: .95; } 75% { opacity: .7; } 100% { height: 60%; opacity: 0; } }
+.emb { left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px; border-radius: 50%; background: #ffcf5a; box-shadow: 0 0 5px #ff8a00; z-index: 5;
+  animation: hhember calc(3.2s * var(--d)) ease-out calc(.3s + var(--t)) both; --dist: calc(var(--s) * .7 * var(--d)); }
+@keyframes hhember {
+  0% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 1; }
+  45% { transform: translate(calc(cos(var(--a)) * var(--dist)), calc(sin(var(--a)) * var(--dist) - var(--s) * .5)); opacity: 1; }
+  100% { transform: translate(calc(cos(var(--a)) * var(--dist) * 1.2 + 6px), calc(sin(var(--a)) * var(--dist) - var(--s) * .9)); opacity: 0; background: #7a4a2a; box-shadow: none; }
+}
+.fx-hit.new .drop { --dist: calc(var(--s) * .8 * var(--d)); }
+.fx-hit.new .shock.s2 { animation-delay: .3s; border-width: 1.5px; }
+.foam { left: 50%; top: 50%; width: 120%; height: 120%; border-radius: 50%; transform: translate(-50%, -50%) scale(.3); opacity: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0) 30%, rgba(255,255,255,.75) 42%, rgba(255,255,255,.35) 55%, rgba(255,255,255,0) 68%);
+  animation: hhfoam 3.2s ease-out .3s forwards; }
+@keyframes hhfoam { 0% { transform: translate(-50%, -50%) scale(.3); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; } }
+.fx-miss.new .crown.k2 { animation-delay: .35s; border-width: 2.5px; }
+.fx-miss.new .mini { left: 50%; bottom: 46%; width: 12%; height: 0; border-radius: 50% 50% 20% 20%; background: linear-gradient(to top, rgba(255,255,255,.3), rgba(255,255,255,.95)); animation: hhmini .7s ease-out forwards; }
+.fx-miss.new .mini.m1 { margin-left: -38%; animation-delay: .75s; } .fx-miss.new .mini.m2 { margin-left: 22%; animation-delay: .9s; } .fx-miss.new .mini.m3 { margin-left: -8%; animation-delay: 1.05s; width: 9%; }
+@keyframes hhmini { 0% { height: 0; opacity: 1; } 45% { height: 60%; } 100% { height: 10%; opacity: 0; } }
+.fx-miss.new .mist { left: 50%; bottom: 40%; width: 160%; height: 120%; transform: translateX(-50%); border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 70%, rgba(255,255,255,.55), rgba(255,255,255,0) 65%); filter: blur(2px); opacity: 0; animation: hhmist 2.2s ease-out .25s forwards; }
+@keyframes hhmist { 0% { opacity: 0; transform: translateX(-50%) scale(.5); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateX(-50%) translateY(-25%) scale(1.3); } }

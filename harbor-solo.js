@@ -184,7 +184,7 @@
     if (allSunk(myShots)) { drawPlay(said(s, 'You')); return setTimeout(function () { finish(true); }, 1800); }
     cpuBusy = true;
     drawPlay(said(s, 'You'));
-    setTimeout(cpuTurn, s.result === 'sunk' ? 2300 : 1300);
+    setTimeout(cpuTurn, s.result === 'sunk' ? 3300 : s.result === 'hit' ? 2300 : 1900);
   }
   function cpuTurn() {
     if (phase !== 'play') return;
