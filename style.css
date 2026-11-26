@@ -2056,3 +2056,88 @@ a.hh-x { text-decoration: none; display: inline-block; }
 .hs-level.sel { border-color: var(--gold); background: #fff8e8; box-shadow: 0 0 0 3px rgba(201,161,90,.2); }
 .hs-think { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 50%; border: 2px solid #c9d6e0; border-top-color: var(--navy); vertical-align: -1px; animation: hhspin .8s linear infinite; }
 .hh-boat.reveal { opacity: .75; }
+
+/* Harbor Hunt: across / down toggle (raised 3D buttons, one pressed at a time) */
+.hh-boatrow { display: flex; align-items: center; gap: 8px; }
+.hh-boatrow .hh-boatbtn { flex: 1; }
+.hh-dirrow { justify-content: flex-end; }
+.hh-dir { display: inline-flex; gap: 6px; flex: none; }
+.hh-dirbtn { width: 44px; height: 40px; padding: 0; display: grid; place-items: center; cursor: pointer; border-radius: 10px;
+  border: 1px solid #9fb0bf; background: linear-gradient(180deg, #ffffff 0%, #e6edf3 55%, #c9d5df 100%); color: #5b6b7a;
+  box-shadow: 0 4px 0 #8c9cab, 0 6px 8px rgba(10, 37, 64, .25), inset 0 1px 0 rgba(255,255,255,.9);
+  transform: translateY(-2px); transition: transform .08s, box-shadow .08s, background .12s; }
+.hh-dirbtn svg { width: 26px; height: 12px; fill: currentColor; filter: drop-shadow(0 1px 0 rgba(255,255,255,.8)); }
+.hh-dirbtn.v svg { transform: rotate(90deg); width: 24px; }
+.hh-dirbtn:hover { color: var(--navy); }
+.hh-dirbtn:active { transform: translateY(1px); box-shadow: 0 1px 0 #8c9cab, 0 2px 3px rgba(10, 37, 64, .25); }
+.hh-dirbtn.on { transform: translateY(2px); color: #fff; border-color: #0b2540;
+  background: linear-gradient(180deg, #2c5a8a 0%, #173a63 60%, #0b2540 100%);
+  box-shadow: 0 0 0 #0b2540, inset 0 3px 6px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.15); }
+.hh-dirbtn.on svg { filter: drop-shadow(0 0 3px rgba(243, 195, 91, .9)); fill: #f3d79b; }
+.hh-dirbtn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* Harbor Hunt endings */
+.he-overlay { position: fixed; inset: 0; z-index: 4000; display: flex; align-items: center; justify-content: center; padding: 14px; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 40%, rgba(11, 37, 64, .55), rgba(5, 15, 28, .85)); animation: hefade .35s ease-out; }
+.he-overlay.out { animation: hefadeout .3s ease-in forwards; }
+@keyframes hefade { from { opacity: 0; } } @keyframes hefadeout { to { opacity: 0; } }
+.he-card { position: relative; z-index: 2; width: min(520px, 100%); background: #fff; border-radius: 18px; overflow: hidden; text-align: center;
+  box-shadow: 0 30px 70px rgba(0,0,0,.5), 0 0 0 4px rgba(232, 182, 72, .9); animation: hepop .7s cubic-bezier(.2, 1.4, .4, 1) both; }
+.he-overlay.lose .he-card { box-shadow: 0 30px 70px rgba(0,0,0,.5), 0 0 0 4px rgba(150, 170, 185, .9); animation-name: hesink; }
+@keyframes hepop { 0% { transform: scale(.4) rotate(-6deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes hesink { 0% { transform: translateY(-40px); opacity: 0; } 60% { transform: translateY(8px); } 100% { transform: none; opacity: 1; } }
+.he-scene { display: block; width: 100%; height: auto; }
+.he-title { margin: 14px 16px 4px; font-size: 1.7rem; color: var(--navy); letter-spacing: .5px; }
+.he-overlay.win .he-title { color: #b8860b; text-shadow: 0 2px 0 #fff3c4, 0 3px 6px rgba(150, 100, 0, .35); animation: hetitle 1.2s ease-in-out infinite alternate; }
+@keyframes hetitle { from { transform: scale(1); } to { transform: scale(1.06); } }
+.he-text { margin: 0 18px 6px; color: var(--muted); line-height: 1.5; }
+.he-btns { padding: 10px 16px 18px; }
+.he-btns .btn { border: none; cursor: pointer; }
+/* Win scene motion */
+.he-rays { transform-origin: 200px 95px; animation: herays 18s linear infinite; }
+@keyframes herays { to { transform: rotate(360deg); } }
+.he-wave { animation: hewave 3s linear infinite; }
+@keyframes hewave { to { transform: translateX(40px); } }
+.he-wheel { animation: hewheel 2.4s ease-in-out infinite alternate; }
+@keyframes hewheel { from { transform: translate(200px, 236px) rotate(-18deg); } to { transform: translate(200px, 236px) rotate(18deg); } }
+.he-captain { animation: hecap 1.2s ease-in-out infinite alternate; transform-origin: 200px 270px; }
+@keyframes hecap { from { transform: translateY(0) rotate(-1deg); } to { transform: translateY(-4px) rotate(1deg); } }
+.he-wave-arm { transform-origin: 240px 200px; animation: hewavearm .5s ease-in-out infinite alternate; }
+@keyframes hewavearm { from { transform: rotate(-14deg); } to { transform: rotate(10deg); } }
+
+.he-sailor.c1 { animation: hejump .55s ease-in-out infinite alternate; }
+.he-sailor.c2 { animation: hejump .5s ease-in-out .2s infinite alternate; }
+.he-sailor.c3 { animation: hejump .6s ease-in-out .1s infinite alternate; }
+.he-sailor.c4 { animation: hejump .52s ease-in-out .3s infinite alternate; }
+@keyframes hejump { from { translate: 0 0; } to { translate: 0 -12px; } }
+.he-arm-l, .he-arm-r { transform-box: fill-box; transform-origin: 50% 100%; animation: hearms .3s ease-in-out infinite alternate; }
+.he-arm-r { animation-delay: .15s; }
+@keyframes hearms { from { rotate: -10deg; } to { rotate: 12deg; } }
+/* Confetti and fireworks */
+.he-fx { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.he-fx i { position: absolute; top: -20px; height: 12px; border-radius: 2px; opacity: .95; animation: heconfetti 3.5s linear infinite; }
+@keyframes heconfetti { 0% { transform: translate(0, -20px) rotate(0deg); } 100% { transform: translate(var(--dx), 110vh) rotate(var(--r)); } }
+.he-fw { position: absolute; width: 0; height: 0; animation: hefw 1.6s ease-out infinite; }
+.he-fw s { position: absolute; left: 0; top: 0; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c), 0 0 16px var(--c); }
+.he-fw s:nth-child(1) { --a: 0deg; } .he-fw s:nth-child(2) { --a: 30deg; } .he-fw s:nth-child(3) { --a: 60deg; } .he-fw s:nth-child(4) { --a: 90deg; }
+.he-fw s:nth-child(5) { --a: 120deg; } .he-fw s:nth-child(6) { --a: 150deg; } .he-fw s:nth-child(7) { --a: 180deg; } .he-fw s:nth-child(8) { --a: 210deg; }
+.he-fw s:nth-child(9) { --a: 240deg; } .he-fw s:nth-child(10) { --a: 270deg; } .he-fw s:nth-child(11) { --a: 300deg; } .he-fw s:nth-child(12) { --a: 330deg; }
+.he-fw s { animation: hespark 1.6s ease-out infinite; animation-delay: inherit; }
+@keyframes hespark { 0% { transform: rotate(var(--a)) translateX(0) scale(1); opacity: 0; } 8% { opacity: 1; } 70% { opacity: 1; } 100% { transform: rotate(var(--a)) translateX(90px) translateY(20px) scale(.4); opacity: 0; } }
+@keyframes hefw { 0%, 100% { opacity: 1; } }
+/* Lose scene motion */
+.he-bob { animation: hebob 2.6s ease-in-out infinite; }
+@keyframes hebob { 0%, 100% { transform: translate(190px, 210px) rotate(-4deg); } 50% { transform: translate(190px, 202px) rotate(4deg); } }
+.he-drift { animation: hedrift 7s ease-in-out infinite; }
+@keyframes hedrift { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(14px, -5px) rotate(8deg); } }
+.he-wave.w1 { animation: hewave 6s linear infinite; }
+.he-wave.w2 { animation: hewave2 4s linear infinite; }
+.he-wave.w3 { animation: hewave 3s linear infinite reverse; }
+@keyframes hewave2 { 0% { transform: translateX(0); } 100% { transform: translateX(60px); } }
+.he-drip circle { animation: hedrip 1.4s ease-in infinite; }
+.he-drip circle:nth-child(2) { animation-delay: .7s; }
+@keyframes hedrip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .he-overlay *, .he-overlay { animation: none !important; }
+  .he-fx { display: none; }
+}

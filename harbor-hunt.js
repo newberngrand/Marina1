@@ -14,7 +14,7 @@
   var ROWS = 'ABCDEFGH';
   var ctx = null, sb = null, match = null, shots = [], myShips = null, seat = 0;
   var place = { ships: {}, sel: 'yacht', vertical: false }, open = false, busy = false, lastStatus = '', lastTurn = 0, flashId = 0;
-  var dismissed = {}, seenShot = {}, animated = {}, drawnSig = '', tilted = {};
+  var dismissed = {}, seenShot = {}, animated = {}, drawnSig = '', tilted = {}, ended = {};
   var SND = window.HarborSounds || { boom: noop, splash: noop, sink: noop, place: noop, ambientStart: noop, ambientStop: noop, isOn: function () { return false; }, toggle: noop, unlock: noop };
   function noop() {}
 
@@ -29,7 +29,7 @@
 
   // The artwork (boats, water, flames, splashes) is shared with Harbor Hunt against the computer (harbor-solo.js).
   window.HarborHunt = { init: init, art: { svgDefs: svgDefs, boatSvg: boatSvg, boatHtml: boatHtml, fxHtml: fxHtml, gridHtml: gridHtml,
-    sunkCells: sunkCells, FLEET: FLEET, NAMES: NAMES, label: label } };
+    sunkCells: sunkCells, fleetButtons: fleetButtons, FLEET: FLEET, NAMES: NAMES, label: label } };
 
   function init(c) {
     if (ctx) return;
@@ -371,6 +371,23 @@
     return [c];
   }
 
+  // Across / down: two raised 3D buttons with double-ended arrows; only one is pressed at a time.
+  function dirToggle(attr, vertical) {
+    var arrow = '<svg viewBox="0 0 40 16" aria-hidden="true"><path d="M2,8 L10,1 L10,5 L30,5 L30,1 L38,8 L30,15 L30,11 L10,11 L10,15 Z"/></svg>';
+    return '<span class="hh-dir" role="radiogroup" aria-label="Boat direction">' +
+      '<button type="button" class="hh-dirbtn' + (vertical ? '' : ' on') + '" ' + attr + '="dir" data-v="0" role="radio" aria-checked="' + !vertical + '" title="Going across">' + arrow + '</button>' +
+      '<button type="button" class="hh-dirbtn v' + (vertical ? ' on' : '') + '" ' + attr + '="dir" data-v="1" role="radio" aria-checked="' + vertical + '" title="Going down">' + arrow + '</button></span>';
+  }
+  function fleetButtons(attr, place, pic) {
+    var rows = FLEET.map(function (f) {
+      var sel = place.sel === f.type;
+      return '<div class="hh-boatrow"><button type="button" class="hh-boatbtn' + (sel ? ' sel' : '') + (place.ships[f.type] ? ' placed' : '') + '" ' + attr + '="pick" data-type="' + f.type + '">' +
+        '<span class="hh-boatpic" style="--len:' + f.len + '">' + pic(f.type, f.len) + '</span>' + f.name + ' <span class="note">' + f.len + '</span>' +
+        (place.ships[f.type] ? ' &#10003;' : '') + '</button>' + (sel ? dirToggle(attr, place.vertical) : '') + '</div>';
+    }).join('');
+    return rows + (place.sel ? '' : '<div class="hh-boatrow hh-dirrow"><span class="note">Direction</span>' + dirToggle(attr, place.vertical) + '</div>');
+  }
+
   function gridHtml(opts) {
     var h = '<div class="hh-grid' + (opts.target ? ' target' : '') + (opts.active ? ' active' : '') + (opts.extra || '') + '" role="grid" aria-label="' + esc(opts.label) + '">';
     // Every square has a fixed spot, so the boats and effects laid over them don't push them around.
@@ -394,13 +411,8 @@
     var layers = ships.map(function (s) { return boatHtml(s.type, s.cells, 'afloat' + (place.sel === s.type ? ' sel' : '')); }).join('');
     var html = '<p class="hh-intro">Hide your boats from <strong>' + esc(them()) + '</strong>. Pick a boat, then tap the square where it should start.</p>' +
       '<div class="hh-place">' +
-        '<div class="hh-fleet">' + FLEET.map(function (f) {
-          return '<button type="button" class="hh-boatbtn' + (place.sel === f.type ? ' sel' : '') + (place.ships[f.type] ? ' placed' : '') + '" data-hh="pick" data-type="' + f.type + '">' +
-            '<span class="hh-boatpic" style="--len:' + f.len + '">' + boatSvg(f.type, f.len) + '</span>' + f.name + ' <span class="note">' + f.len + '</span>' +
-            (place.ships[f.type] ? ' &#10003;' : '') + '</button>';
-        }).join('') +
-        '<div class="hh-tools"><button type="button" class="btn-sm" data-hh="rotate">' + (place.vertical ? '&#8597; Going down' : '&#8596; Going across') + '</button>' +
-        '<button type="button" class="btn-sm" data-hh="shuffle">Shuffle</button><button type="button" class="btn-sm" data-hh="clear">Clear</button></div></div>' +
+        '<div class="hh-fleet">' + fleetButtons('data-hh', place, boatSvg) +
+        '<div class="hh-tools"><button type="button" class="btn-sm" data-hh="shuffle">Shuffle</button><button type="button" class="btn-sm" data-hh="clear">Clear</button></div></div>' +
         gridHtml({ label: 'Your harbor', active: true, layers: layers, cell: function (i) { return { say: where[i] ? NAMES[where[i]] : 'water' }; } }) +
       '</div><p class="hh-msg" id="hhMsg"></p>' +
       '<div class="hh-actions"><button type="button" class="btn btn-gold" data-hh="ready"' + (done ? '' : ' disabled') + '>Ready &mdash; hide my boats</button>' +
@@ -463,6 +475,16 @@
     var status;
     if (m.status === 'done') {
       var won = m.winner === seat;
+      // The big finish: the captain cheered at the helm, or bobbing in a ring buoy. Once per game, after the last boat goes down.
+      if (!ended[m.id] && window.HarborEndings) {
+        ended[m.id] = 1;
+        var them2 = short(them()), lastShot = shots[shots.length - 1];
+        setTimeout(function () {
+          HarborEndings.show(won
+            ? { won: true, title: 'Victory, Captain!', text: 'You found every one of ' + them2 + '\u2019s boats. The crew is cheering!', button: 'See the boards' }
+            : { won: false, title: 'Man overboard!', text: them2 + ' found your whole fleet. Dry off and challenge them again!', button: 'See the boards' });
+        }, lastShot && isNew(lastShot) ? 2600 : 400);
+      }
       status = '<div class="hh-result ' + (won ? 'won' : 'lost') + '">' + (won ? '&#127942; You won! You found every boat.' : esc(short(them())) + ' won this one.') + '</div>';
     } else {
       status = '<div class="hh-turn ' + (m.turn === seat ? 'mine' : '') + '">' + (m.turn === seat ? 'Your turn &mdash; tap a square on ' + esc(short(them())) + '&rsquo;s harbor' : 'Waiting for ' + esc(short(them())) + '&hellip;') + '</div>';
@@ -534,7 +556,7 @@
       return sb.rpc('hh_leave', { p_match: match.id, p_client: ctx.clientId }).then(function () { busy = false; refresh(); });
     }
     if (act === 'pick') { place.sel = b.getAttribute('data-type'); return drawPlacing(); }
-    if (act === 'rotate') { place.vertical = !place.vertical; return drawPlacing(); }
+    if (act === 'dir') { place.vertical = b.getAttribute('data-v') === '1'; return drawPlacing(); }
     if (act === 'shuffle') { shuffle(); place.sel = null; return drawPlacing(); }
     if (act === 'clear') { place.ships = {}; place.sel = 'yacht'; return drawPlacing(); }
     if (act === 'ready') {

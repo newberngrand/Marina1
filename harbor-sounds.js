@@ -7,6 +7,8 @@
    sink    - a boat going down: a hull groan, water rushing in, bubbles all around
    place   - a hull settling onto the water when a boat is placed
    ambient - low idling engines (one on each side), lapping water and swells while the game is open
+   fanfare, cheer - winning: brass fanfare, ship's horn, the crew cheering and clapping
+   trombone - losing: a sad trombone and a splash
    Sound starts on the player's first tap (browsers require a tap before playing audio).
    The on/off choice is remembered on this device. */
 (function () {
@@ -162,6 +164,65 @@
       a.out.gain.setValueAtTime(a.out.gain.value, ctx.currentTime);
       a.out.gain.exponentialRampToValueAtTime(0.0001, now(700));
       setTimeout(function () { a.nodes.forEach(function (n) { try { n.stop(); } catch (e) {} }); a.out.disconnect(); }, 800);
+    },
+    // Winning: a bright brass fanfare (a little wide across the speakers), a ship's horn, then the crew cheering.
+    fanfare: function () {
+      if (!ready()) return;
+      var t = now(50);
+      function brass(t0, f, dur, vol, pan) {
+        var o = spot(pan, 0.7), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 2;
+        lp.frequency.setValueAtTime(600, t0); lp.frequency.exponentialRampToValueAtTime(3200, t0 + 0.06); lp.frequency.exponentialRampToValueAtTime(1400, t0 + dur);
+        lp.connect(o);
+        [f, f * 1.003].forEach(function (fr, i) {
+          var osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = fr;
+          var vib = ctx.createOscillator(); vib.frequency.value = 5.5; var vg = ctx.createGain(); vg.gain.value = fr * 0.006; vib.connect(vg); vg.connect(osc.frequency);
+          var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.04); g.gain.setValueAtTime(vol, t0 + dur - 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+          osc.connect(g); g.connect(lp); osc.start(t0); vib.start(t0); osc.stop(t0 + dur + 0.05); vib.stop(t0 + dur + 0.05);
+        });
+      }
+      // G4 C5 E5 G5 ... G5 E5 G5-C6 chord
+      var notes = [[392, 0, 0.16], [523, 0.17, 0.16], [659, 0.34, 0.16], [784, 0.51, 0.42], [659, 0.95, 0.16], [784, 1.12, 0.9]];
+      notes.forEach(function (n) { brass(t + n[1], n[0], n[2], 0.09, -0.3); brass(t + n[1] + 0.012, n[0] / 2, n[2], 0.06, 0.3); });
+      [523, 659, 1046].forEach(function (f, i) { brass(t + 1.12, f, 0.9, 0.05, i - 1); });
+      var horn = spot(0, 0.9); tone(horn, t + 2.2, 98, 96, 1.4, 0.35, 'sawtooth', 0.15); tone(horn, t + 2.2, 147, 145, 1.4, 0.2, 'sawtooth', 0.15);
+    },
+    cheer: function () {
+      if (!ready()) return;
+      var t = now();
+      // A crowd: many voices of filtered noise swelling at different times, spread across left and right.
+      for (var v = 0; v < 14; v++) {
+        var p = (Math.random() - 0.5) * 1.8, o = spot(p, 0.8), dt = Math.random() * 0.6, dur = 1.6 + Math.random() * 1.4;
+        var src = ctx.createBufferSource(); src.buffer = Math.random() < 0.5 ? noiseL : noiseR;
+        var f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = 6; f1.frequency.value = 500 + Math.random() * 500;
+        var f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = 7; f2.frequency.value = 1200 + Math.random() * 1200;
+        var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + dt); g.gain.exponentialRampToValueAtTime(0.16, t + dt + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + dt + dur);
+        src.connect(f1); src.connect(f2); f1.connect(g); f2.connect(g); g.connect(o);
+        src.start(t + dt, Math.random()); src.stop(t + dt + dur + 0.05);
+      }
+      // A few "hooray!" whoops rising in pitch.
+      for (var k = 0; k < 5; k++) {
+        var st = t + 0.2 + Math.random() * 1.4, f = 260 + Math.random() * 160, oo = spot((Math.random() - 0.5) * 1.6, 0.7);
+        tone(oo, st, f, f * 1.8, 0.35, 0.05, 'triangle', 0.05);
+      }
+      // Clapping.
+      for (var c = 0; c < 40; c++) noiseBurst(spot((Math.random() - 0.5) * 1.8, 0.6), t + 0.3 + Math.random() * 2.2, 0.05, 'bandpass', 1800 + Math.random() * 1500, 900, 1.2, 0.08, 0.002, Math.random() < 0.5 ? noiseL : noiseR);
+    },
+    // Losing: a sad trombone, wah-wah-wah-waaah, with a splash.
+    trombone: function () {
+      if (!ready()) return;
+      var t = now(50), notes = [[311, 0, 0.42], [294, 0.46, 0.42], [277, 0.92, 0.42], [262, 1.38, 1.5]];
+      notes.forEach(function (n, i) {
+        var o = spot(0, 0.7), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 6;
+        var t0 = t + n[1], d = n[2];
+        lp.frequency.setValueAtTime(300, t0); lp.frequency.exponentialRampToValueAtTime(1500, t0 + d * 0.35); lp.frequency.exponentialRampToValueAtTime(400, t0 + d);
+        lp.connect(o);
+        var osc = ctx.createOscillator(); osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(n[0], t0);
+        if (i === 3) { var vib = ctx.createOscillator(); vib.frequency.value = 5; var vg = ctx.createGain(); vg.gain.value = 9; vib.connect(vg); vg.connect(osc.frequency); vib.start(t0 + 0.3); vib.stop(t0 + d + 0.05); osc.frequency.linearRampToValueAtTime(n[0] * 0.96, t0 + d); }
+        var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.2, t0 + 0.05); g.gain.setValueAtTime(0.2, t0 + d - 0.1); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+        osc.connect(g); g.connect(lp); osc.start(t0); osc.stop(t0 + d + 0.05);
+      });
+      S.splash(0);
     },
     isOn: function () { return on; },
     toggle: function () {

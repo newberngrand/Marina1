@@ -114,12 +114,8 @@
           (r.w || r.l ? '<em>Your record: ' + r.w + ' won, ' + r.l + ' lost</em>' : '') + '</button>';
       }).join('') + '</div>' +
       '<h3>Hide your boats</h3><p class="hh-intro">Pick a boat, then tap the square where it should start. Or press <strong>Shuffle</strong>.</p>' +
-      '<div class="hh-place"><div class="hh-fleet">' + FLEET.map(function (f) {
-        return '<button type="button" class="hh-boatbtn' + (place.sel === f.type ? ' sel' : '') + (place.ships[f.type] ? ' placed' : '') + '" data-hs="pick" data-type="' + f.type + '">' +
-          '<span class="hh-boatpic" style="--len:' + f.len + '">' + A.boatSvg(f.type, f.len) + '</span>' + f.name + ' <span class="note">' + f.len + '</span>' + (place.ships[f.type] ? ' &#10003;' : '') + '</button>';
-      }).join('') +
-      '<div class="hh-tools"><button type="button" class="btn-sm" data-hs="rotate">' + (place.vertical ? '&#8597; Going down' : '&#8596; Going across') + '</button>' +
-      '<button type="button" class="btn-sm" data-hs="shuffle">Shuffle</button><button type="button" class="btn-sm" data-hs="clear">Clear</button></div></div>' +
+      '<div class="hh-place"><div class="hh-fleet">' + A.fleetButtons('data-hs', place, A.boatSvg) +
+      '<div class="hh-tools"><button type="button" class="btn-sm" data-hs="shuffle">Shuffle</button><button type="button" class="btn-sm" data-hs="clear">Clear</button></div></div>' +
       A.gridHtml({ label: 'Your harbor', active: true, layers: layers, cell: function (i) { return { say: where[i] ? NAMES[where[i]] : 'water' }; } }) + '</div>' +
       '<p class="hh-msg" id="hhMsg"></p><div class="hh-actions"><button type="button" class="btn btn-gold" data-hs="go"' + (done ? '' : ' disabled') + '>Start the hunt</button></div>';
   }
@@ -132,7 +128,7 @@
     if (!act && b.hasAttribute('data-cell')) return cellClick(+b.getAttribute('data-cell'));
     if (act === 'level') { level = b.getAttribute('data-level'); try { localStorage.setItem(LEVEL_KEY, level); } catch (x) {} return drawSetup(); }
     if (act === 'pick') { place.sel = b.getAttribute('data-type'); return drawSetup(); }
-    if (act === 'rotate') { place.vertical = !place.vertical; return drawSetup(); }
+    if (act === 'dir') { place.vertical = b.getAttribute('data-v') === '1'; return drawSetup(); }
     if (act === 'shuffle') { place.ships = {}; randomFleet().forEach(function (s) { place.ships[s.type] = s.cells; }); place.sel = null; SND.place(); return drawSetup(); }
     if (act === 'clear') { place.ships = {}; place.sel = 'yacht'; return drawSetup(); }
     if (act === 'go') return begin();
@@ -311,5 +307,11 @@
     var head = '<div class="hh-result ' + (won ? 'won' : 'lost') + '">' + (won ? '&#127942; You won! Every boat found in ' + myShots.length + ' shots.' : gaveUp ? 'You gave up. The ' + esc(lvl.name) + '&rsquo;s boats are shown.' : 'The ' + esc(lvl.name) + ' found all your boats.') + '</div>' +
       '<p class="hh-last">Your aim: ' + hits + ' hits from ' + myShots.length + ' shots (' + acc + '%). Record against the ' + esc(lvl.name) + ': ' + r.w + ' won, ' + r.l + ' lost.</p>';
     drawPlay('', head);
+    // The big finish: the captain cheered at the helm, or bobbing in a ring buoy.
+    if (window.HarborEndings) setTimeout(function () {
+      HarborEndings.show(won
+        ? { won: true, title: 'Victory, Captain!', text: 'You sank the ' + lvl.name + '\u2019s whole fleet in ' + myShots.length + ' shots. The crew is cheering!', button: 'See the boards' }
+        : { won: false, title: 'Man overboard!', text: gaveUp ? 'You abandoned ship. The ' + lvl.name + '\u2019s boats are shown on its harbor.' : 'The ' + lvl.name + ' found your whole fleet. Climb back aboard and try again!', button: 'See the boards' });
+    }, gaveUp ? 200 : 500);
   }
 })();
