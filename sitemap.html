@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611261127">
+<link rel="stylesheet" href="style.css?v=202611261135">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -330,7 +330,9 @@
         'Photos and videos of the marina and downtown.',
         'Click a photo to see it full size; arrows or swipe move between photos.',
         'The pictures are managed on the Admin page (Gallery tab).',
-        'Logged-in members, cruisers and staff can send photos, videos or video links; they show only after an admin approves them.'] },
+        'Logged in? A Share a Photo or Video button: send photos, video files (up to 50 MB, about a minute of phone video) or a YouTube, Vimeo, Instagram, TikTok or Facebook link, with a description and who took it.',
+        'Nothing sent shows on the Gallery until an admin approves it. Below the form, each person sees what they sent: Waiting for review, On the Gallery or Not used.',
+        'Visitors who aren’t logged in see a line asking them to log in to share.'] },
       { name: 'Documents', url: 'documents.html', icon: 'doc', points: [
         'Documents the board has marked Public: permits, licenses, marina rules and forms.',
         'Members-only and board documents never appear here.'] },
@@ -344,7 +346,8 @@
       { name: 'Member Portal', url: 'member-portal.html', icon: 'lock', points: [
         'Where members land after logging in ("Marina Login" in the menu).',
         'Current events and votes, the marina documents members can see, and My Account (change password).',
-        'Board members also get a Board button; admins get the Admin page.'], children: [
+        'Board members also get a Board button; admins get the Admin page.',
+        'The Admin button shows a red count when member photos or videos are waiting for review, with a reminder at the top linking to Gallery Review.'], children: [
         { name: 'Event page', url: 'event.html', icon: 'star', points: [
           'The details of one event, meeting or vote, with any attached files.',
           'For a vote: the ballot with a final confirmation, then the results (when the vote allows it).',
@@ -378,11 +381,15 @@
         'Choose Public or members-only; Board documents are only for the board.',
         'Send a document out for review and track the reviewers.'] },
       { name: 'Gallery', url: 'admin.html', icon: 'image', points: [
-        'Add and remove the photos and videos shown on the Gallery page.'], children: [
+        'Add and remove the photos and videos shown on the Gallery page, and put them in order.',
+        'Videos uploaded by members play right on the Gallery; deleting one deletes the file too.',
+        'The Review member uploads button opens Gallery Review.'], children: [
         { name: 'Gallery Review', url: 'gallery-review.html', icon: 'image', points: [
-          'Photos and videos sent by members and cruisers from the Gallery page.',
-          'Approve & Publish puts it at the end of the Gallery; Reject deletes it.',
-          'The Admin button (Members page) and the Gallery Review tab show a count of uploads waiting.'] }] },
+          'Photos, video files and video links sent by members, cruisers and staff from the Gallery page.',
+          'Each shows a preview, who sent it (slip, or the LTC / STC / staff login) and when; you can fix the description and Taken by name first.',
+          'Approve & Publish adds it to the end of the Gallery Photos or Videos (reorder it on the Gallery tab). Reject deletes it; the reason is only for your records and no one is emailed.',
+          'A red count of uploads waiting shows on the Admin button (Member Portal), the Gallery Review tab and the Review member uploads button.',
+          'Recently reviewed lists what was published or rejected.'] }] },
       { name: 'Members', url: 'admin.html', icon: 'users', points: [
         'Every slip: owner, email, member type, voting or non-voting, active, board and admin rights.',
         'Search, filter and sort; edit a slip, add notes, or set a new password.'] },
@@ -464,7 +471,7 @@
 
   /* ---------- Chart of the Website: each page as a little screen on a harbor chart ---------- */
   // [x, y, tilt, wireframe, big?] keyed by group:page name (each island is then moved by OFF below).
-  var W = 2700, H = 1850;
+  var W = 2900, H = 1960;
   var SPOT = {
     'public:Home': [640, 520, -2, 'home', 1], 'public:About': [370, 330, 4, 'text'], 'public:Documents': [650, 245, -3, 'docs'],
     'public:Gallery': [915, 330, 3, 'gallery'], 'public:Reservations': [285, 575, -5, 'form'], 'public:Contact': [355, 815, 3, 'contact'],
@@ -473,7 +480,7 @@
     'members:Member Portal': [1300, 430, -2, 'portal'], 'members:Event page': [1505, 250, 3, 'event'], 'members:Poker Run': [1715, 345, -4, 'cards'],
     'members:Cast Your Vote': [1640, 545, 5, 'vote'], 'members:Reset Password': [1190, 190, -6, 'form'], 'members:Email link opener': [1435, 620, 2, 'link'],
     'members:Document Review': [1840, 170, 4, 'docs'],
-    'admin:Current Events': [1345, 885, -1, 'dash'], 'admin:Documents': [1545, 825, 4, 'docs'], 'admin:Gallery': [1735, 885, -3, 'gallery'],
+    'admin:Current Events': [1345, 885, -1, 'dash'], 'admin:Documents': [1545, 825, 4, 'docs'], 'admin:Gallery': [1735, 885, -3, 'gallery'], 'admin:Gallery Review': [1935, 860, 4, 'gallery'],
     'admin:Members': [1300, 1095, 3, 'table'], 'admin:Email Members': [1515, 1075, -2, 'email'], 'admin:Activity Log': [1725, 1120, 2, 'log'],
     'admin:Visit Replay': [1885, 1010, -5, 'replay'], 'admin:Help': [1150, 965, 4, 'help'],
     'board:Board': [330, 1125, -3, 'board'], 'board:Minutes Editor': [560, 1180, 4, 'editor']
@@ -502,7 +509,7 @@
   // Where each island sits, how big it is (half its longest side), and where its name goes.
   var PLACE = {
     public: { x: 760, y: 800, size: 640, lab: 'above' }, members: { x: 2130, y: 460, size: 560, lab: 'below' },
-    admin: { x: 2120, y: 1430, size: 570, lab: [0.32, 0.3] }, board: { x: 400, y: 1660, size: 235, lab: 'above' }, islet: { x: 1235, y: 1650, size: 140 }
+    admin: { x: 2150, y: 1440, size: 640, lab: [0.32, 0.3] }, board: { x: 400, y: 1660, size: 235, lab: 'above' }, islet: { x: 1235, y: 1650, size: 140 }
   };
   ISLES.forEach(function (c) {
     var key = c.name ? c.g : 'islet', P = PLACE[key], raw = SHAPES[key], pts = [], minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
@@ -574,7 +581,7 @@
     ['members:Event page', 'members:Poker Run'], ['members:Reset Password', 'members:Member Portal'], ['members:Email link opener', 'members:Event page'],
     ['admin:Email Members', 'members:Email link opener'], ['admin:Email Members', 'members:Cast Your Vote'], ['members:Cast Your Vote', 'members:Event page'],
     ['admin:Documents', 'members:Document Review'], ['members:Member Portal', 'admin:Current Events'], ['admin:Activity Log', 'admin:Visit Replay'],
-    ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
+    ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Gallery', 'admin:Gallery Review'], ['public:Gallery', 'admin:Gallery Review'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
     ['admin:Email Members', 'admin:Activity Log'], ['admin:Members', 'admin:Help'], ['members:Member Portal', 'board:Board'], ['board:Board', 'board:Minutes Editor']
   ];
   var L = function (cls) { return '<div class="w-ln' + (cls ? ' ' + cls : '') + '"></div>'; };
@@ -910,6 +917,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611261127"></script>
+<script src="member-login.js?v=202611261135"></script>
 </body>
 </html>
