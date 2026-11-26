@@ -36,9 +36,32 @@
     });
   });
 
+  // Marina Chat: how many people are in the chat now, and new messages since this person last looked.
+  function loadChatNotice(sb) {
+    var since = null;
+    try { since = localStorage.getItem('chatLastRead'); } catch (e) {}
+    Promise.all([sb.rpc('chat_online'), sb.rpc('chat_unread', { p_since: since })]).then(function (res) {
+      if (res[0].error) return;
+      var d = res[0].data || { count: 0, names: [] }, n = d.count || 0, unread = (res[1] && res[1].data) || 0;
+      var names = (d.names || []).slice().sort(), who = names.slice(0, 4).map(D.esc).join(', ') + (names.length > 4 ? ' and ' + (names.length - 4) + ' more' : '');
+      var el = $('portalChat');
+      el.innerHTML = '<span class="chat-notice-icon" aria-hidden="true">&#128172;</span><span class="chat-notice-text"><strong>Marina Chat:</strong> ' +
+        (n ? n + (n === 1 ? ' person is' : ' people are') + ' in the chat now <span class="chat-notice-who">(' + who + ')</span>' : 'no one is in the chat right now') +
+        (unread ? ' &middot; <strong>' + unread + ' new message' + (unread > 1 ? 's' : '') + '</strong>' + (since ? ' since your last visit' : ' this week') : '') +
+        '</span><span class="chat-notice-go">' + (n ? 'Join' : 'Open Chat') + ' &rarr;</span>';
+      el.classList.toggle('busy', n > 0);
+      el.hidden = false;
+      var bl = $('portalChatLink');
+      bl.innerHTML = 'Chat' + (unread ? '<span class="board-count">' + unread + '</span>' : '');
+      bl.title = n + ' in the chat now' + (unread ? ', ' + unread + ' new message' + (unread > 1 ? 's' : '') : '');
+    });
+  }
+
   function renderAccount(sb, m) {
     $('portalLoading').hidden = true;
     $('portalMember').hidden = false;
+    loadChatNotice(sb);
+    setInterval(function () { if (document.visibilityState === 'visible') loadChatNotice(sb); }, 60000);
     $('portalWelcome').textContent = 'Welcome, ' + (m.owner_name || 'Member');
     // Board members: a Board button (the only way in to the Board page), plus a reminder
     // when minutes are waiting for their approval.

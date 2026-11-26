@@ -6,7 +6,7 @@
 <title>Site Map | New Bern Grand Marina</title>
 <meta name="description" content="Every page of the New Bern Grand Marina website and what it does.">
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="style.css?v=202611261210">
+<link rel="stylesheet" href="style.css?v=202611261437">
 <style>
   .sm-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .sm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.88rem; color: var(--muted); }
@@ -344,7 +344,8 @@
         'Where members land after logging in ("Marina Login" in the menu).',
         'Current events and votes, the marina documents members can see, and My Account (change password).',
         'Board members also get a Board button; admins get the Admin page.',
-        'The Admin button shows a red count when member photos or videos are waiting for review, with a reminder at the top linking to Gallery Review.'], children: [
+        'The Admin button shows a red count when member photos or videos are waiting for review, with a reminder at the top linking to Gallery Review.',
+        'A Marina Chat notice says how many people are in the chat right now (and who), plus any new messages since the last visit; the Chat button shows the new-message count.'], children: [
         { name: 'Event page', url: 'event.html', icon: 'star', points: [
           'The details of one event, meeting or vote, with any attached files.',
           'For a vote: the ballot with a final confirmation, then the results (when the vote allows it).',
@@ -360,6 +361,13 @@
         'Video files can be up to 50 MB (about a minute of phone video); longer videos go on YouTube and are shared as a link. Large phone photos are made smaller automatically.',
         'Nothing sent shows on the Gallery until an admin approves it on Gallery Review. Below the form, each person sees what they sent: Waiting for review, On the Gallery or Not used.',
         'Admins also see a Review Uploads button there with the number waiting.'] },
+      { name: 'Marina Chat', url: 'chat.html', icon: 'mail', points: [
+        'One live chat room for everyone logged in: slip owners, long-term cruisers, transients and staff. Visitors never see it.',
+        'Messages appear instantly for everyone; "In the chat now" lists who has it open. Enter sends, Shift+Enter starts a new line.',
+        'Owners show as their name and slip; shared logins (cruisers, staff) are asked for a first name, shown with the kind of login.',
+        'Anyone can delete their own messages. Admins can delete any message and mute a login so it can read but not post (logged in the Activity Log).',
+        'Messages are kept for 90 days, then removed automatically.',
+        'Reached from the Chat button on the Member Portal and the Chat link in the logged-in bar at the top of every page, which shows how many are online.'] },
       { name: 'Cast Your Vote', url: 'vote.html', icon: 'check', points: [
         'Opened from the Approve / Disapprove (or Yea / Nay, etc.) buttons in a vote announcement email.',
         'No login needed: the owner picks the choice and slips, then presses Confirm.',
@@ -488,7 +496,7 @@
     'public:Walk the Docks in 3D': [1010, 1185, -6, '3d'],
     'members:Member Portal': [1300, 430, -2, 'portal'], 'members:Event page': [1505, 250, 3, 'event'], 'members:Poker Run': [1715, 345, -4, 'cards'],
     'members:Cast Your Vote': [1640, 545, 5, 'vote'], 'members:Reset Password': [1190, 190, -6, 'form'], 'members:Email link opener': [1435, 620, 2, 'link'],
-    'members:Document Review': [1840, 170, 4, 'docs'], 'members:Gallery': [1860, 470, -3, 'gallery'],
+    'members:Document Review': [1840, 170, 4, 'docs'], 'members:Gallery': [1860, 470, -3, 'gallery'], 'members:Marina Chat': [1220, 600, 3, 'text'],
     'admin:Current Events': [1345, 885, -1, 'dash'], 'admin:Documents': [1545, 825, 4, 'docs'], 'admin:Gallery': [1735, 885, -3, 'gallery'], 'admin:Gallery Review': [1935, 860, 4, 'gallery'],
     'admin:Members': [1300, 1095, 3, 'table'], 'admin:Email Members': [1515, 1075, -2, 'email'], 'admin:Activity Log': [1725, 1120, 2, 'log'],
     'admin:Visit Replay': [1885, 1010, -5, 'replay'], 'admin:Help': [1150, 965, 4, 'help'], 'admin:Development Setup': [1120, 1140, -3, 'text'],
@@ -590,7 +598,7 @@
     ['members:Event page', 'members:Poker Run'], ['members:Reset Password', 'members:Member Portal'], ['members:Email link opener', 'members:Event page'],
     ['admin:Email Members', 'members:Email link opener'], ['admin:Email Members', 'members:Cast Your Vote'], ['members:Cast Your Vote', 'members:Event page'],
     ['admin:Documents', 'members:Document Review'], ['members:Member Portal', 'admin:Current Events'], ['admin:Activity Log', 'admin:Visit Replay'],
-    ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Gallery', 'admin:Gallery Review'], ['members:Gallery', 'admin:Gallery Review'], ['public:Gallery', 'members:Gallery'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
+    ['admin:Current Events', 'admin:Documents'], ['admin:Documents', 'admin:Gallery'], ['admin:Gallery', 'admin:Gallery Review'], ['members:Gallery', 'admin:Gallery Review'], ['public:Gallery', 'members:Gallery'], ['members:Member Portal', 'members:Marina Chat'], ['admin:Current Events', 'admin:Members'], ['admin:Members', 'admin:Email Members'],
     ['admin:Email Members', 'admin:Activity Log'], ['admin:Members', 'admin:Help'], ['admin:Help', 'admin:Development Setup'], ['members:Member Portal', 'board:Board'], ['board:Board', 'board:Minutes Editor']
   ];
   var L = function (cls) { return '<div class="w-ln' + (cls ? ' ' + cls : '') + '"></div>'; };
@@ -926,6 +934,6 @@
   start();
 })();
 </script>
-<script src="member-login.js?v=202611261210"></script>
+<script src="member-login.js?v=202611261437"></script>
 </body>
 </html>

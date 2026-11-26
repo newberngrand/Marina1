@@ -390,6 +390,7 @@
         '<span id="memberBarWho">Logged in as <strong>Slip ' + slip.replace(/[^A-Z0-9-]/g, '') + '</strong></span>' +
         '<span class="member-bar-links">' +
           '<a href="member-portal.html">Member Portal</a>' +
+          '<a href="chat.html" id="memberBarChat">Chat</a>' +
           '<button type="button" id="memberBarLogout">Log Out</button>' +
         '</span>' +
       '</div>';
@@ -397,6 +398,11 @@
     if (header && header.parentNode) header.parentNode.insertBefore(bar, header);
     else document.body.insertBefore(bar, document.body.firstChild);
     document.getElementById('memberBarLogout').addEventListener('click', logOut);
+    // How many people are in Marina Chat right now, beside the Chat link.
+    getClient().then(function (sb) { return sb.rpc('chat_online'); }).then(function (r) {
+      var n = r && r.data && r.data.count, a = document.getElementById('memberBarChat');
+      if (a && n) { a.innerHTML = 'Chat <span class="member-bar-online">' + n + ' online</span>'; a.title = n + ' in Marina Chat now'; }
+    }).catch(function () {});
 
     // Owners with several slips (same email on file) see all of them.
     getClient().then(function (sb) { return sb.rpc('my_slips'); }).then(function (r) {
