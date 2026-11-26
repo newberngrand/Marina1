@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | New Bern Grand Marina</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="style.css?v=202611261818">
+<link rel="stylesheet" href="style.css?v=202611261846">
+<script src="site-look.js?v=202611261846"></script>
 </head>
 <body data-member-portal>
 
@@ -65,7 +66,51 @@
         <a class="admin-tab admin-tab-link" id="boardTab" href="board.html" hidden>Board</a>
         <a class="admin-tab admin-tab-link" id="galReviewTab" href="gallery-review.html" title="Photos and videos sent by members">Gallery Review</a>
         <button type="button" class="admin-tab" data-tab="requests" role="tab" id="requestsTab">Help Requests</button>
+        <button type="button" class="admin-tab" data-tab="settings" role="tab">Settings</button>
         <button type="button" class="admin-tab" data-tab="help" role="tab">Help</button>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="admin-panel" data-panel="settings" hidden>
+        <div class="admin-panel-head">
+          <h2>Settings</h2>
+          <a href="index.html" target="_blank" rel="noopener" class="btn-sm">View the website &#8599;</a>
+        </div>
+        <p class="note" style="margin-top:-6px">Choices show on this page right away so you can try them. Press <strong>Save settings</strong> to use them on the whole website for everyone.</p>
+        <div class="portal-card st-section">
+          <h3>Website colors</h3>
+          <p class="note" style="margin:0">One color style for every page: the header, buttons, page banners and footer.</p>
+          <div class="st-themes" id="stThemes"></div>
+        </div>
+        <div class="portal-card st-section">
+          <h3>Headings</h3>
+          <p class="note" style="margin:0">The lettering used for page titles and the marina name.</p>
+          <div class="st-choices" id="stFonts"></div>
+        </div>
+        <div class="portal-card st-section">
+          <h3>Buttons</h3>
+          <p class="note" style="margin:0">The shape of buttons such as Reserve a Slip.</p>
+          <div class="st-choices" id="stButtons"></div>
+        </div>
+        <div class="portal-card st-section">
+          <h3>Home page main photo</h3>
+          <p class="note" style="margin:0">The big picture at the top of the home page, under the &ldquo;Welcome to New Bern Grand Marina&rdquo; heading. Wide, bright photos work best.</p>
+          <div class="st-hero-prev" id="stHeroPrev"><div><b>Welcome to</b><span>New Bern Grand Marina</span></div></div>
+          <div class="st-hero-tools">
+            <input type="file" id="stHeroFile" accept="image/jpeg,image/png,image/webp" hidden>
+            <label for="stHeroFile" class="btn-sm">Upload a new photo</label>
+            <button type="button" class="btn-sm" id="stHeroGalBtn">Choose from the Gallery</button>
+            <button type="button" class="btn-sm" id="stHeroReset">Use the original photo</button>
+            <label class="st-range">Show more of the top <input type="range" id="stHeroPos" min="0" max="100" step="1" aria-label="Photo position"> bottom</label>
+          </div>
+          <div class="st-gal" id="stGal" hidden></div>
+          <p class="note" id="stHeroNote" style="margin:8px 0 0"></p>
+        </div>
+        <div class="st-savebar">
+          <button type="button" class="btn btn-gold" id="stSave">Save settings</button>
+          <button type="button" class="btn-sm" id="stUndo">Undo changes</button>
+          <span class="note" id="stMsg"></span>
+        </div>
       </div>
 
       <!-- HELP REQUESTS -->
@@ -727,9 +772,9 @@
 </footer>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-<script src="member-login.js?v=202611261818"></script>
-<script src="member-data.js?v=202611261818"></script>
-<script src="video-utils.js?v=202611261818"></script>
-<script src="admin.js?v=202611261818"></script>
+<script src="member-login.js?v=202611261846"></script>
+<script src="member-data.js?v=202611261846"></script>
+<script src="video-utils.js?v=202611261846"></script>
+<script src="admin.js?v=202611261846"></script>
 </body>
 </html>

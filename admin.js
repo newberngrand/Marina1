@@ -34,6 +34,7 @@
         setupVideos();
         setupAnnouncements();
         setupRequests();
+        setupSettings();
       });
     }).catch(function (e) {
       $('adminLoading').textContent = e.message || 'Something went wrong.';
@@ -1180,6 +1181,105 @@
   }
 
   // Shrink big photos (longest side 2400px) before upload so the gallery loads fast.
+  /* ---------- Settings: website colors, headings, buttons and the home page photo ---------- */
+  var ST_THEMES = [
+    { id: 'classic', name: 'Classic Navy & Gold', note: 'The original look', c: ['#0b2540', '#123a5e', '#c9a15a', '#f4efe6'] },
+    { id: 'coastal', name: 'Coastal Teal & Sand', note: 'Bright and beachy', c: ['#0f3d4a', '#1d6070', '#e0a458', '#f6f1e7'] },
+    { id: 'sunset', name: 'Harbor Sunset', note: 'Warm plum and amber', c: ['#3a1f3d', '#5d2f55', '#f2a541', '#fbf1e6'] },
+    { id: 'nautical', name: 'Nautical Red', note: 'Navy with signal-flag red', c: ['#14213d', '#22345c', '#c0392b', '#f3f1ee'] },
+    { id: 'slate', name: 'Modern Slate', note: 'Cool grey and sea glass', c: ['#2b3440', '#3d4957', '#6fb3c9', '#f2f4f6'] },
+    { id: 'evergreen', name: 'Evergreen', note: 'Forest green and brass', c: ['#1f3b2d', '#2e5641', '#c8a24a', '#f3f0e6'] }
+  ];
+  var ST_FONTS = [{ id: 'sans', name: 'Modern', sample: 'Aa', font: '"Segoe UI", Arial, sans-serif' }, { id: 'serif', name: 'Classic', sample: 'Aa', font: 'Georgia, serif' }];
+  var ST_BUTTONS = [{ id: 'pill', name: 'Pill', r: '999px' }, { id: 'rounded', name: 'Rounded', r: '10px' }, { id: 'square', name: 'Square', r: '3px' }];
+  var stCur = {}, stSaved = {}, stGalLoaded = false;
+  var ST_KEYS = { theme: 'site_theme', font: 'site_font', buttons: 'site_buttons', hero: 'hero_image', heroPos: 'hero_position' };
+
+  function setupSettings() {
+    $('stThemes').addEventListener('click', function (e) { var b = e.target.closest('[data-theme]'); if (b) { stCur.theme = b.getAttribute('data-theme'); stRender(); } });
+    $('stFonts').addEventListener('click', function (e) { var b = e.target.closest('[data-font]'); if (b) { stCur.font = b.getAttribute('data-font'); stRender(); } });
+    $('stButtons').addEventListener('click', function (e) { var b = e.target.closest('[data-btn]'); if (b) { stCur.buttons = b.getAttribute('data-btn'); stRender(); } });
+    $('stHeroPos').addEventListener('input', function () { stCur.heroPos = $('stHeroPos').value; stRender(); });
+    $('stHeroReset').addEventListener('click', function () { stCur.hero = ''; stCur.heroPos = ''; stRender(); });
+    $('stHeroGalBtn').addEventListener('click', function () {
+      var g = $('stGal');
+      g.hidden = !g.hidden;
+      if (g.hidden || stGalLoaded) return;
+      stGalLoaded = true;
+      g.innerHTML = '<p class="note">Loading the Gallery&hellip;</p>';
+      sb.from('gallery_photos').select('src, caption').eq('active', true).order('sort_order').then(function (r) {
+        g.innerHTML = (r.data || []).map(function (p) {
+          return '<button type="button" data-src="' + D.esc(p.src) + '" title="' + D.esc(p.caption) + '"><img src="' + D.esc(p.src) + '" alt="' + D.esc(p.caption) + '" loading="lazy"></button>';
+        }).join('') || '<p class="note">No Gallery photos yet.</p>';
+        stRender();
+      });
+    });
+    $('stGal').addEventListener('click', function (e) { var b = e.target.closest('[data-src]'); if (b) { stCur.hero = b.getAttribute('data-src'); stRender(); } });
+    $('stHeroFile').addEventListener('change', function () {
+      var f = $('stHeroFile').files[0];
+      $('stHeroFile').value = '';
+      if (!f) return;
+      if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { $('stHeroNote').textContent = 'Please choose a JPG, PNG or WebP photo.'; return; }
+      $('stHeroNote').textContent = 'Uploading…';
+      shrink(f).then(function (s) {
+        var path = 'site/hero-' + Date.now() + '.' + s.ext;
+        return sb.storage.from('gallery').upload(path, s.blob, { contentType: s.type, upsert: false }).then(function (up) {
+          if (up.error) throw new Error(up.error.message);
+          stCur.hero = MemberAuth.config.url + '/storage/v1/object/public/gallery/' + path;
+          if (s.w && s.w < 1400) $('stHeroNote').textContent = 'Uploaded. This photo is fairly small (' + s.w + ' pixels wide), so it may look soft on big screens.';
+          else $('stHeroNote').textContent = 'Uploaded. Press Save settings to put it on the home page.';
+          stRender();
+        });
+      }).catch(function (ex) { $('stHeroNote').textContent = 'Couldn’t upload the photo: ' + ex.message; });
+    });
+    $('stUndo').addEventListener('click', function () { stCur = Object.assign({}, stSaved); stRender(); $('stMsg').textContent = ''; });
+    $('stSave').addEventListener('click', stSave);
+    sb.from('site_settings').select('key, value').in('key', Object.keys(ST_KEYS).map(function (k) { return ST_KEYS[k]; })).then(function (r) {
+      var m = {};
+      (r.data || []).forEach(function (x) { m[x.key] = x.value; });
+      Object.keys(ST_KEYS).forEach(function (k) { stSaved[k] = m[ST_KEYS[k]] || ''; });
+      stCur = Object.assign({}, stSaved);
+      stRender();
+    });
+  }
+  function stRender() {
+    var theme = stCur.theme || 'classic', font = stCur.font || 'sans', btn = stCur.buttons || 'pill';
+    $('stThemes').innerHTML = ST_THEMES.map(function (t) {
+      return '<button type="button" class="st-theme' + (theme === t.id ? ' sel' : '') + '" data-theme="' + t.id + '" aria-pressed="' + (theme === t.id) + '">' +
+        '<span class="st-theme-top" style="background:linear-gradient(120deg,' + t.c[0] + ',' + t.c[1] + ')"><i style="background:' + t.c[2] + ';color:' + (t.id === 'nautical' || t.id === 'slate' ? '#fff' : t.c[0]) + '">Reserve</i></span>' +
+        '<span class="st-theme-swatch">' + t.c.map(function (c) { return '<span style="background:' + c + '"></span>'; }).join('') + '</span>' +
+        '<span class="st-theme-name">' + D.esc(t.name) + '<small>' + D.esc(t.note) + '</small></span></button>';
+    }).join('');
+    $('stFonts').innerHTML = ST_FONTS.map(function (f) {
+      return '<button type="button" class="st-choice' + (font === f.id ? ' sel' : '') + '" data-font="' + f.id + '" aria-pressed="' + (font === f.id) + '"><span class="st-sample" style="font-family:' + f.font + '">New Bern Grand</span>' + f.name + '</button>';
+    }).join('');
+    $('stButtons').innerHTML = ST_BUTTONS.map(function (b) {
+      return '<button type="button" class="st-choice' + (btn === b.id ? ' sel' : '') + '" data-btn="' + b.id + '" aria-pressed="' + (btn === b.id) + '"><span class="st-btnsample" style="border-radius:' + b.r + '">Reserve a Slip</span><br>' + b.name + '</button>';
+    }).join('');
+    var pos = stCur.heroPos === '' || stCur.heroPos == null ? 87 : +stCur.heroPos;
+    $('stHeroPos').value = pos;
+    document.querySelectorAll('#stGal [data-src]').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-src') === stCur.hero); });
+    if (!stCur.hero) $('stHeroNote').textContent = $('stHeroNote').textContent.indexOf('Upload') === 0 ? $('stHeroNote').textContent : 'Showing the original photo.';
+    // Try it on this page right away.
+    if (window.SiteLook) SiteLook.apply(stCur);
+    var changed = Object.keys(ST_KEYS).some(function (k) { return String(stCur[k] || '') !== String(stSaved[k] || ''); });
+    $('stSave').disabled = !changed;
+    $('stUndo').disabled = !changed;
+    if (changed) $('stMsg').textContent = 'Not saved yet.';
+  }
+  function stSave() {
+    var rows = Object.keys(ST_KEYS).map(function (k) { return { key: ST_KEYS[k], value: String(stCur[k] == null ? '' : stCur[k]) }; });
+    $('stSave').disabled = true;
+    $('stMsg').textContent = 'Saving…';
+    sb.from('site_settings').upsert(rows).then(function (r) {
+      if (r.error) { $('stSave').disabled = false; $('stMsg').textContent = 'Couldn’t save: ' + r.error.message; return; }
+      stSaved = Object.assign({}, stCur);
+      try { localStorage.setItem('siteLook', JSON.stringify({ theme: stCur.theme || null, font: stCur.font || null, buttons: stCur.buttons || null, hero: stCur.hero || null, heroPos: stCur.heroPos || null })); } catch (e) {}
+      stRender();
+      $('stMsg').textContent = 'Saved. The whole website now uses these settings.';
+    });
+  }
+
   function shrink(file) {
     return new Promise(function (resolve) {
       if (file.type === 'image/gif') return resolve({ blob: file, type: file.type, ext: 'gif' });

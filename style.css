@@ -14,6 +14,10 @@
   --line: #e2e6ea;
   --radius: 10px;
   --shadow: 0 10px 30px rgba(11, 37, 64, 0.12);
+  --hero-t1: rgba(7, 24, 41, 0.88);
+  --hero-t2: rgba(18, 58, 94, 0.72);
+  --hero-t3: rgba(28, 93, 110, 0.55);
+  --btn-radius: 999px;
 }
 
 * { box-sizing: border-box; }
@@ -134,7 +138,7 @@ nav.main-nav a.active {
 .btn {
   display: inline-block;
   padding: 12px 22px;
-  border-radius: 999px;
+  border-radius: var(--btn-radius);
   font-weight: 700;
   font-size: 0.9rem;
   letter-spacing: 0.4px;
@@ -445,6 +449,16 @@ nav.main-nav a.active {
   background: none; border: none; padding: 10px 16px; cursor: pointer; font: inherit; font-weight: 600;
   color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -2px;
 }
+/* Phones: the admin tabs become a neat grid of rounded buttons */
+@media (max-width: 700px) {
+  .admin-tabs { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; border-bottom: 0; }
+  .admin-tabs .admin-tab { display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center; min-height: 46px; margin: 0; padding: 8px 10px;
+    background: #fff; border: 1px solid var(--line); border-radius: 8px; color: var(--navy); line-height: 1.25;
+    box-shadow: 0 2px 4px rgba(11, 37, 64, .08); }
+  .admin-tabs .admin-tab.active { background: var(--navy); color: #fff; border-color: var(--navy); box-shadow: 0 3px 8px rgba(11, 37, 64, .25); }
+  .admin-tabs .admin-tab.active .board-count { background: var(--gold); color: var(--navy-dark); }
+  .admin-tabs .admin-tab[hidden] { display: none; }
+}
 .admin-tab.active { color: var(--navy); border-bottom-color: var(--gold); }
 .admin-panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .admin-panel-head h2 { margin: 0; color: var(--navy); }
@@ -712,10 +726,10 @@ a.vote-tag.open { padding: 3px 10px; }
   position: relative;
   color: var(--white);
   background:
-    linear-gradient(160deg, rgba(7,24,41,0.88) 10%, rgba(18,58,94,0.72) 55%, rgba(28,93,110,0.55) 100%),
-    url('images/waterview.png');
+    linear-gradient(160deg, var(--hero-t1) 10%, var(--hero-t2) 55%, var(--hero-t3) 100%),
+    var(--hero-img, url('images/waterview.png'));
   background-size: cover;
-  background-position: center 87%;
+  background-position: center var(--hero-pos, 87%);
   padding: 110px 0 90px;
   overflow: hidden;
 }
@@ -2169,3 +2183,52 @@ a.hh-x { text-decoration: none; display: inline-block; }
 .fx-miss.new .mist { left: 50%; bottom: 40%; width: 160%; height: 120%; transform: translateX(-50%); border-radius: 50%;
   background: radial-gradient(ellipse at 50% 70%, rgba(255,255,255,.55), rgba(255,255,255,0) 65%); filter: blur(2px); opacity: 0; animation: hhmist 2.2s ease-out .25s forwards; }
 @keyframes hhmist { 0% { opacity: 0; transform: translateX(-50%) scale(.5); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateX(-50%) translateY(-25%) scale(1.3); } }
+
+/* ---------- Website styles (chosen on Admin > Settings) ---------- */
+html[data-theme="coastal"] { --navy: #0f3d4a; --navy-dark: #082a33; --navy-mid: #1d6070; --teal: #2a8a8f; --gold: #e0a458; --gold-dark: #c4863a; --sand: #f6f1e7;
+  --hero-t1: rgba(8, 42, 51, .85); --hero-t2: rgba(29, 96, 112, .65); --hero-t3: rgba(42, 138, 143, .45); }
+html[data-theme="sunset"] { --navy: #3a1f3d; --navy-dark: #24122a; --navy-mid: #5d2f55; --teal: #b5523b; --gold: #f2a541; --gold-dark: #d4861f; --sand: #fbf1e6;
+  --hero-t1: rgba(36, 18, 42, .85); --hero-t2: rgba(93, 47, 85, .62); --hero-t3: rgba(181, 82, 59, .42); }
+html[data-theme="nautical"] { --navy: #14213d; --navy-dark: #0b1426; --navy-mid: #22345c; --teal: #2b6c8f; --gold: #c0392b; --gold-dark: #962d22; --sand: #f3f1ee;
+  --hero-t1: rgba(11, 20, 38, .88); --hero-t2: rgba(34, 52, 92, .7); --hero-t3: rgba(43, 108, 143, .5); }
+html[data-theme="slate"] { --navy: #2b3440; --navy-dark: #1c222b; --navy-mid: #3d4957; --teal: #4f7d8c; --gold: #6fb3c9; --gold-dark: #4e93a8; --sand: #f2f4f6;
+  --hero-t1: rgba(28, 34, 43, .86); --hero-t2: rgba(61, 73, 87, .68); --hero-t3: rgba(79, 125, 140, .48); }
+html[data-theme="evergreen"] { --navy: #1f3b2d; --navy-dark: #12241b; --navy-mid: #2e5641; --teal: #3f7d64; --gold: #c8a24a; --gold-dark: #a8842e; --sand: #f3f0e6;
+  --hero-t1: rgba(18, 36, 27, .86); --hero-t2: rgba(46, 86, 65, .66); --hero-t3: rgba(63, 125, 100, .46); }
+html[data-theme="nautical"] .btn-gold, html[data-theme="slate"] .btn-gold { color: #fff; }
+html[data-font="serif"] h1, html[data-font="serif"] h2, html[data-font="serif"] .brand-text .name, html[data-font="serif"] .hero-eyebrow,
+html[data-font="serif"] .page-hero .eyebrow { font-family: Georgia, "Times New Roman", serif; letter-spacing: .2px; }
+html[data-buttons="rounded"] { --btn-radius: 10px; }
+html[data-buttons="square"] { --btn-radius: 3px; }
+
+/* Admin > Settings */
+.st-section { margin-bottom: 18px; }
+.st-section h3 { margin: 0 0 4px; }
+.st-themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-top: 12px; }
+.st-theme { text-align: left; background: #fff; border: 2px solid var(--line); border-radius: 12px; padding: 0; overflow: hidden; cursor: pointer; font: inherit; color: var(--ink); }
+.st-theme.sel { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201, 161, 90, .3); }
+.st-theme-top { height: 58px; position: relative; }
+.st-theme-top i { position: absolute; left: 10px; bottom: 9px; display: inline-block; padding: 3px 12px; border-radius: 999px; font-style: normal; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.st-theme-swatch { display: flex; height: 10px; }
+.st-theme-swatch span { flex: 1; }
+.st-theme-name { display: block; padding: 8px 10px 10px; font-weight: 700; color: var(--navy); }
+.st-theme-name small { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; }
+.st-choices { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.st-choice { border: 2px solid var(--line); border-radius: 10px; padding: 10px 14px; background: #fff; cursor: pointer; font: inherit; color: var(--navy); min-width: 130px; }
+.st-choice.sel { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201, 161, 90, .3); }
+.st-choice .st-sample { display: block; font-size: 1.3rem; font-weight: 700; margin-bottom: 2px; }
+.st-choice .st-btnsample { display: inline-block; padding: 6px 14px; background: var(--gold); color: var(--navy-dark); font-weight: 700; font-size: .75rem; text-transform: uppercase; margin-bottom: 4px; }
+.st-hero-prev { position: relative; border-radius: 10px; overflow: hidden; min-height: 170px; color: #fff; display: flex; align-items: center; padding: 20px 22px; margin: 12px 0;
+  background: linear-gradient(160deg, var(--hero-t1) 10%, var(--hero-t2) 55%, var(--hero-t3) 100%), var(--prev-img, var(--hero-img, url('images/waterview.png')));
+  background-size: cover; background-position: center var(--prev-pos, var(--hero-pos, 87%)); }
+.st-hero-prev b { display: block; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; font-size: .72rem; }
+.st-hero-prev span { font-size: 1.5rem; font-weight: 700; }
+.st-hero-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.st-hero-tools label.st-range { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--muted); flex: 1; min-width: 220px; }
+.st-hero-tools input[type=range] { flex: 1; }
+.st-gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-top: 10px; max-height: 260px; overflow-y: auto; padding: 2px; }
+.st-gal button { padding: 0; border: 3px solid transparent; border-radius: 8px; overflow: hidden; cursor: pointer; aspect-ratio: 4 / 3; background: #eef2f6; }
+.st-gal button.sel { border-color: var(--gold); }
+.st-gal img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.st-savebar { position: sticky; bottom: 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 0; background: linear-gradient(to top, #fff 70%, rgba(255,255,255,0)); }
+@media (max-width: 480px) { html[data-font="serif"] .brand-text .name { font-size: .86rem; letter-spacing: -.1px; } }
