@@ -14,7 +14,9 @@
   var ROWS = 'ABCDEFGH';
   var ctx = null, sb = null, match = null, shots = [], myShips = null, seat = 0;
   var place = { ships: {}, sel: 'yacht', vertical: false }, open = false, busy = false, lastStatus = '', lastTurn = 0, flashId = 0;
-  var dismissed = {};
+  var dismissed = {}, seenShot = {}, animated = {}, drawnSig = '';
+  var SND = window.HarborSounds || { boom: noop, splash: noop, sink: noop, place: noop, ambientStart: noop, ambientStop: noop, isOn: function () { return false; }, toggle: noop, unlock: noop };
+  function noop() {}
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -33,8 +35,14 @@
     document.body.insertAdjacentHTML('beforeend',
       '<div class="hh-overlay" id="hhOverlay" hidden><div class="hh-panel" role="dialog" aria-modal="true" aria-labelledby="hhTitle">' +
         '<div class="hh-head"><h2 id="hhTitle"><span aria-hidden="true">&#9875;</span> Harbor Hunt</h2>' +
-        '<button type="button" class="hh-x" id="hhClose" aria-label="Back to chat">Back to chat</button></div>' +
-        '<div class="hh-body" id="hhBody"></div></div></div>');
+        '<span class="hh-head-btns"><button type="button" class="hh-x hh-snd" id="hhSound"></button>' +
+        '<button type="button" class="hh-x" id="hhClose" aria-label="Back to chat">Back to chat</button></span></div>' +
+        '<div class="hh-body" id="hhBody"></div></div></div>' + svgDefs());
+    function soundLabel() { $('hhSound').innerHTML = SND.isOn() ? '&#128266; Sound on' : '&#128263; Sound off'; $('hhSound').setAttribute('aria-pressed', SND.isOn() ? 'true' : 'false'); }
+    soundLabel();
+    $('hhSound').addEventListener('click', function () { SND.toggle(); soundLabel(); if (open && SND.isOn()) SND.ambientStart(); });
+    // Browsers only allow sound after a tap, so any tap in the game unlocks it.
+    $('hhOverlay').addEventListener('pointerdown', function () { SND.unlock(); if (open) SND.ambientStart(); });
     $('hhClose').addEventListener('click', hide);
     $('hhOverlay').addEventListener('click', function (e) { if (e.target.id === 'hhOverlay') hide(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && open) hide(); });
@@ -75,9 +83,15 @@
           loads.push(sb.rpc('hh_my_board', { p_match: m.id, p_client: cid }));
         }
         return Promise.all(loads).then(function (res) {
-          var before = shots.length;
           shots = res[0].data || [];
-          if (shots.length > before) flashId = shots[shots.length - 1].id;
+          var maxId = shots.length ? shots[shots.length - 1].id : 0;
+          if (seenShot[m.id] === undefined) seenShot[m.id] = maxId;     // first look: no effects for old shots
+          else if (maxId > seenShot[m.id]) {
+            var fresh = shots.filter(function (x) { return x.id > seenShot[m.id]; }), last = fresh[fresh.length - 1];
+            seenShot[m.id] = maxId; flashId = last.id;
+            if (last.result === 'miss') SND.splash();
+            else { SND.boom(); if (last.result === 'sunk') setTimeout(SND.sink, 450); }
+          }
           if (res[1] && res[1].data) myShips = res[1].data;
           var nowStatus = m.status + ':' + m.turn;
           // Open the board when a game you're in starts, and nudge the title when it's your turn.
@@ -85,7 +99,8 @@
           if (m.status === 'playing' && m.turn === seat && lastTurn !== seat && !document.hasFocus()) document.title = '⚓ Your turn · Marina Chat';
           lastStatus = m.status; lastTurn = m.status === 'playing' ? m.turn : 0;
           bar();
-          if (open) draw();
+          var sig = m.id + m.status + m.turn + m.p1_ready + m.p2_ready + shots.length + (myShips ? 1 : 0);
+          if (open && sig !== drawnSig) draw();
           return nowStatus;
         });
       });
@@ -115,18 +130,24 @@
 
   function show(auto) {
     if (auto && open) { draw(); return; }
-    open = true;
+    open = true; drawnSig = '';
     $('hhOverlay').hidden = false;
+    SND.ambientStart();
     document.documentElement.classList.add('hh-lock');
     if (match) draw(); else lobby();
   }
   function hide() {
     open = false;
     $('hhOverlay').hidden = true;
+    SND.ambientStop();
     document.documentElement.classList.remove('hh-lock');
     if (match && ['done', 'declined', 'cancelled'].indexOf(match.status) >= 0) { dismissed[match.id] = 1; match = null; bar(); }
   }
-  function body(html) { $('hhBody').innerHTML = html; }
+  function body(html) {
+    $('hhBody').innerHTML = html;
+    drawnSig = match ? match.id + match.status + match.turn + match.p1_ready + match.p2_ready + shots.length + (myShips ? 1 : 0) : '';
+    if (flashId) animated[flashId] = 1;
+  }
   function msg(text, bad) { var el = $('hhMsg'); if (el) { el.textContent = text || ''; el.className = 'hh-msg' + (bad ? ' bad' : ''); } }
 
   /* ---------- Choose someone to play ---------- */
@@ -174,40 +195,138 @@
     drawPlaying();
   }
 
-  function shipAt(ships) {
-    var at = {};
-    (ships || []).forEach(function (s) { s.cells.forEach(function (c, k) { at[c] = { type: s.type, first: k === 0, last: k === s.cells.length - 1, vertical: s.cells.length > 1 && s.cells[1] - s.cells[0] === 8 }; }); });
-    return at;
+  /* ---------- Boats drawn as little 3D models (seen from above, with shading and a shadow) ---------- */
+  function svgDefs() {
+    function grad(id, stops) {
+      return '<linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1">' + stops.map(function (s) {
+        return '<stop offset="' + s[0] + '" stop-color="' + s[1] + '"/>'; }).join('') + '</linearGradient>';
+    }
+    return '<svg class="hh-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>' +
+      grad('hhCream', [[0, '#fffdf6'], [0.45, '#f3ead6'], [1, '#b9a982']]) +
+      grad('hhWhite', [[0, '#ffffff'], [0.5, '#e8edf2'], [1, '#a9b6c2']]) +
+      grad('hhGreen', [[0, '#5aa37f'], [0.5, '#2f6b4f'], [1, '#173a2a']]) +
+      grad('hhRed', [[0, '#f08a66'], [0.5, '#c0563b'], [1, '#7a2c1a']]) +
+      grad('hhDeck', [[0, '#f7f9fb'], [1, '#c9d2da']]) +
+      grad('hhTeak', [[0, '#d9a56b'], [1, '#8f5f31']]) +
+      grad('hhGlass', [[0, '#8cc4e2'], [0.5, '#2c5a7c'], [1, '#13283b']]) +
+      grad('hhRoof', [[0, '#ffffff'], [1, '#cfd8e0']]) +
+      grad('hhSheen', [[0, 'rgba(255,255,255,.75)'], [0.45, 'rgba(255,255,255,0)'], [1, 'rgba(0,0,0,.18)']]) +
+      '</defs></svg>';
   }
-  function gridHtml(opts) {
-    var h = '<div class="hh-grid' + (opts.target ? ' target' : '') + (opts.active ? ' active' : '') + '" role="grid" aria-label="' + esc(opts.label) + '">';
-    h += '<span class="hh-corner"></span>';
-    for (var c = 0; c < 8; c++) h += '<span class="hh-colh">' + (c + 1) + '</span>';
-    for (var r = 0; r < 8; r++) {
-      h += '<span class="hh-rowh">' + ROWS[r] + '</span>';
-      for (c = 0; c < 8; c++) {
-        var i = r * 8 + c, cell = opts.cell(i);
-        h += '<button type="button" class="hh-cell ' + cell.cls + '" data-cell="' + i + '"' + (cell.disabled ? ' disabled' : '') +
-          ' aria-label="' + label(i) + (cell.say ? ', ' + cell.say : '') + '">' + (cell.mark || '') + '</button>';
+  function hull(W, k, x0) {   // stern on the left, pointed bow on the right; k insets it for decks
+    x0 = (x0 || 4) + k;
+    var y0 = 16 + k, y1 = 84 - k, xb = W - 4 - k * 1.6, xm = W * 0.66;
+    return 'M' + (x0 + 6) + ',' + y0 + ' L' + xm + ',' + y0 + ' Q' + (xb - 8) + ',' + (y0 + 4) + ' ' + xb + ',50 Q' + (xb - 8) + ',' + (y1 - 4) + ' ' + xm + ',' + y1 +
+      ' L' + (x0 + 6) + ',' + y1 + ' Q' + x0 + ',' + y1 + ' ' + x0 + ',' + (y1 - 6) + ' L' + x0 + ',' + (y0 + 6) + ' Q' + x0 + ',' + y0 + ' ' + (x0 + 6) + ',' + y0 + ' Z';
+  }
+  function boatSvg(type, len) {
+    var W = len * 100, h = '<svg viewBox="0 0 ' + W + ' 100" preserveAspectRatio="none" aria-hidden="true">';
+    h += '<path d="M2,32 Q-14,50 2,68" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5" stroke-linecap="round" class="hh-wake"/>';
+    if (type === 'yacht') {
+      h += '<path d="' + hull(W, 0) + '" fill="url(#hhCream)" stroke="#8a7650" stroke-width="2"/>' +
+        '<path d="' + hull(W, 5) + '" fill="none" stroke="#c9a15a" stroke-width="3"/>' +
+        '<path d="' + hull(W, 9) + '" fill="url(#hhDeck)"/>' +
+        '<rect x="16" y="31" width="70" height="38" rx="6" fill="url(#hhTeak)"/>' +
+        '<path d="M16,38 H86 M16,46 H86 M16,54 H86 M16,62 H86" stroke="rgba(80,50,20,.35)" stroke-width="1.5"/>' +
+        '<rect x="96" y="27" width="190" height="46" rx="14" fill="url(#hhRoof)" stroke="#9aa7b3" stroke-width="2"/>' +
+        '<rect x="104" y="33" width="174" height="10" rx="5" fill="url(#hhGlass)"/><rect x="104" y="57" width="174" height="10" rx="5" fill="url(#hhGlass)"/>' +
+        '<rect x="140" y="38" width="96" height="24" rx="9" fill="url(#hhWhite)" stroke="#8d9aa6" stroke-width="1.5"/>' +
+        '<path d="M236,40 Q252,50 236,60" fill="url(#hhGlass)"/>' +
+        '<path d="M296,50 H360" stroke="#b9a982" stroke-width="2"/><circle cx="330" cy="50" r="3" fill="#8a7650"/>';
+    } else if (type === 'sailboat') {
+      h += '<path d="' + hull(W, 0) + '" fill="url(#hhWhite)" stroke="#0b2540" stroke-width="2.5"/>' +
+        '<path d="' + hull(W, 5) + '" fill="none" stroke="#0b2540" stroke-width="3"/>' +
+        '<path d="' + hull(W, 9) + '" fill="url(#hhDeck)"/>' +
+        '<rect x="18" y="34" width="56" height="32" rx="8" fill="url(#hhTeak)"/>' +
+        '<rect x="84" y="31" width="96" height="38" rx="14" fill="url(#hhRoof)" stroke="#9aa7b3" stroke-width="2"/>' +
+        '<rect x="96" y="37" width="28" height="7" rx="3" fill="url(#hhGlass)"/><rect x="96" y="56" width="28" height="7" rx="3" fill="url(#hhGlass)"/>' +
+        '<path d="M196,50 L30,50" stroke="#5b6670" stroke-width="5" stroke-linecap="round"/>' +
+        '<path d="M190,44 L40,47 L40,53 L190,56 Z" fill="#ffffff" stroke="#b8c2cc" stroke-width="1.5"/>' +
+        '<path d="M196,50 L' + (W - 10) + ',50" stroke="#5b6670" stroke-width="1.5"/>' +
+        '<circle cx="196" cy="50" r="7" fill="#d7dde3" stroke="#5b6670" stroke-width="2.5"/>';
+    } else if (type === 'trawler') {
+      h += '<path d="' + hull(W, 0) + '" fill="url(#hhGreen)" stroke="#0f2a1d" stroke-width="2"/>' +
+        '<path d="' + hull(W, 7) + '" fill="url(#hhDeck)"/>' +
+        '<rect x="18" y="30" width="78" height="40" rx="4" fill="#5d7a8c"/>' +
+        '<path d="M18,40 H96 M18,50 H96 M18,60 H96 M36,30 V70 M56,30 V70 M76,30 V70" stroke="rgba(255,255,255,.35)" stroke-width="2"/>' +
+        '<rect x="106" y="25" width="108" height="50" rx="6" fill="url(#hhRoof)" stroke="#7d8a95" stroke-width="2"/>' +
+        '<rect x="190" y="31" width="16" height="38" rx="4" fill="url(#hhGlass)"/>' +
+        '<rect x="128" y="42" width="22" height="16" rx="4" fill="#2f2f2f"/><ellipse cx="139" cy="50" rx="7" ry="5" fill="#555"/>' +
+        '<path d="M150,22 L150,6 M150,78 L150,94" stroke="#6b5a3f" stroke-width="3"/>';
+    } else {
+      h += '<rect x="0" y="40" width="18" height="20" rx="3" fill="#2a2f35"/><rect x="2" y="44" width="10" height="12" rx="2" fill="#4a535c"/>' +
+        '<path d="' + hull(W, 0, 14) + '" fill="url(#hhRed)" stroke="#5a1f12" stroke-width="2"/>' +
+        '<path d="' + hull(W, 7, 14) + '" fill="url(#hhDeck)"/>' +
+        '<rect x="74" y="34" width="44" height="32" rx="6" fill="url(#hhRoof)" stroke="#7d8a95" stroke-width="2"/>' +
+        '<path d="M118,36 Q130,50 118,64" fill="url(#hhGlass)" stroke="#2c5a7c" stroke-width="2"/>' +
+        '<rect x="32" y="38" width="30" height="24" rx="5" fill="#e3e8ec" stroke="#aab4bd" stroke-width="1.5"/>';
+    }
+    h += '<path d="' + hull(W, 0, type === 'skiff' ? 14 : 4) + '" fill="url(#hhSheen)" opacity=".7"/>';
+    return h + '</svg>';
+  }
+  function boatHtml(type, cells, state) {
+    var len = cells.length, sorted = cells.slice().sort(function (a, b) { return a - b; });
+    var v = len > 1 && sorted[1] - sorted[0] === 8, r = Math.floor(sorted[0] / 8), c = sorted[0] % 8;
+    return '<div class="hh-boat b-' + type + ' ' + (state || 'afloat') + (v ? ' v' : '') + '" style="grid-column:' + (c + 2) + ' / span ' + (v ? 1 : len) +
+      ';grid-row:' + (r + 2) + ' / span ' + (v ? len : 1) + ';--len:' + len + '"><div class="hh-boat-rot"><div class="hh-boat-in">' + boatSvg(type, len) +
+      (/sinking/.test(state) ? '<span class="hh-bubbles"><i></i><i></i><i></i><i></i><i></i><i></i></span>' : '') + '</div></div></div>';
+  }
+  function fxHtml(cell, kind, isNewShot) {
+    var r = Math.floor(cell / 8), c = cell % 8, parts = '', n = kind === 'miss' ? 7 : 9;
+    if (isNewShot) for (var k = 0; k < n; k++) parts += '<i style="--a:' + Math.round(k * (360 / n) + Math.random() * 20) + 'deg;--d:' + (0.7 + Math.random() * 0.6).toFixed(2) + '"></i>';
+    return '<div class="hh-fx fx-' + kind + (isNewShot ? ' new' : '') + '" style="grid-column:' + (c + 2) + ';grid-row:' + (r + 2) + '"><b></b>' + parts + '</div>';
+  }
+  function isNew(shot) { return !!shot && shot.id === flashId && !animated[shot.id]; }
+  // Squares of a boat sunk on the other harbor: from the server, or worked out from the hits (older games).
+  function sunkCells(shot, hitSet) {
+    if (shot.sunk_cells && shot.sunk_cells.length) return shot.sunk_cells;
+    var len = { yacht: 4, sailboat: 3, trawler: 3, skiff: 2 }[shot.sunk_type] || 2, c = shot.cell;
+    for (var pass = 0; pass < 2; pass++) {
+      var step = pass ? 8 : 1;
+      for (var start = c - (len - 1) * step; start <= c; start += step) {
+        var run = [], ok = true;
+        for (var k = 0; k < len; k++) {
+          var x = start + k * step;
+          if (x < 0 || x > 63 || (!pass && Math.floor(x / 8) !== Math.floor(c / 8)) || !hitSet[x]) { ok = false; break; }
+          run.push(x);
+        }
+        if (ok) return run;
       }
     }
-    return h + '</div>';
+    return [c];
   }
-  function boatCls(s) { return s ? ' boat b-' + s.type + (s.first ? ' first' : '') + (s.last ? ' last' : '') + (s.vertical ? ' v' : ' h') : ''; }
+
+  function gridHtml(opts) {
+    var h = '<div class="hh-grid' + (opts.target ? ' target' : '') + (opts.active ? ' active' : '') + '" role="grid" aria-label="' + esc(opts.label) + '">';
+    // Every square has a fixed spot, so the boats and effects laid over them don't push them around.
+    h += '<span class="hh-corner" style="grid-area:1/1"></span>';
+    for (var c = 0; c < 8; c++) h += '<span class="hh-colh" style="grid-area:1/' + (c + 2) + '">' + (c + 1) + '</span>';
+    for (var r = 0; r < 8; r++) {
+      h += '<span class="hh-rowh" style="grid-area:' + (r + 2) + '/1">' + ROWS[r] + '</span>';
+      for (c = 0; c < 8; c++) {
+        var i = r * 8 + c, cell = opts.cell(i);
+        h += '<button type="button" class="hh-cell ' + (cell.cls || '') + '" style="grid-area:' + (r + 2) + '/' + (c + 2) + '" data-cell="' + i + '"' + (cell.disabled ? ' disabled' : '') +
+          ' aria-label="' + label(i) + (cell.say ? ', ' + cell.say : '') + '"></button>';
+      }
+    }
+    return h + (opts.layers || '') + '</div>';
+  }
 
   function drawPlacing() {
     var ships = FLEET.map(function (f) { return place.ships[f.type] ? { type: f.type, cells: place.ships[f.type] } : null; }).filter(Boolean);
-    var at = shipAt(ships), done = ships.length === 4;
+    var where = {}, done = ships.length === 4;
+    ships.forEach(function (s) { s.cells.forEach(function (x) { where[x] = s.type; }); });
+    var layers = ships.map(function (s) { return boatHtml(s.type, s.cells, 'afloat' + (place.sel === s.type ? ' sel' : '')); }).join('');
     var html = '<p class="hh-intro">Hide your boats from <strong>' + esc(them()) + '</strong>. Pick a boat, then tap the square where it should start.</p>' +
       '<div class="hh-place">' +
         '<div class="hh-fleet">' + FLEET.map(function (f) {
           return '<button type="button" class="hh-boatbtn' + (place.sel === f.type ? ' sel' : '') + (place.ships[f.type] ? ' placed' : '') + '" data-hh="pick" data-type="' + f.type + '">' +
-            '<span class="hh-boatpic b-' + f.type + '">' + new Array(f.len + 1).join('<i></i>') + '</span>' + f.name + ' <span class="note">' + f.len + '</span>' +
+            '<span class="hh-boatpic" style="--len:' + f.len + '">' + boatSvg(f.type, f.len) + '</span>' + f.name + ' <span class="note">' + f.len + '</span>' +
             (place.ships[f.type] ? ' &#10003;' : '') + '</button>';
         }).join('') +
         '<div class="hh-tools"><button type="button" class="btn-sm" data-hh="rotate">' + (place.vertical ? '&#8597; Going down' : '&#8596; Going across') + '</button>' +
         '<button type="button" class="btn-sm" data-hh="shuffle">Shuffle</button><button type="button" class="btn-sm" data-hh="clear">Clear</button></div></div>' +
-        gridHtml({ label: 'Your harbor', active: true, cell: function (i) { var s = at[i]; return { cls: boatCls(s), say: s ? NAMES[s.type] : 'water' }; } }) +
+        gridHtml({ label: 'Your harbor', active: true, layers: layers, cell: function (i) { return { say: where[i] ? NAMES[where[i]] : 'water' }; } }) +
       '</div><p class="hh-msg" id="hhMsg"></p>' +
       '<div class="hh-actions"><button type="button" class="btn btn-gold" data-hh="ready"' + (done ? '' : ' disabled') + '>Ready &mdash; hide my boats</button>' +
       '<button type="button" class="btn-sm" data-hh="leave">Call off the game</button></div>';
@@ -217,24 +336,42 @@
   function boardsHtml(playing) {
     var mineShots = shots.filter(function (s) { return s.player === seat; });
     var theirShots = shots.filter(function (s) { return s.player !== seat; });
-    var mine = {}, theirs = {};
-    mineShots.forEach(function (s) { mine[s.cell] = s; });
+    var mine = {}, theirs = {}, myHits = {};
+    mineShots.forEach(function (s) { mine[s.cell] = s; if (s.result !== 'miss') myHits[s.cell] = 1; });
     theirShots.forEach(function (s) { theirs[s.cell] = s; });
-    var at = shipAt(myShips), myTurn = playing && match.status === 'playing' && match.turn === seat;
+    var myTurn = playing && match.status === 'playing' && match.turn === seat;
     var foundTypes = mineShots.filter(function (s) { return s.result === 'sunk'; }).map(function (s) { return s.sunk_type; });
     var lostTypes = theirShots.filter(function (s) { return s.result === 'sunk'; }).map(function (s) { return s.sunk_type; });
     function fleetLine(list) {
       return '<div class="hh-fleetline">' + FLEET.map(function (f) { var gone = list.indexOf(f.type) >= 0; return '<span class="' + (gone ? 'gone' : '') + '">' + f.name + '</span>'; }).join('') + '</div>';
     }
-    var target = gridHtml({ label: short(them()) + '’s harbor', target: true, active: myTurn, cell: function (i) {
+    // Their harbor: boats you've sunk appear (sinking, then a wreck); hits burn, misses ripple.
+    var tLayers = '', wreckCells = {};
+    mineShots.filter(function (s) { return s.result === 'sunk'; }).forEach(function (s) {
+      var cells = sunkCells(s, myHits);
+      cells.forEach(function (x) { wreckCells[x] = 1; });
+      tLayers += boatHtml(s.sunk_type, cells, isNew(s) ? 'sinking' : 'wreck');
+    });
+    mineShots.forEach(function (s) { tLayers += fxHtml(s.cell, s.result === 'miss' ? 'miss' : (wreckCells[s.cell] && !isNew(s) ? 'hit out' : 'hit'), isNew(s)); });
+    var target = gridHtml({ label: short(them()) + '’s harbor', target: true, active: myTurn, layers: tLayers, cell: function (i) {
       var s = mine[i];
-      if (s) return { cls: s.result + (s.id === flashId ? ' flash' : ''), mark: s.result === 'miss' ? '<i></i>' : '&#10006;', disabled: true, say: s.result };
-      return { cls: '', disabled: !myTurn, say: 'not called yet' };
+      if (s) return { cls: 'called', disabled: true, say: s.result };
+      return { disabled: !myTurn, say: 'not called yet' };
     } });
-    var own = gridHtml({ label: 'Your harbor', cell: function (i) {
-      var s = theirs[i], b = at[i];
-      return { cls: boatCls(b) + (s ? ' ' + s.result + (s.id === flashId ? ' flash' : '') : ''), mark: s ? (s.result === 'miss' ? '<i></i>' : '&#10006;') : '', disabled: true,
-        say: (b ? NAMES[b.type] : 'water') + (s ? ', ' + s.result : '') };
+    // Your harbor: your boats, and their shots on them.
+    var oLayers = '', where = {};
+    (myShips || []).forEach(function (b) {
+      b.cells.forEach(function (x) { where[x] = b.type; });
+      var sunkShot = theirShots.filter(function (s) { return s.result === 'sunk' && s.sunk_type === b.type; })[0];
+      oLayers += boatHtml(b.type, b.cells, sunkShot ? (isNew(sunkShot) ? 'sinking' : 'wreck') : 'afloat');
+    });
+    theirShots.forEach(function (s) {
+      var gone = lostTypes.indexOf(where[s.cell]) >= 0;
+      oLayers += fxHtml(s.cell, s.result === 'miss' ? 'miss' : (gone && !isNew(s) ? 'hit out' : 'hit'), isNew(s));
+    });
+    var own = gridHtml({ label: 'Your harbor', layers: oLayers, cell: function (i) {
+      var s = theirs[i];
+      return { disabled: true, say: (where[i] ? NAMES[where[i]] : 'water') + (s ? ', ' + s.result : '') };
     } });
     return '<div class="hh-boards">' +
       '<div class="hh-board"><h3>' + esc(short(them())) + '&rsquo;s harbor</h3>' + target + '<div class="note">Boats you&rsquo;ve sunk:</div>' + fleetLine(foundTypes) + '</div>' +
@@ -350,6 +487,7 @@
       if (!cells) return msg('The ' + f.name + ' doesn’t fit there. Try another square or turn it.', true);
       if (overlaps(cells, f.type)) return msg('Boats can’t overlap.', true);
       place.ships[f.type] = cells;
+      SND.place();
       var next = FLEET.filter(function (x) { return !place.ships[x.type]; })[0];
       place.sel = next ? next.type : null;
       return drawPlacing();
