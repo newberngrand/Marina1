@@ -68,7 +68,19 @@
       // Remember the tab, except in the site map's preview of this page (a frame).
       try { if (window.top === window.self) sessionStorage.setItem('adminTab', name); } catch (e) {}
     }
-    tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute('data-tab')); }); });
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        var name = t.getAttribute('data-tab');
+        show(name);
+        // On phones the tabs fill the screen, so a tap seems to do nothing: glide down to the section's heading.
+        if (window.innerWidth <= 700) {
+          var panel = document.querySelector('.admin-panel[data-panel="' + name + '"]');
+          var head = panel && (panel.querySelector('.admin-panel-head') || panel);
+          var bar = document.querySelector('header.site-header');
+          if (head) window.scrollTo({ top: head.getBoundingClientRect().top + window.pageYOffset - (bar ? bar.offsetHeight : 0) - 10, behavior: 'smooth' });
+        }
+      });
+    });
     var saved = null;
     try { saved = sessionStorage.getItem('adminTab'); } catch (e) {}
     // admin.html#help (Back to Help), or #events, #docs ... (the site map's previews) open that tab.
