@@ -14,7 +14,7 @@
   var ROWS = 'ABCDEFGH';
   var ctx = null, sb = null, match = null, shots = [], myShips = null, seat = 0;
   var place = { ships: {}, sel: 'yacht', vertical: false }, open = false, busy = false, lastStatus = '', lastTurn = 0, flashId = 0;
-  var dismissed = {}, seenShot = {}, animated = {}, drawnSig = '';
+  var dismissed = {}, seenShot = {}, animated = {}, drawnSig = '', tilted = {};
   var SND = window.HarborSounds || { boom: noop, splash: noop, sink: noop, place: noop, ambientStart: noop, ambientStop: noop, isOn: function () { return false; }, toggle: noop, unlock: noop };
   function noop() {}
 
@@ -89,8 +89,9 @@
           else if (maxId > seenShot[m.id]) {
             var fresh = shots.filter(function (x) { return x.id > seenShot[m.id]; }), last = fresh[fresh.length - 1];
             seenShot[m.id] = maxId; flashId = last.id;
-            if (last.result === 'miss') SND.splash();
-            else { SND.boom(); if (last.result === 'sunk') setTimeout(SND.sink, 450); }
+            var pan = ((last.cell % 8) - 3.5) / 3.5 * 0.75;
+            if (last.result === 'miss') SND.splash(pan);
+            else { SND.boom(pan); if (last.result === 'sunk') setTimeout(function () { SND.sink(pan); }, 500); }
           }
           if (res[1] && res[1].data) myShips = res[1].data;
           var nowStatus = m.status + ':' + m.turn;
@@ -195,22 +196,42 @@
     drawPlaying();
   }
 
-  /* ---------- Boats drawn as little 3D models (seen from above, with shading and a shadow) ---------- */
+  /* ---------- Shared paint: gradients and filters used by every boat, flame and splash ---------- */
   function svgDefs() {
-    function grad(id, stops) {
-      return '<linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1">' + stops.map(function (s) {
+    function grad(id, stops, x2, y2) {
+      return '<linearGradient id="' + id + '" x1="0" y1="0" x2="' + (x2 || 0) + '" y2="' + (y2 === undefined ? 1 : y2) + '">' + stops.map(function (s) {
         return '<stop offset="' + s[0] + '" stop-color="' + s[1] + '"/>'; }).join('') + '</linearGradient>';
     }
+    function rad(id, stops, cx, cy, r) {
+      return '<radialGradient id="' + id + '" cx="' + (cx || 0.5) + '" cy="' + (cy || 0.5) + '" r="' + (r || 0.5) + '">' + stops.map(function (s) {
+        return '<stop offset="' + s[0] + '" stop-color="' + s[1] + '"/>'; }).join('') + '</radialGradient>';
+    }
     return '<svg class="hh-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>' +
-      grad('hhCream', [[0, '#fffdf6'], [0.45, '#f3ead6'], [1, '#b9a982']]) +
-      grad('hhWhite', [[0, '#ffffff'], [0.5, '#e8edf2'], [1, '#a9b6c2']]) +
-      grad('hhGreen', [[0, '#5aa37f'], [0.5, '#2f6b4f'], [1, '#173a2a']]) +
-      grad('hhRed', [[0, '#f08a66'], [0.5, '#c0563b'], [1, '#7a2c1a']]) +
-      grad('hhDeck', [[0, '#f7f9fb'], [1, '#c9d2da']]) +
-      grad('hhTeak', [[0, '#d9a56b'], [1, '#8f5f31']]) +
-      grad('hhGlass', [[0, '#8cc4e2'], [0.5, '#2c5a7c'], [1, '#13283b']]) +
-      grad('hhRoof', [[0, '#ffffff'], [1, '#cfd8e0']]) +
-      grad('hhSheen', [[0, 'rgba(255,255,255,.75)'], [0.45, 'rgba(255,255,255,0)'], [1, 'rgba(0,0,0,.18)']]) +
+      grad('hhCream', [[0, '#fffef8'], [0.35, '#f4ecd9'], [0.75, '#d9cba8'], [1, '#8f7f5c']]) +
+      grad('hhWhite', [[0, '#ffffff'], [0.4, '#eef2f6'], [0.78, '#c4cfd9'], [1, '#7f8f9e']]) +
+      grad('hhGreen', [[0, '#6fb894'], [0.35, '#3d8462'], [0.75, '#24573f'], [1, '#0f2a1d']]) +
+      grad('hhRed', [[0, '#ff9f7c'], [0.35, '#d4613f'], [0.75, '#a3412a'], [1, '#5a1f12']]) +
+      grad('hhDeck', [[0, '#fbfcfd'], [0.6, '#e1e7ec'], [1, '#b7c2cc']]) +
+      grad('hhTeak', [[0, '#e2b07a'], [0.5, '#b07a45'], [1, '#7a4f26']]) +
+      grad('hhGlass', [[0, '#a8d8f0'], [0.35, '#3d7397'], [0.7, '#1b3953'], [1, '#0b1a28']]) +
+      grad('hhRoof', [[0, '#ffffff'], [0.55, '#e6ecf1'], [1, '#aebbc6']]) +
+      grad('hhChrome', [[0, '#ffffff'], [0.5, '#9aa6b1'], [1, '#e5eaee']]) +
+      grad('hhSheen', [[0, 'rgba(255,255,255,.85)'], [0.3, 'rgba(255,255,255,.15)'], [0.55, 'rgba(255,255,255,0)'], [1, 'rgba(0,0,0,.28)']]) +
+      grad('hhLong', [[0, 'rgba(0,0,0,.18)'], [0.25, 'rgba(0,0,0,0)'], [0.85, 'rgba(255,255,255,0)'], [1, 'rgba(255,255,255,.25)']], 1, 0) +
+      rad('hhFlame', [[0, '#ffffff'], [0.18, '#fff4b8'], [0.42, '#ffbe3b'], [0.68, '#f2561d'], [0.88, 'rgba(160,30,10,.55)'], [1, 'rgba(120,20,10,0)']], 0.5, 0.72, 0.6) +
+      rad('hhBoom', [[0, '#ffffff'], [0.15, '#fffbe0'], [0.35, '#ffd060'], [0.55, '#ff7a1f'], [0.75, '#b8320f'], [0.9, 'rgba(70,30,20,.7)'], [1, 'rgba(40,30,30,0)']]) +
+      rad('hhSmoke', [[0, 'rgba(70,66,62,.85)'], [0.6, 'rgba(90,86,82,.45)'], [1, 'rgba(110,106,102,0)']]) +
+      rad('hhSlick', [[0, 'rgba(20,20,26,.75)'], [0.45, 'rgba(60,40,80,.45)'], [0.65, 'rgba(30,90,90,.35)'], [0.82, 'rgba(120,90,30,.25)'], [1, 'rgba(0,0,0,0)']]) +
+      '<filter id="hhBlur" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="4"/></filter>' +
+      '<filter id="hhBlurS" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="1.6"/></filter>' +
+      // Flames lick and flicker: turbulence pushes the flame shape around, the seed changes many times a second.
+      '<filter id="hhFire" x="-40%" y="-40%" width="180%" height="180%"><feTurbulence type="fractalNoise" baseFrequency="0.06 0.14" numOctaves="2" seed="2" result="n">' +
+        '<animate attributeName="seed" values="1;3;5;2;6;4;7;1" dur="0.7s" repeatCount="indefinite"/></feTurbulence>' +
+        '<feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"/>' +
+        '<feGaussianBlur in="d" stdDeviation="0.6"/></filter>' +
+      // Billowing fireball and smoke edges.
+      '<filter id="hhBillow" x="-50%" y="-50%" width="200%" height="200%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="8" result="n"/>' +
+        '<feDisplacementMap in="SourceGraphic" in2="n" scale="26" xChannelSelector="R" yChannelSelector="B" result="d"/><feGaussianBlur in="d" stdDeviation="1.2"/></filter>' +
       '</defs></svg>';
   }
   function hull(W, k, x0) {   // stern on the left, pointed bow on the right; k insets it for decks
@@ -219,62 +240,114 @@
     return 'M' + (x0 + 6) + ',' + y0 + ' L' + xm + ',' + y0 + ' Q' + (xb - 8) + ',' + (y0 + 4) + ' ' + xb + ',50 Q' + (xb - 8) + ',' + (y1 - 4) + ' ' + xm + ',' + y1 +
       ' L' + (x0 + 6) + ',' + y1 + ' Q' + x0 + ',' + y1 + ' ' + x0 + ',' + (y1 - 6) + ' L' + x0 + ',' + (y0 + 6) + ' Q' + x0 + ',' + y0 + ' ' + (x0 + 6) + ',' + y0 + ' Z';
   }
+  function cleat(x, y) { return '<rect x="' + (x - 4) + '" y="' + (y - 1.5) + '" width="8" height="3" rx="1.5" fill="url(#hhChrome)" stroke="#5b6670" stroke-width=".6"/>'; }
   function boatSvg(type, len) {
-    var W = len * 100, h = '<svg viewBox="0 0 ' + W + ' 100" preserveAspectRatio="none" aria-hidden="true">';
-    h += '<path d="M2,32 Q-14,50 2,68" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5" stroke-linecap="round" class="hh-wake"/>';
+    var W = len * 100, sx = type === 'skiff' ? 14 : 4, h = '<svg viewBox="0 0 ' + W + ' 100" preserveAspectRatio="none" aria-hidden="true">';
+    // Wake and foam where the hull meets the water.
+    h += '<g class="hh-wake"><path d="M' + (sx + 2) + ',30 Q' + (sx - 26) + ',14 ' + (sx - 60) + ',6 M' + (sx + 2) + ',70 Q' + (sx - 26) + ',86 ' + (sx - 60) + ',94" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="4" stroke-linecap="round" filter="url(#hhBlurS)"/>' +
+      '<ellipse cx="' + (sx - 6) + '" cy="50" rx="16" ry="22" fill="rgba(255,255,255,.4)" filter="url(#hhBlur)"/></g>';
+    h += '<path d="' + hull(W, -2, sx) + '" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5" filter="url(#hhBlurS)"/>';
+    var body = { yacht: 'hhCream', sailboat: 'hhWhite', trawler: 'hhGreen', skiff: 'hhRed' }[type];
+    var edge = { yacht: '#7d6a45', sailboat: '#0b2540', trawler: '#0f2a1d', skiff: '#5a1f12' }[type];
+    h += '<path d="' + hull(W, 0, sx) + '" fill="url(#' + body + ')" stroke="' + edge + '" stroke-width="2"/>';
+    h += '<path d="' + hull(W, 0, sx) + '" fill="url(#hhLong)"/>';
     if (type === 'yacht') {
-      h += '<path d="' + hull(W, 0) + '" fill="url(#hhCream)" stroke="#8a7650" stroke-width="2"/>' +
-        '<path d="' + hull(W, 5) + '" fill="none" stroke="#c9a15a" stroke-width="3"/>' +
-        '<path d="' + hull(W, 9) + '" fill="url(#hhDeck)"/>' +
-        '<rect x="16" y="31" width="70" height="38" rx="6" fill="url(#hhTeak)"/>' +
-        '<path d="M16,38 H86 M16,46 H86 M16,54 H86 M16,62 H86" stroke="rgba(80,50,20,.35)" stroke-width="1.5"/>' +
-        '<rect x="96" y="27" width="190" height="46" rx="14" fill="url(#hhRoof)" stroke="#9aa7b3" stroke-width="2"/>' +
-        '<rect x="104" y="33" width="174" height="10" rx="5" fill="url(#hhGlass)"/><rect x="104" y="57" width="174" height="10" rx="5" fill="url(#hhGlass)"/>' +
-        '<rect x="140" y="38" width="96" height="24" rx="9" fill="url(#hhWhite)" stroke="#8d9aa6" stroke-width="1.5"/>' +
-        '<path d="M236,40 Q252,50 236,60" fill="url(#hhGlass)"/>' +
-        '<path d="M296,50 H360" stroke="#b9a982" stroke-width="2"/><circle cx="330" cy="50" r="3" fill="#8a7650"/>';
+      h += '<path d="' + hull(W, 5, sx) + '" fill="none" stroke="#c9a15a" stroke-width="2.5"/>' +
+        '<path d="' + hull(W, 9, sx) + '" fill="url(#hhDeck)"/>' +
+        '<path d="' + hull(W, 11, sx) + '" fill="none" stroke="#9aa6b1" stroke-width="1" stroke-dasharray="3 3"/>' +
+        '<rect x="16" y="29" width="72" height="42" rx="6" fill="url(#hhTeak)"/>' +
+        '<path d="M16,35 H88 M16,41 H88 M16,47 H88 M16,53 H88 M16,59 H88 M16,65 H88" stroke="rgba(70,40,15,.35)" stroke-width="1.2"/>' +
+        '<rect x="30" y="38" width="30" height="24" rx="4" fill="rgba(40,110,150,.55)" stroke="#e8eef3" stroke-width="2"/>' +
+        '<rect x="96" y="25" width="192" height="50" rx="16" fill="url(#hhRoof)" stroke="#8d9aa6" stroke-width="1.6"/>' +
+        '<rect x="104" y="31" width="176" height="10" rx="5" fill="url(#hhGlass)"/><rect x="104" y="59" width="176" height="10" rx="5" fill="url(#hhGlass)"/>' +
+        '<rect x="138" y="37" width="100" height="26" rx="10" fill="url(#hhWhite)" stroke="#7f8f9e" stroke-width="1.4"/>' +
+        '<rect x="148" y="43" width="30" height="14" rx="4" fill="url(#hhGlass)"/><circle cx="210" cy="50" r="5" fill="url(#hhChrome)" stroke="#5b6670" stroke-width="1"/>' +
+        '<path d="M238,38 Q256,50 238,62" fill="url(#hhGlass)" stroke="#2c5a7c" stroke-width="1.2"/>' +
+        '<rect x="300" y="40" width="34" height="20" rx="4" fill="url(#hhDeck)" stroke="#9aa6b1" stroke-width="1"/>' +
+        '<path d="M346,50 L372,50" stroke="#8d7a55" stroke-width="2"/><circle cx="362" cy="50" r="3.5" fill="#5b6670"/>' +
+        cleat(24, 23) + cleat(24, 77) + cleat(330, 25) + cleat(330, 75);
     } else if (type === 'sailboat') {
-      h += '<path d="' + hull(W, 0) + '" fill="url(#hhWhite)" stroke="#0b2540" stroke-width="2.5"/>' +
-        '<path d="' + hull(W, 5) + '" fill="none" stroke="#0b2540" stroke-width="3"/>' +
-        '<path d="' + hull(W, 9) + '" fill="url(#hhDeck)"/>' +
-        '<rect x="18" y="34" width="56" height="32" rx="8" fill="url(#hhTeak)"/>' +
-        '<rect x="84" y="31" width="96" height="38" rx="14" fill="url(#hhRoof)" stroke="#9aa7b3" stroke-width="2"/>' +
-        '<rect x="96" y="37" width="28" height="7" rx="3" fill="url(#hhGlass)"/><rect x="96" y="56" width="28" height="7" rx="3" fill="url(#hhGlass)"/>' +
-        '<path d="M196,50 L30,50" stroke="#5b6670" stroke-width="5" stroke-linecap="round"/>' +
-        '<path d="M190,44 L40,47 L40,53 L190,56 Z" fill="#ffffff" stroke="#b8c2cc" stroke-width="1.5"/>' +
-        '<path d="M196,50 L' + (W - 10) + ',50" stroke="#5b6670" stroke-width="1.5"/>' +
-        '<circle cx="196" cy="50" r="7" fill="#d7dde3" stroke="#5b6670" stroke-width="2.5"/>';
+      h += '<path d="' + hull(W, 5, sx) + '" fill="none" stroke="#0b2540" stroke-width="3"/>' +
+        '<path d="' + hull(W, 9, sx) + '" fill="url(#hhDeck)"/>' +
+        '<path d="' + hull(W, 11, sx) + '" fill="none" stroke="#9aa6b1" stroke-width="1" stroke-dasharray="3 3"/>' +
+        '<rect x="18" y="33" width="58" height="34" rx="8" fill="url(#hhTeak)"/>' +
+        '<path d="M18,40 H76 M18,47 H76 M18,54 H76 M18,61 H76" stroke="rgba(70,40,15,.35)" stroke-width="1.2"/>' +
+        '<circle cx="34" cy="50" r="8" fill="none" stroke="url(#hhChrome)" stroke-width="3"/>' +
+        '<rect x="84" y="30" width="98" height="40" rx="15" fill="url(#hhRoof)" stroke="#8d9aa6" stroke-width="1.6"/>' +
+        '<rect x="96" y="36" width="30" height="7" rx="3" fill="url(#hhGlass)"/><rect x="96" y="57" width="30" height="7" rx="3" fill="url(#hhGlass)"/>' +
+        '<rect x="140" y="41" width="22" height="18" rx="3" fill="rgba(40,110,150,.5)" stroke="#e8eef3" stroke-width="1.5"/>' +
+        '<path d="M196,50 L28,50" stroke="#4c5761" stroke-width="5" stroke-linecap="round"/>' +
+        '<path d="M190,43 Q115,40 40,46 L40,54 Q115,60 190,57 Z" fill="url(#hhWhite)" stroke="#b8c2cc" stroke-width="1.2"/>' +
+        '<path d="M170,44 Q140,50 170,56 M130,43 Q100,50 130,57 M90,44 Q66,50 90,56" fill="none" stroke="rgba(120,135,150,.5)" stroke-width="1"/>' +
+        '<path d="M196,50 L' + (W - 8) + ',50 M196,50 L120,18 M196,50 L120,82" stroke="#5b6670" stroke-width="1.1"/>' +
+        '<circle cx="196" cy="50" r="7.5" fill="url(#hhChrome)" stroke="#4c5761" stroke-width="2.2"/>' + cleat(22, 22) + cleat(22, 78) + cleat(262, 50);
     } else if (type === 'trawler') {
-      h += '<path d="' + hull(W, 0) + '" fill="url(#hhGreen)" stroke="#0f2a1d" stroke-width="2"/>' +
-        '<path d="' + hull(W, 7) + '" fill="url(#hhDeck)"/>' +
-        '<rect x="18" y="30" width="78" height="40" rx="4" fill="#5d7a8c"/>' +
-        '<path d="M18,40 H96 M18,50 H96 M18,60 H96 M36,30 V70 M56,30 V70 M76,30 V70" stroke="rgba(255,255,255,.35)" stroke-width="2"/>' +
-        '<rect x="106" y="25" width="108" height="50" rx="6" fill="url(#hhRoof)" stroke="#7d8a95" stroke-width="2"/>' +
-        '<rect x="190" y="31" width="16" height="38" rx="4" fill="url(#hhGlass)"/>' +
-        '<rect x="128" y="42" width="22" height="16" rx="4" fill="#2f2f2f"/><ellipse cx="139" cy="50" rx="7" ry="5" fill="#555"/>' +
-        '<path d="M150,22 L150,6 M150,78 L150,94" stroke="#6b5a3f" stroke-width="3"/>';
+      h += '<path d="' + hull(W, 4, sx) + '" fill="none" stroke="#e7d9a6" stroke-width="2"/>' +
+        '<path d="' + hull(W, 8, sx) + '" fill="url(#hhDeck)"/>' +
+        '<rect x="16" y="28" width="82" height="44" rx="4" fill="#4f6c7e"/>' +
+        '<path d="M16,36 H98 M16,44 H98 M16,52 H98 M16,60 H98 M16,68 H98 M28,28 V72 M44,28 V72 M60,28 V72 M76,28 V72 M92,28 V72" stroke="rgba(230,240,245,.35)" stroke-width="1.4"/>' +
+        '<ellipse cx="40" cy="44" rx="10" ry="7" fill="#e07b2a" stroke="#8a4513" stroke-width="1"/><ellipse cx="68" cy="58" rx="9" ry="6" fill="#e9c23a" stroke="#8a6d13" stroke-width="1"/>' +
+        '<rect x="106" y="22" width="110" height="56" rx="6" fill="url(#hhRoof)" stroke="#7d8a95" stroke-width="1.6"/>' +
+        '<rect x="112" y="27" width="98" height="46" rx="4" fill="none" stroke="#c9d2da" stroke-width="1"/>' +
+        '<rect x="190" y="29" width="18" height="42" rx="4" fill="url(#hhGlass)"/>' +
+        '<rect x="128" y="40" width="24" height="20" rx="4" fill="#2b2b2b"/><ellipse cx="140" cy="50" rx="8" ry="6" fill="#4d4d4d"/><ellipse cx="138" cy="48" rx="3" ry="2" fill="#777"/>' +
+        '<rect x="164" y="44" width="14" height="12" rx="6" fill="url(#hhChrome)"/>' +
+        '<path d="M150,20 L136,2 M150,80 L136,98" stroke="#6b5a3f" stroke-width="3" stroke-linecap="round"/>' +
+        '<path d="M136,2 L100,6 M136,98 L100,94" stroke="rgba(80,70,50,.6)" stroke-width="1"/>' + cleat(250, 24) + cleat(250, 76);
     } else {
-      h += '<rect x="0" y="40" width="18" height="20" rx="3" fill="#2a2f35"/><rect x="2" y="44" width="10" height="12" rx="2" fill="#4a535c"/>' +
-        '<path d="' + hull(W, 0, 14) + '" fill="url(#hhRed)" stroke="#5a1f12" stroke-width="2"/>' +
-        '<path d="' + hull(W, 7, 14) + '" fill="url(#hhDeck)"/>' +
-        '<rect x="74" y="34" width="44" height="32" rx="6" fill="url(#hhRoof)" stroke="#7d8a95" stroke-width="2"/>' +
-        '<path d="M118,36 Q130,50 118,64" fill="url(#hhGlass)" stroke="#2c5a7c" stroke-width="2"/>' +
-        '<rect x="32" y="38" width="30" height="24" rx="5" fill="#e3e8ec" stroke="#aab4bd" stroke-width="1.5"/>';
+      h += '<rect x="0" y="40" width="18" height="20" rx="3" fill="#20252b"/><rect x="2" y="43" width="11" height="14" rx="2" fill="#4a535c"/><rect x="14" y="46" width="6" height="8" fill="#1a1d22"/>' +
+        '<path d="' + hull(W, 7, sx) + '" fill="url(#hhDeck)"/>' +
+        '<path d="' + hull(W, 9, sx) + '" fill="none" stroke="#9aa6b1" stroke-width="1" stroke-dasharray="3 3"/>' +
+        '<rect x="74" y="33" width="46" height="34" rx="6" fill="url(#hhRoof)" stroke="#7d8a95" stroke-width="1.6"/>' +
+        '<circle cx="90" cy="50" r="6" fill="#2b2f35" stroke="url(#hhChrome)" stroke-width="2"/>' +
+        '<path d="M120,35 Q133,50 120,65" fill="url(#hhGlass)" stroke="#2c5a7c" stroke-width="1.6"/>' +
+        '<rect x="30" y="37" width="32" height="26" rx="6" fill="#e3e8ec" stroke="#aab4bd" stroke-width="1.4"/><path d="M30,50 H62" stroke="#c5ccd3" stroke-width="1"/>' +
+        cleat(160, 30) + cleat(160, 70);
     }
-    h += '<path d="' + hull(W, 0, type === 'skiff' ? 14 : 4) + '" fill="url(#hhSheen)" opacity=".7"/>';
+    h += '<path d="' + hull(W, 0, sx) + '" fill="url(#hhSheen)" opacity=".75"/>';
     return h + '</svg>';
   }
   function boatHtml(type, cells, state) {
     var len = cells.length, sorted = cells.slice().sort(function (a, b) { return a - b; });
     var v = len > 1 && sorted[1] - sorted[0] === 8, r = Math.floor(sorted[0] / 8), c = sorted[0] % 8;
+    var down = /sinking|wreck/.test(state || '');
     return '<div class="hh-boat b-' + type + ' ' + (state || 'afloat') + (v ? ' v' : '') + '" style="grid-column:' + (c + 2) + ' / span ' + (v ? 1 : len) +
-      ';grid-row:' + (r + 2) + ' / span ' + (v ? len : 1) + ';--len:' + len + '"><div class="hh-boat-rot"><div class="hh-boat-in">' + boatSvg(type, len) +
-      (/sinking/.test(state) ? '<span class="hh-bubbles"><i></i><i></i><i></i><i></i><i></i><i></i></span>' : '') + '</div></div></div>';
+      ';grid-row:' + (r + 2) + ' / span ' + (v ? len : 1) + ';--len:' + len + '">' +
+      (down ? '<span class="hh-slick"></span>' : '') +
+      '<div class="hh-boat-rot"><div class="hh-boat-in">' + boatSvg(type, len) + '</div>' +
+      (/sinking/.test(state) ? '<span class="hh-bubbles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="hh-churn"></span>' : '') +
+      (down ? '<span class="hh-debris"><i></i><i></i><i></i></span>' : '') + '</div></div>';
+  }
+  function flameSvg() {
+    return '<svg class="hh-flame" viewBox="0 0 40 60" aria-hidden="true"><g filter="url(#hhFire)">' +
+      '<path d="M20,58 C6,52 4,38 12,28 C12,36 16,38 17,34 C14,24 18,12 24,4 C24,16 34,22 32,36 C36,32 36,26 35,22 C40,32 38,52 20,58 Z" fill="url(#hhFlame)"/>' +
+      '<path d="M20,56 C13,52 12,44 16,38 C17,43 20,44 21,40 C21,34 24,30 26,26 C27,36 31,40 28,48 C27,53 24,55 20,56 Z" fill="#fff6c8" opacity=".85"/></g></svg>';
   }
   function fxHtml(cell, kind, isNewShot) {
-    var r = Math.floor(cell / 8), c = cell % 8, parts = '', n = kind === 'miss' ? 7 : 9;
-    if (isNewShot) for (var k = 0; k < n; k++) parts += '<i style="--a:' + Math.round(k * (360 / n) + Math.random() * 20) + 'deg;--d:' + (0.7 + Math.random() * 0.6).toFixed(2) + '"></i>';
-    return '<div class="hh-fx fx-' + kind + (isNewShot ? ' new' : '') + '" style="grid-column:' + (c + 2) + ';grid-row:' + (r + 2) + '"><b></b>' + parts + '</div>';
+    var r = Math.floor(cell / 8), c = cell % 8, plane = '', up = '', k, n;
+    function bits(cls, count, spread) {
+      var s = '';
+      // Sparks, debris and droplets fly mostly upward, then fall back.
+      for (var j = 0; j < count; j++) s += '<i class="' + cls + '" style="--a:' + Math.round(-170 + (j + Math.random()) * (160 / count)) + 'deg;--d:' + (0.6 + Math.random() * (spread || 0.7)).toFixed(2) + ';--t:' + (Math.random() * 0.15).toFixed(2) + 's"></i>';
+      return s;
+    }
+    if (kind === 'miss') {
+      plane = '<i class="ring"></i>';
+      if (isNewShot) { plane += '<i class="rip"></i><i class="rip r2"></i><i class="rip r3"></i>'; up = '<span class="crown"></span><span class="column"></span>' + bits('drop', 10, 0.8); }
+    } else {
+      var out = / out/.test(' ' + kind);
+      plane = '<i class="scorch"></i>';
+      up = out ? '<em class="smk"></em><em class="smk s2"></em>' : flameSvg() + '<em class="smk"></em><em class="smk s2"></em><em class="smk s3"></em>';
+      if (isNewShot) {
+        plane += '<i class="shock"></i><i class="spray"></i>';
+        up += '<i class="flash"></i><span class="fball"><svg viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#hhBillow)"><circle cx="50" cy="50" r="40" fill="url(#hhBoom)"/>' +
+          '<circle cx="34" cy="40" r="22" fill="url(#hhBoom)"/><circle cx="66" cy="44" r="20" fill="url(#hhBoom)"/></g></svg></span>' +
+          '<span class="plume"><svg viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#hhBillow)"><circle cx="50" cy="55" r="34" fill="url(#hhSmoke)"/><circle cx="36" cy="40" r="24" fill="url(#hhSmoke)"/><circle cx="62" cy="38" r="26" fill="url(#hhSmoke)"/></g></svg></span>' +
+          bits('spk', 12, 0.9) + bits('deb', 6, 0.6);
+      }
+    }
+    return '<div class="hh-fx fx-' + kind + (isNewShot ? ' new' : '') + '" style="grid-column:' + (c + 2) + ';grid-row:' + (r + 2) + '">' +
+      '<span class="hh-plane">' + plane + '</span><span class="hh-up">' + up + '</span></div>';
   }
   function isNew(shot) { return !!shot && shot.id === flashId && !animated[shot.id]; }
   // Squares of a boat sunk on the other harbor: from the server, or worked out from the hits (older games).
@@ -297,7 +370,7 @@
   }
 
   function gridHtml(opts) {
-    var h = '<div class="hh-grid' + (opts.target ? ' target' : '') + (opts.active ? ' active' : '') + '" role="grid" aria-label="' + esc(opts.label) + '">';
+    var h = '<div class="hh-grid' + (opts.target ? ' target' : '') + (opts.active ? ' active' : '') + (opts.extra || '') + '" role="grid" aria-label="' + esc(opts.label) + '">';
     // Every square has a fixed spot, so the boats and effects laid over them don't push them around.
     h += '<span class="hh-corner" style="grid-area:1/1"></span>';
     for (var c = 0; c < 8; c++) h += '<span class="hh-colh" style="grid-area:1/' + (c + 2) + '">' + (c + 1) + '</span>';
@@ -353,7 +426,8 @@
       tLayers += boatHtml(s.sunk_type, cells, isNew(s) ? 'sinking' : 'wreck');
     });
     mineShots.forEach(function (s) { tLayers += fxHtml(s.cell, s.result === 'miss' ? 'miss' : (wreckCells[s.cell] && !isNew(s) ? 'hit out' : 'hit'), isNew(s)); });
-    var target = gridHtml({ label: short(them()) + '’s harbor', target: true, active: myTurn, layers: tLayers, cell: function (i) {
+    var tiltIn = !tilted[match.id]; tilted[match.id] = 1;
+    var target = gridHtml({ label: short(them()) + '’s harbor', target: true, active: myTurn, extra: ' tilt' + (tiltIn ? ' tilt-in' : ''), layers: tLayers, cell: function (i) {
       var s = mine[i];
       if (s) return { cls: 'called', disabled: true, say: s.result };
       return { disabled: !myTurn, say: 'not called yet' };
@@ -374,7 +448,7 @@
       return { disabled: true, say: (where[i] ? NAMES[where[i]] : 'water') + (s ? ', ' + s.result : '') };
     } });
     return '<div class="hh-boards">' +
-      '<div class="hh-board"><h3>' + esc(short(them())) + '&rsquo;s harbor</h3>' + target + '<div class="note">Boats you&rsquo;ve sunk:</div>' + fleetLine(foundTypes) + '</div>' +
+      '<div class="hh-board theirs"><h3>' + esc(short(them())) + '&rsquo;s harbor</h3><div class="hh-tilt">' + target + '</div>' + '<div class="note">Boats you&rsquo;ve sunk:</div>' + fleetLine(foundTypes) + '</div>' +
       '<div class="hh-board mine"><h3>Your harbor</h3>' + own + '<div class="note">Your boats sunk:</div>' + fleetLine(lostTypes) + '</div></div>';
   }
 
